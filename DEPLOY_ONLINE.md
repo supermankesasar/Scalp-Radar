@@ -1,0 +1,16 @@
+# Cara pasang Scalp Radar di internet — tanpa menjalankan CMD desktop
+
+**Pilihan sederhana:** GitHub + Render Web Service berbayar dengan persistent disk. Tidak perlu membuat akun Binance/API key atau menulis program. Deploy dan biaya hosting tetap perlu dilakukan di akunmu sendiri; paket ZIP bukan URL web publik otomatis.
+
+1. Buka [github.com/new](https://github.com/new), buat repository **private** baru, misalnya `scalp-radar`. Masukkan file-file dari folder hasil ekstrak ke **root** repository menggunakan tombol **Add file → Upload files**. Yang penting: `index.html`, `app.py`, `signals.py`, `icon.png`, `manifest.webmanifest`, `sw.js`, `render.yaml`, dan `README.md`. Bukan mengunggah ZIP sebagai satu file saja.
+2. Buka [Render Dashboard](https://dashboard.render.com/), hubungkan akun GitHub ke Render jika diminta. Pilih **New → Blueprint** (nama menu bisa berubah) dan pilih repository tersebut. Render akan membaca `render.yaml`.
+3. Pastikan plan layanan **paid/always-on** yang mendukung **persistent disk** aktif, dan mount disk berada di `/opt/render/project/src/data` (sudah didefinisikan di Blueprint). Jangan gunakan web service gratis apabila kamu mengandalkan riwayat scanner saat tidak membuka HP.
+4. Jalankan **Apply/Deploy Blueprint** dan cek log. Ketika healthcheck `/api/health` sudah merespons, Render akan menampilkan alamat HTTPS berbentuk `https://nama-layanan.onrender.com`. Ini adalah alamat yang bisa kamu buka dari PC maupun HP.
+5. Pada Android Chrome buka alamat HTTPS itu, pilih menu browser **Add to Home screen / Install app** jika tersedia. Ikon Scalp Radar akan tampil seperti aplikasi, namun tetap membutuhkan koneksi internet dan server aktif.
+6. Periksa bagian status scanning. Pada awal penggunaan, tab "Sudah Naik/Turun" akan **kosong** sampai ada sinyal Potensi baru yang benar-benar mencapai ambang. Bila Binance memblokir IP/region hosting, error akan terlihat di dashboard. Pindah layanan/region yang memang secara resmi dapat mengakses Binance; jangan memakai bypass terhadap pembatasan akses.
+
+**Catatan biaya & keterbatasan:** Render mengenakan biaya untuk layanan always-on dan persistent disk. Biayanya bergantung pada paket yang dipilih; periksa harga terkini sebelum deploy. Render Free bisa tidur saat idle dan tidak memiliki persistent disk, sehingga tidak sesuai untuk histori sinyal 24/7. Alternatifnya VPS 24/7 dengan Python dan folder database permanen. Layanan ini memakai scanner internal satu proses; **jangan jalankan banyak replika sekaligus pada satu database SQLite** tanpa merancang ulang locking/scheduler.
+
+**Privasi:** Secara bawaan URL deployment bisa dibuka oleh orang yang mengetahui alamatnya. Dashboard tidak mengambil kredensial Binance dan tidak membuka order. Jika ingin akses khusus diri sendiri, tambahkan autentikasi di reverse proxy/hosting pada tahap berikutnya.
+
+**Jika ingin tes lokal dulu:** Windows membutuhkan Python 3.10+ dan klik `START-WINDOWS.bat`. Kalau CMD ditutup atau laptop mati, scanning lokal berhenti. Mengakses `127.0.0.1` dari HP akan mengarah ke HP itu sendiri, bukan laptop.
