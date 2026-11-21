@@ -67,8 +67,10 @@ class ScannerTests(unittest.TestCase):
         app.STORE=SignalStore(Path(self._tmp.name)/'scanner.sqlite')
         with app.SCAN_LOCK:
             app.SCAN_STATE.update({'running':False,'rows':[],'processed':0,'total':0,'eligible':0,
-                                   'errors':[],'startedAt':None,'completedAt':None,'generation':0,'limit':80,
-                                   'minTurnover':30000000,'message':'Belum dipindai'})
+                                   'errors':[],'startedAt':None,'completedAt':None,'generation':0,'mode':'all',
+                                   'requestedMode':'all','requestedMinTurnover':30000000,
+                                   'minTurnover':30000000,'universe':0,'missingTicker':0,'trackedExtra':0,
+                                   'message':'Belum dipindai'})
 
     def tearDown(self):
         app.STORE=self._original_store
@@ -82,9 +84,20 @@ class ScannerTests(unittest.TestCase):
     @patch.object(app,'request_market',side_effect=fake_market)
     def test_universe_selection(self, mock):
         self.assertEqual(len(app.active_symbols()),len(BASE_SYMBOLS))
-        vals,eligible=app.active_tickers(40,30000000)
-        self.assertEqual([x['symbol'] for x in vals],BASE_SYMBOLS[:4])
-        self.assertEqual(eligible,4)
+        allvals, all_info=app.active_tickers('all',30000000)
+        self.assertEqual(len(allvals),len(BASE_SYMBOLS))
+        self.assertEqual(all_info['universe'],len(BASE_SYMBOLS))
+        self.assertEqual(all_info['eligible'],len(BASE_SYMBOLS))
+        self.assertIn('ZZZUSDT', [x['symbol'] for x in allvals])
+        liquid,info=app.active_tickers('liquid',30000000)
+        self.assertEqual([x['symbol'] for x in liquid],BASE_SYMBOLS[:4])
+        self.assertEqual(info['eligible'],4)
+        top, top_info=app.active_tickers('top80',30000000)
+        self.assertEqual(len(top),len(BASE_SYMBOLS))
+        self.assertEqual(top_info['eligible'],len(BASE_SYMBOLS))
+        tracked,more=app.active_tickers('liquid',30000000,tracked={'ZZZUSDT'})
+        self.assertIn('ZZZUSDT',[x['symbol'] for x in tracked])
+        self.assertEqual(more['trackedExtra'],1)
 
     @patch.object(app,'request_market',side_effect=fake_market)
     def test_dynamic_snapshot(self, mock):
@@ -114,11 +127,15 @@ class ScannerTests(unittest.TestCase):
     @patch.object(app,'request_market',side_effect=fake_market)
     def test_scan_job_full(self, mock):
         with app.SCAN_LOCK:
-            app.SCAN_STATE.update({'generation':1,'running':True,'limit':40,'minTurnover':30000000})
-        app.scan_job(1,40,30000000)
-        st=app.read_scanner(40,30000000)
+            app.SCAN_STATE.update({'generation':1,'running':True,'mode':'liquid','minTurnover':30000000})
+        app.scan_job(1,'liquid',30000000)
+        st=app.read_scanner('liquid',30000000)
         self.assertFalse(st['running'])
         self.assertEqual(st['processed'],4)
+        self.assertEqual(st['universe'],6)
+        self.assertEqual(st['eligible'],4)
+        self.assertEqual(st['successful'],4)
+        self.assertEqual(st['failed'],0)
         self.assertEqual(st['total'],4)
         self.assertEqual(st['errorCount'],0)
         self.assertEqual(len(st['rows']),4)
@@ -148,9 +165,57 @@ class ScannerTests(unittest.TestCase):
         self.assertTrue(down['potentialDown'])
         self.assertGreaterEqual(down['shortScore'],65)
 
+
+    @patch.object(app,'request_market',side_effect=fake_market)
+    def test_all_pairs_scan_not_limited_by_volume(self,mock):
+        with app.SCAN_LOCK:
+            app.SCAN_STATE.update({'generation':2,'running':True,'mode':'all',
+                                   'requestedMode':'all','minTurnover':30000000})
+        app.scan_job(2,'all',30000000)
+        st=app.read_scanner('all',30000000)
+        self.assertEqual(st['universe'],6)
+        self.assertEqual(st['eligible'],6)
+        self.assertEqual(st['total'],6)
+        self.assertEqual(st['processed'],6)
+        self.assertEqual(st['successful'],6)
+        self.assertEqual(st['failed'],0)
+        self.assertIn('ZZZUSDT',{r['symbol'] for r in st['rows']})
+
+    def test_mode_change_waits_for_active_batch_and_is_reported(self):
+        with app.SCAN_LOCK:
+            app.SCAN_STATE.update({'generation':4,'running':True,'mode':'all',
+                                   'requestedMode':'all','minTurnover':30000000,
+                                   'total':100,'processed':10,'eligible':100,'universe':100})
+        result=app.read_scanner('top80',30000000)
+        self.assertTrue(result['configPending'])
+        self.assertEqual(result['mode'],'all')
+        self.assertEqual(result['requestedMode'],'top80')
+        with app.SCAN_LOCK:
+            self.assertEqual(app.SCAN_STATE['generation'],4)
+
+    def test_top80_never_requires_min_turnover(self):
+        def many(endpoint,params,ttl=0):
+            if endpoint.endswith('exchangeInfo'):
+                return {'symbols':[{'symbol':f'C{i:03d}USDT','status':'TRADING',
+                    'contractType':'PERPETUAL','quoteAsset':'USDT'} for i in range(120)]}
+            if endpoint.endswith('ticker/24hr'):
+                return [{'symbol':f'C{i:03d}USDT','quoteVolume':str(120-i),
+                    'priceChangePercent':'0','lastPrice':'1.0'} for i in range(120)]
+            raise AssertionError(endpoint)
+        with patch.object(app,'request_market',side_effect=many):
+            all_rows,info=app.active_tickers('all',30000000)
+            self.assertEqual(len(all_rows),120)
+            top,meta=app.active_tickers('top80',100000000)
+            self.assertEqual(len(top),80)
+            self.assertEqual(meta['universe'],120)
+            self.assertEqual(meta['eligible'],80)
+            self.assertEqual(top[0]['symbol'],'C000USDT')
+
     def test_invalid_config(self):
         with self.assertRaises(ValueError):
-            app.read_scanner(10000,10)
+            app.read_scanner('unsupported',30000000)
+        with self.assertRaises(ValueError):
+            app.read_scanner('liquid',123)
 
 if __name__ == '__main__':
     unittest.main()

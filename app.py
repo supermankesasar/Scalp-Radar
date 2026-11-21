@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Binance Futures Scalping Scanner — fase 1 v0.2, read-only, Python standard library."""
+"""Scalp Radar v0.4 — full-universe Binance Futures scanner, read-only."""
 from __future__ import annotations
 
 import json
@@ -21,8 +21,16 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parent
 STORE = SignalStore(os.getenv('SCANNER_DB', str(ROOT / 'data' / 'signals.sqlite3')))
 BASE = "https://fapi.binance.com"
-SCAN_LIMITS = (40, 80, 120)
+SCAN_MODES = ('all', 'liquid', 'top80')
+DEFAULT_MODE = 'all'
+DEFAULT_TURNOVER = 30000000
 SCAN_MIN_TURNOVER = (10000000, 30000000, 100000000)
+# 20 symbols x four kline calls (~8 weight/symbol), separated by >= 7 seconds.
+# These are conservative baseline limits; inspect Binance response headers/logs on hosting.
+SCAN_BATCH_SIZE = 20
+SCAN_BATCH_INTERVAL = 7.0
+SCAN_MAX_WORKERS = 4
+SCAN_REFRESH_MS = 180000
 CACHE = {}
 CACHE_LOCK = threading.Lock()
 
@@ -266,9 +274,12 @@ def snapshot(symbol):
 CATEGORIES = ("POTENSI_NAIK", "SUDAH_NAIK", "POTENSI_TURUN", "SUDAH_TURUN", "NETRAL")
 SCAN_LOCK = threading.Lock()
 SCAN_STATE = {
-    "running": False, "rows": [], "processed": 0, "total": 0, "eligible": 0,
-    "errors": [], "startedAt": None, "completedAt": None,
-    "limit": 80, "minTurnover": 30000000, "generation": 0, "message": "Belum dipindai",
+    'running': False, 'rows': [], 'processed': 0, 'total': 0, 'eligible': 0,
+    'universe': 0, 'missingTicker': 0, 'trackedExtra': 0,
+    'errors': [], 'startedAt': None, 'completedAt': None,
+    'mode': DEFAULT_MODE, 'minTurnover': DEFAULT_TURNOVER,
+    'requestedMode': DEFAULT_MODE, 'requestedMinTurnover': DEFAULT_TURNOVER,
+    'generation': 0, 'message': 'Belum dipindai',
 }
 
 
@@ -283,34 +294,63 @@ def active_symbols():
     }
 
 
-def active_tickers(limit, min_turnover, tracked=None):
+def validate_scan_options(mode, min_turnover):
+    if mode not in SCAN_MODES:
+        raise ValueError('Mode scan harus ALL PAIRS, LIQUID, atau TOP 80.')
+    if min_turnover not in SCAN_MIN_TURNOVER:
+        raise ValueError('Volume minimum LIQUID harus $10M, $30M, atau $100M.')
+
+
+def active_tickers(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, tracked=None):
+    """Return selected perpetual contracts and transparent counts for each scan mode.
+
+    ALL never silently filters low-volume symbols. Tracked symbols are retained
+    outside the LIQUID/TOP80 cut, so potential->reached history is not lost.
+    """
+    validate_scan_options(mode, min_turnover)
     available = active_symbols()
     tickers = request_market('/fapi/v1/ticker/24hr', {}, ttl=120)
-    good = []
     by_symbol = {}
+    if not isinstance(tickers, list):
+        raise RuntimeError('Format ticker 24h Binance tidak dikenali')
     for t in tickers:
+        symbol = t.get('symbol')
+        if symbol not in available:
+            continue
         try:
-            symbol = t['symbol']
-            q = float(t['quoteVolume'])
+            quote_volume = max(0, float(t['quoteVolume']))
             last = float(t.get('lastPrice', 0))
-            chg = float(t.get('priceChangePercent', 0))
+            pct24h = float(t.get('priceChangePercent', 0))
         except (KeyError, ValueError, TypeError):
             continue
-        if symbol not in available or last <= 0:
+        if not all(map(math.isfinite, (quote_volume, last, pct24h))) or last <= 0:
             continue
-        record = {'symbol': symbol, 'turnover24h': q, 'change24h': chg}
-        by_symbol[symbol] = record
-        if q >= min_turnover:
-            good.append(record)
-    good.sort(key=lambda x: x['turnover24h'], reverse=True)
-    selected = good[:limit]
-    present = {x['symbol'] for x in selected}
-    # Keep following prior signals even if a pair exits the volume Top-N.
-    for sym in sorted(tracked or []):
-        if sym not in present and sym in by_symbol:
-            selected.append(by_symbol[sym])
-            present.add(sym)
-    return selected, len(good)
+        by_symbol[symbol] = {
+            'symbol': symbol, 'turnover24h': quote_volume, 'change24h': pct24h,
+            'tickerAvailable': True,
+        }
+    # Missing 24h tickers are still scanned in ALL mode; candle history may
+    # be insufficient, which gets counted as a per-symbol failure rather than hidden.
+    all_tickers = [by_symbol.get(sym, {
+        'symbol': sym, 'turnover24h': 0.0, 'change24h': None,
+        'tickerAvailable': False,
+    }) for sym in available]
+    all_tickers.sort(key=lambda r:(-r['turnover24h'], r['symbol']))
+    if mode == 'all':
+        selected = list(all_tickers)
+    elif mode == 'liquid':
+        selected = [r for r in all_tickers if r['tickerAvailable'] and r['turnover24h'] >= min_turnover]
+    else:
+        selected = [r for r in all_tickers if r['tickerAvailable']][:80]
+    eligible = len(selected)
+    seen = {x['symbol'] for x in selected}
+    extras = [r for r in all_tickers if r['symbol'] in (tracked or set()) and r['symbol'] not in seen]
+    selected.extend(extras)
+    return selected, {
+        'universe': len(available), 'eligible': eligible,
+        'missingTicker': len(available) - len(by_symbol),
+        'trackedExtra': len(extras),
+    }
 
 
 def price_return(rows, back):
@@ -388,91 +428,140 @@ def scan_symbol(ticker, is_tracked=False):
     }
 
 
-def scan_job(generation, limit, min_turnover):
+def _same_generation(generation):
+    with SCAN_LOCK:
+        return generation == SCAN_STATE['generation']
+
+
+def scan_job(generation, mode, min_turnover):
     try:
         tracked = STORE.active_symbols()
-        tickers, eligible = active_tickers(limit, min_turnover, tracked)
+        tickers, info = active_tickers(mode, min_turnover, tracked)
         with SCAN_LOCK:
             if generation != SCAN_STATE['generation']:
                 return
             SCAN_STATE['total'] = len(tickers)
-            SCAN_STATE['eligible'] = eligible
-            SCAN_STATE['message'] = 'Memindai candle, tren, dan Open Interest'
+            SCAN_STATE.update(info)
+            SCAN_STATE['message'] = 'Memindai pair dalam batch, prioritaskan volume besar'
         if not tickers:
-            raise RuntimeError('Tidak ditemukan pair aktif dengan batas volume yang dipilih.')
-        # Limit concurrency: less API pressure, and report incremental progress.
-        with ThreadPoolExecutor(max_workers=6) as executor:
-            futures = {executor.submit(scan_symbol, t, t['symbol'] in tracked):t['symbol'] for t in tickers}
-            for future in as_completed(futures):
-                try:
-                    res = future.result()
-                    res = STORE.refresh(res, res['_recent5m'])
-                    err = None
-                except Exception as e:
-                    res = None
-                    err = '%s: %s' % (futures[future], str(e))
-                with SCAN_LOCK:
-                    if generation != SCAN_STATE['generation']:
+            raise RuntimeError('Tidak ditemukan pair USDT perpetual sesuai mode filter.')
+
+        # Limited batches avoid flooding futures kline endpoints when ALL is
+        # selected. Rate-limit errors interrupt the remaining cycle for safety.
+        stop_for_limit = False
+        with ThreadPoolExecutor(max_workers=SCAN_MAX_WORKERS) as executor:
+            for offset in range(0, len(tickers), SCAN_BATCH_SIZE):
+                if not _same_generation(generation):
+                    return
+                started_batch = time.monotonic()
+                batch = tickers[offset:offset+SCAN_BATCH_SIZE]
+                futures = {executor.submit(scan_symbol, t, t['symbol'] in tracked):t['symbol'] for t in batch}
+                for future in as_completed(futures):
+                    if not _same_generation(generation):
                         return
-                    SCAN_STATE['processed'] += 1
-                    if res:
-                        SCAN_STATE['rows'].append(res)
-                    if err:
-                        SCAN_STATE['errors'].append(err)
-    except Exception as e:
+                    try:
+                        res = future.result()
+                        res = STORE.refresh(res, res['_recent5m'])
+                        error = None
+                    except Exception as exc:
+                        res = None
+                        error = '%s: %s' % (futures[future], str(exc))
+                        if any(term in str(exc).lower() for term in ('rate limit', 'http 429', 'http 418')):
+                            stop_for_limit = True
+                    with SCAN_LOCK:
+                        if generation != SCAN_STATE['generation']:
+                            return
+                        SCAN_STATE['processed'] += 1
+                        if res:
+                            SCAN_STATE['rows'].append(res)
+                        if error:
+                            SCAN_STATE['errors'].append(error)
+                if stop_for_limit:
+                    with SCAN_LOCK:
+                        SCAN_STATE['errors'].append('Rate limit Binance terdeteksi; siklus scan dihentikan untuk melindungi koneksi API.')
+                    break
+                # Track the signal journeys already found while scanning the
+                # next batch; no need for the browser to stay open.
+                if offset + SCAN_BATCH_SIZE < len(tickers):
+                    remaining = SCAN_BATCH_INTERVAL - (time.monotonic() - started_batch)
+                    if remaining > 0:
+                        time.sleep(remaining)
+    except Exception as exc:
         with SCAN_LOCK:
             if generation == SCAN_STATE['generation']:
-                SCAN_STATE['errors'].append('Scanner: ' + str(e))
+                SCAN_STATE['errors'].append('Scanner: ' + str(exc))
     finally:
         with SCAN_LOCK:
             if generation == SCAN_STATE['generation']:
                 SCAN_STATE['running'] = False
                 SCAN_STATE['completedAt'] = int(time.time()*1000)
-                SCAN_STATE['message'] = 'Selesai' if SCAN_STATE['rows'] else 'Data scanner belum tersedia'
+                stopped = SCAN_STATE['processed'] < SCAN_STATE['total']
+                SCAN_STATE['message'] = ('Scan terhenti sebelum selesai' if stopped else
+                    'Scan selesai' if SCAN_STATE['rows'] else 'Tidak ada data berhasil dianalisis')
 
 
-def read_scanner(limit=80, min_turnover=30000000, force=False):
-    if limit not in SCAN_LIMITS or min_turnover not in SCAN_MIN_TURNOVER:
-        raise ValueError('Pilihan scan harus dari menu limit/volume yang tersedia.')
+def _saved_visible(rows, mode, min_turnover):
+    """Choose already scanned rows without pretending they belong to a new scan."""
+    ranked = sorted(rows, key=lambda r:-(r.get('turnover24h') or 0))
+    if mode == 'all':
+        chosen = ranked
+    elif mode == 'liquid':
+        chosen = [r for r in ranked if (r.get('turnover24h') or 0) >= min_turnover]
+    else:
+        chosen = ranked[:80]
+    # Always retain rows with ongoing/completed signal journeys in any mode.
+    keep = {r['symbol'] for r in chosen}
+    return [r for r in ranked if r['symbol'] in keep or r.get('categories')]
+
+
+def read_scanner(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
+    validate_scan_options(mode, min_turnover)
     now_ms = int(time.time()*1000)
     with SCAN_LOCK:
+        SCAN_STATE['requestedMode'] = mode
+        SCAN_STATE['requestedMinTurnover'] = min_turnover
         running = SCAN_STATE['running']
-        new_filters = (limit, min_turnover) != (SCAN_STATE['limit'], SCAN_STATE['minTurnover'])
+        new_filters = (mode, min_turnover if mode == 'liquid' else None) != (
+            SCAN_STATE['mode'], SCAN_STATE['minTurnover'] if SCAN_STATE['mode'] == 'liquid' else None)
         elapsed = now_ms - (SCAN_STATE['completedAt'] or 0)
         started_age = now_ms - (SCAN_STATE['startedAt'] or 0)
-        need_start = (not running and (SCAN_STATE['completedAt'] is None or new_filters or elapsed >= 180000
-                                       or (force and started_age >= 60000)))
+        need_start = (not running and (SCAN_STATE['completedAt'] is None or new_filters
+                                      or elapsed >= SCAN_REFRESH_MS or (force and started_age >= 60000)))
         if need_start:
             SCAN_STATE.update({
-                'running': True, 'rows': [], 'processed': 0, 'total': 0,
-                'eligible': 0, 'errors': [], 'startedAt': now_ms, 'completedAt': None,
-                'limit': limit, 'minTurnover': min_turnover,
-                'generation': SCAN_STATE['generation']+1, 'message': 'Mengambil daftar pair Binance',
+                'running': True, 'rows': [], 'processed': 0, 'total': 0, 'eligible': 0,
+                'universe': 0, 'missingTicker': 0, 'trackedExtra': 0,
+                'errors': [], 'startedAt': now_ms, 'completedAt': None,
+                'mode': mode, 'minTurnover': min_turnover,
+                'generation': SCAN_STATE['generation']+1,
+                'message': 'Mengambil daftar USDT perpetual Binance',
             })
-            job = threading.Thread(target=scan_job, args=(SCAN_STATE['generation'],limit,min_turnover), daemon=True)
+            job = threading.Thread(target=scan_job, args=(SCAN_STATE['generation'],mode,min_turnover), daemon=True)
             job.start()
         fresh = list(SCAN_STATE['rows'])
         from_disk = STORE.latest_rows()
-        # Keep saved snapshots visible during a scan, but respect chosen liquidity universe.
-        eligible_saved = sorted((x for x in from_disk if x['turnover24h'] >= min_turnover),
-                                key=lambda x:x['turnover24h'],reverse=True)
-        selected_saved = eligible_saved[:limit]
-        allowed = {x['symbol'] for x in selected_saved}
-        allowed.update(x['symbol'] for x in from_disk if x.get('categories'))
+        # While the scan progresses, snapshots may be up to 36h old: explicitly
+        # mark them stale, never mistake them for fresh candle data.
+        visible_disk = _saved_visible(from_disk, mode, min_turnover)
         fresh_ids = {x['symbol'] for x in fresh}
-        combined = fresh + [dict(x, stale=True) for x in from_disk
-                            if x['symbol'] not in fresh_ids and x['symbol'] in allowed]
+        combined = fresh + [dict(x, stale=True) for x in visible_disk if x['symbol'] not in fresh_ids]
+        pending = SCAN_STATE['running'] and new_filters
         return {
             'running': SCAN_STATE['running'], 'rows': combined,
             'processed': SCAN_STATE['processed'], 'total': SCAN_STATE['total'],
-            'eligible': SCAN_STATE['eligible'], 'errors': SCAN_STATE['errors'][:10],
-            'errorCount': len(SCAN_STATE['errors']), 'startedAt': SCAN_STATE['startedAt'],
-            'completedAt': SCAN_STATE['completedAt'], 'limit': SCAN_STATE['limit'],
-            'minTurnover': SCAN_STATE['minTurnover'], 'message': SCAN_STATE['message'],
+            'successful': len(fresh),
+            'failed': SCAN_STATE['processed'] - len(fresh),
+            'eligible': SCAN_STATE['eligible'], 'universe': SCAN_STATE['universe'],
+            'missingTicker': SCAN_STATE['missingTicker'], 'trackedExtra': SCAN_STATE['trackedExtra'],
+            'errors': SCAN_STATE['errors'][:10], 'errorCount': len(SCAN_STATE['errors']),
+            'startedAt': SCAN_STATE['startedAt'], 'completedAt': SCAN_STATE['completedAt'],
+            'mode': SCAN_STATE['mode'], 'requestedMode': mode, 'configPending': pending,
+            'minTurnover': SCAN_STATE['minTurnover'], 'requestedMinTurnover': min_turnover,
+            'message': SCAN_STATE['message'],
             'source': 'Binance USD-M Futures public API',
             'categories': list(CATEGORIES),
-            'tracking': 'SQLite: Sudah Naik/Turun hanya dari signal Potential yang tersimpan + candle tutup berikutnya',
-            'scoring': 'Aturan heuristik, bukan probabilitas/prediksi tervalidasi',
+            'tracking': 'SQLite: status Sudah memerlukan sinyal Potensi lebih dulu dan candle berikutnya',
+            'scoring': 'Aturan heuristik, bukan probabilitas atau sinyal tervalidasi',
         }
 
 
@@ -492,20 +581,22 @@ class Handler(BaseHTTPRequestHandler):
             self._reply(200, (ROOT/'index.html').read_bytes(), 'text/html; charset=utf-8')
         elif route.path == '/manifest.webmanifest':
             self._reply(200, (ROOT/'manifest.webmanifest').read_bytes(), 'application/manifest+json')
+        elif route.path == '/ui.js':
+            self._reply(200, (ROOT/'ui.js').read_bytes(), 'text/javascript; charset=utf-8')
         elif route.path == '/sw.js':
             self._reply(200, (ROOT/'sw.js').read_bytes(), 'text/javascript; charset=utf-8')
         elif route.path == '/icon.png':
             self._reply(200, (ROOT/'icon.png').read_bytes(), 'image/png')
         elif route.path == '/api/health':
-            self._reply(200, json.dumps({'ok':True,'version':'0.3','storage':'SQLite','activeTracked':len(STORE.active_symbols())}).encode(), 'application/json')
+            self._reply(200, json.dumps({'ok':True,'version':'0.4','storage':'SQLite','activeTracked':len(STORE.active_symbols())}).encode(), 'application/json')
         elif route.path == '/api/events':
             self._reply(200, json.dumps({'events':STORE.audit_events(200)}).encode(), 'application/json')
         elif route.path == '/api/scan':
             args = parse_qs(route.query)
             try:
-                limit = int(args.get('limit', ['80'])[0])
-                turnover = int(args.get('min_turnover', ['30000000'])[0])
-                payload = read_scanner(limit, turnover, args.get('force', ['0'])[0] == '1')
+                mode = args.get('mode', [DEFAULT_MODE])[0].lower()
+                turnover = int(args.get('min_turnover', [str(DEFAULT_TURNOVER)])[0])
+                payload = read_scanner(mode, turnover, args.get('force', ['0'])[0] == '1')
                 self._reply(200, json.dumps(payload, allow_nan=False).encode(), 'application/json; charset=utf-8')
             except (ValueError, TypeError) as e:
                 self._reply(400, json.dumps({'error': str(e)}).encode(), 'application/json; charset=utf-8')
@@ -533,8 +624,8 @@ def scheduler_loop():
     while True:
         try:
             with SCAN_LOCK:
-                limit, turnover = SCAN_STATE['limit'], SCAN_STATE['minTurnover']
-            read_scanner(limit, turnover)
+                mode, turnover = SCAN_STATE['requestedMode'], SCAN_STATE['requestedMinTurnover']
+            read_scanner(mode, turnover)
         except Exception as exc:
             print('Background scheduler:',str(exc),flush=True)
         time.sleep(12)
@@ -546,7 +637,7 @@ def serve():
     if os.getenv('SCANNER_BACKGROUND', '1') == '1':
         threading.Thread(target=scheduler_loop, daemon=True, name='scan-scheduler').start()
     server = ThreadingHTTPServer((host, port), Handler)
-    print('Scalp Signal Tracker v0.3: host %s port %d' % (host,port),flush=True)
+    print('Scalp Radar v0.4: host %s port %d' % (host,port),flush=True)
     print('DB:',STORE.path,'| background scanner:',os.getenv('SCANNER_BACKGROUND','1'),flush=True)
     try:
         server.serve_forever()

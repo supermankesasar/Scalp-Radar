@@ -20,7 +20,8 @@ class HttpApiTests(unittest.TestCase):
             with app.SCAN_LOCK:
                 app.SCAN_STATE.update({'running':False,'rows':[],'processed':0,'total':0,
                     'eligible':0,'errors':[],'startedAt':None,'completedAt':None,'generation':0,
-                    'limit':80,'minTurnover':30000000,'message':'Fresh'})
+                    'mode':'all','requestedMode':'all','requestedMinTurnover':30000000,
+                    'minTurnover':30000000,'universe':0,'missingTicker':0,'trackedExtra':0,'message':'Fresh'})
             srv=ThreadingHTTPServer(('127.0.0.1',0),app.Handler)
             threading.Thread(target=srv.serve_forever,daemon=True).start()
             base='http://127.0.0.1:%d'%srv.server_port
@@ -28,12 +29,16 @@ class HttpApiTests(unittest.TestCase):
                 with patch.object(app,'request_market',side_effect=fake_market):
                     health=json.load(urllib.request.urlopen(base+'/api/health',timeout=3))
                     self.assertTrue(health['ok'])
+                    self.assertEqual(health['version'],'0.4')
+                    js=urllib.request.urlopen(base+'/ui.js',timeout=3).read().decode()
+                    self.assertIn('modeLabel',js)
                     result={}
                     for _ in range(100):
-                        result=json.load(urllib.request.urlopen(base+'/api/scan?limit=40&min_turnover=30000000',timeout=5))
+                        result=json.load(urllib.request.urlopen(base+'/api/scan?mode=liquid&min_turnover=30000000',timeout=5))
                         if not result['running']:break
                         time.sleep(.04)
                     self.assertEqual(result.get('processed'),4)
+                    self.assertEqual(result.get('universe'),6)
                     self.assertEqual(result.get('errorCount'),0)
                     self.assertEqual(len(result['rows']),4)
                     self.assertTrue(all('journeys' in r and 'categories' in r for r in result['rows']))
