@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: scalp-radar
+    runtime: python
+    plan: starter
+    buildCommand: python --version
+    startCommand: python app.py
+    healthCheckPath: /api/health
+    disk:
+      name: signal-history
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1
+    envVars:
+      - key: SCANNER_BACKGROUND
+        value: "1"
