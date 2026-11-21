@@ -1,0 +1,8 @@
+Scalp Radar v0.3
+- Replaced direct price-move bucket classification with event-sourced journey history persisted in SQLite.
+- Independent potential UP/DOWN and confirmed SUDAH UP/DOWN categories: multiple tabs per pair supported.
+- Confirmation requires subsequent CLOSED 5m candle close crossing stored dynamic ATR threshold.
+- Future movements cannot create SUDAH status without prior stored potential; no retrospective fabricated signals.
+- Added background scheduler, tracked-pair carry-forward, PWA shell, Render persistent disk blueprint.
+- Redesigned compact responsive UI, colored high-move highlights, price signed correctly for short/down.
+- Includes 13 offline tests. Live Binance production API access remains unverified in this environment.
