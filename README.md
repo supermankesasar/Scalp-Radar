@@ -106,3 +106,10 @@ Kedua mode memakai satu web dan satu launcher `START-WINDOWS.bat`, tetapi **scan
 **Backtest:** Modul `research_engine.py` sebelumnya hanya mengoleksi 5m 7 hari dan mengevaluasi event legacy, **belum** menjalankan full historical replay atau backtest baru per mode. Angka backtest v0.5 sebelumnya tidak berlaku untuk strategi baru tanpa pengujian ulang. Tidak ada AI trading ataupun eksekusi order otomatis.
 
 **Pengaturan indikator:** Default disimpan pada `data/indicator_settings.sqlite3`; perubahan manual dipakai pada siklus scan berikutnya, dan kedua mode berbagi parameter seperti batas skor dan RSI, sementara rumus fitur setiap mode berbeda. Backup seluruh folder `data` sebelum mengganti versi.
+
+
+## Logo koin pada dashboard (eksperimental)
+
+Tabel **Scalping/Swing**, bar **High Move**, dan detail coin sekarang menampilkan logo koin otomatis dari pustaka open-source `spothq/cryptocurrency-icons` melalui jsDelivr. Tidak perlu API key atau mengganti database. Gambar dimuat secara lazy-load. Kontrak Binance berawalan `1000` dicoba dengan simbol token dasarnya (mis. `1000PEPEUSDT` → `pepe.png`). Simbol tidak valid tidak dimasukkan ke URL. Jika logo koin tidak ada atau CDN tidak bisa diakses, otomatis muncul inisial simbol dalam lingkaran.
+
+Logo bersifat dekoratif dan tidak boleh dianggap verifikasi identitas token. Pengambilan gambar dari CDN memerlukan internet dan bisa gagal untuk token baru; scanner market dan backtest tetap berfungsi tanpa logo. File `coin_logos.js` harus ikut diunduh bersama `ui.js` dan `index.html` (tersedia otomatis pada ZIP branch terbaru).
