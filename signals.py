@@ -134,7 +134,7 @@ class SignalStore:
     def _expire_unobserved(self, db, now):
         # If no fresh candles were observed, mark TIMEOUT (not an assumed loss).
         db.execute("""UPDATE events SET status='EXPIRED', ended_at=?, end_reason='TIMEOUT_UNOBSERVED'
-                      WHERE status='PENDING' AND started_at<?""", (now, now - PENDING_MS))
+                      WHERE status='PENDING' AND started_at<?""", (now, now - self.pending_ms))
 
     def _live_events(self, db, symbol, now):
         return db.execute('''SELECT * FROM events WHERE symbol=? AND (
