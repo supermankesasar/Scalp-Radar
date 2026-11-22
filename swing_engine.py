@@ -4,6 +4,8 @@ Indicators require >=220 closed candles except weekly EMA21 needs >=30.
 Weekly trend uses EMA21 because 200 weekly bars would exclude most new coins.
 Research-only: NOT a validated return model.
 """
+from rsi_alerts import warning_values
+
 TIMEFRAMES=('15m','1h','4h','8h','1d','1w')
 CANDLE_REQUESTS=(('15m',260),('1h',250),('4h',250),('8h',250),('1d',250),('1w',80))
 
@@ -73,6 +75,7 @@ def score_and_candidates(rows,ind,config,regime,ema,utc_vwap,rsi,rsi_reversal_wa
         longScore=longscore,shortScore=shortscore,
         trend1h=regime(hour),trend4h=f4,trend8h=e8,trend1d=dreg,trend1w=week,
         rsi1h=hour['rsi14'],rsi15m=f['rsi14'],rsiPrevious1h=prev_rsi,
+        **warning_values(hour['rsi14'],config,'1h'),
         rsiReversalWatch=bool(overbought),rsiWatchTimeframe='1h',
         rsiWatchThreshold=config['rsi_watch_threshold'],relVolume15m=vrel,
         relVolume5m=None,ema1hDistancePct=distance,
