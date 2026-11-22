@@ -6,6 +6,8 @@ DB_PATH=Path(__file__).resolve().parent/'data'/'indicator_settings.sqlite3'
 LOCK=threading.RLock()
 DEFAULTS={
     'rsi_watch_threshold':70.0,
+    'rsi_warning_long':60.0,
+    'rsi_warning_short':40.0,
     'rsi_long_max':70.0,
     'min_score':68.0,
     'volume_full_score_min':1.10,
@@ -13,6 +15,8 @@ DEFAULTS={
 }
 BOUNDS={
     'rsi_watch_threshold':(50,95),
+    'rsi_warning_long':(50,90),
+    'rsi_warning_short':(10,50),
     'rsi_long_max':(47,90),
     'min_score':(50,95),
     'volume_full_score_min':(0.85,5),
@@ -21,7 +25,7 @@ BOUNDS={
 
 def validate(payload):
     if not isinstance(payload,dict) or set(payload)!=set(DEFAULTS):
-        raise ValueError('Data harus memuat tepat lima parameter yang tersedia.')
+        raise ValueError('Data harus memuat tepat tujuh parameter yang tersedia.')
     clean={}
     for k,(lo,hi) in BOUNDS.items():
         v=payload[k]
@@ -29,6 +33,13 @@ def validate(payload):
             raise ValueError(f'{k}: gunakan angka antara {lo} dan {hi}.')
         clean[k]=float(v)
     return clean
+
+def stored_values(payload):
+    """Upgrade pre-warning five-key SQLite payloads without losing settings."""
+    if not isinstance(payload,dict) or not set(payload).issubset(DEFAULTS):
+        raise ValueError('Stored indicator settings contain unknown parameters.')
+    return validate(dict(DEFAULTS,**payload))
+
 
 def _init(db):
     db.execute('''CREATE TABLE IF NOT EXISTS config(
@@ -45,7 +56,7 @@ def current():
         with sqlite3.connect(DB_PATH,timeout=15) as db:
             _init(db)
             payload,revision,updated=db.execute('SELECT payload,revision,updated_ms FROM config WHERE id=1').fetchone()
-            return {'values':validate(json.loads(payload)), 'revision':revision, 'updated_ms':updated,
+            return {'values':stored_values(json.loads(payload)), 'revision':revision, 'updated_ms':updated,
                     'defaults':dict(DEFAULTS), 'bounds':dict(BOUNDS)}
 
 def save(payload):
@@ -55,7 +66,7 @@ def save(payload):
         with sqlite3.connect(DB_PATH,timeout=15) as db:
             _init(db)
             previous=db.execute('SELECT revision,payload FROM config WHERE id=1').fetchone()
-            if values!=validate(json.loads(previous[1])):
+            if values!=stored_values(json.loads(previous[1])):
                 revision=previous[0]+1
                 stamp=int(time.time()*1000)
                 serialized=json.dumps(values,sort_keys=True)
