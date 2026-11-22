@@ -21,8 +21,10 @@ ROTATION_MARGIN = 1
 
 
 class SignalStore:
-    def __init__(self, path):
+    def __init__(self, path, bar_time_key='lastClosed5m'):
         self.path = str(path)
+        # Scalping follows CLOSED 1m candles, legacy Intraday follows 5m.
+        self.bar_time_key = bar_time_key
         Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         self.lock = threading.RLock()
         with self._conn() as db:
@@ -219,8 +221,8 @@ class SignalStore:
         """Refresh candle outcomes; allow_new=False performs observation only."""
         now = int(time.time()*1000) if now_ms is None else now_ms
         row = dict(row)
-        if not candles or candles[-1]['closeTime'] != row['lastClosed5m']:
-            raise ValueError('Data harus memakai candle 5m tertutup yang cocok')
+        if not candles or candles[-1]['closeTime'] != row[self.bar_time_key]:
+            raise ValueError('Data harus memakai candle tertutup yang cocok: '+self.bar_time_key)
         with self.lock, self._conn() as db:
             self._progress(db, row['symbol'], candles, row['price'], now, row)
             if allow_new:
@@ -246,7 +248,7 @@ class SignalStore:
             db.execute('''INSERT INTO events(symbol,direction,status,started_at,baseline_time,baseline_price,
                    trigger_pct,stop_pct,initial_score,last_price,last_seen,last_score,setup_active)
                    VALUES(?,?,'PENDING',?,?,?,?,?,?,?,?,?,1)''',
-                   (row['symbol'],direction,now,row['lastClosed5m'],row['price'],trigger,stop,
+                   (row['symbol'],direction,now,row[self.bar_time_key],row['price'],trigger,stop,
                     int(score),row['price'],now,int(score)))
             pending += 1
 
@@ -299,7 +301,7 @@ class SignalStore:
             row['livePrice'] = live_price
             row['quoteAt'] = now
             row['liveDriftPct'] = 100*(live_price/row['price']-1) if row.get('price') else None
-            row['fastClosed5m'] = candles[-1]['closeTime']
+            row['fastClosed1m' if self.bar_time_key == 'lastClosed1m' else 'fastClosed5m'] = candles[-1]['closeTime']
             return self._refresh_payload(db,row,now,preserve_technical=True)
 
     def latest_rows(self, age_ms=MAX_ROWS_AGE_MS, now_ms=None):
