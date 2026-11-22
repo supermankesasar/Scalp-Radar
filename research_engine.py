@@ -51,6 +51,9 @@ def sync(con,symbol,start,end,fetcher=fetch):
     n=0
     for a in range(start,end,1500*STEP):
         b=min(end,a+1500*STEP)
+        already=con.execute('SELECT count(*) FROM bars WHERE symbol=? AND open_ms>=? AND open_ms<?',(symbol,a,b)).fetchone()[0]
+        if already==(b-a)//STEP:
+            continue
         rows=fetcher(symbol,a,b)
         valid={r[0]:r for r in (parse(raw) for raw in rows) if a<=r[0]<b}
         with con:
@@ -79,6 +82,8 @@ def replay(con,evts,coverage_start,coverage_end):
     trades=[];skipped={}
     def skip(k):skipped[k]=skipped.get(k,0)+1
     for symbol,direction,signal_close,score in sorted(evts,key=lambda x:x[2]):
+        if signal_close < coverage_start or signal_close+3*STEP >= coverage_end:
+            skip('OUTSIDE_ARCHIVE_OR_UNMATURED');continue
         # Signal baseline_time is candle CLOSE timestamp, next candle opens +1ms.
         entry_ms=((signal_close+1+STEP-1)//STEP)*STEP
         bars=con.execute('SELECT open_ms,o,h,l,c,close_ms FROM bars WHERE symbol=? AND open_ms>=? ORDER BY open_ms LIMIT 3',(symbol,entry_ms)).fetchall()
@@ -133,7 +138,7 @@ def run_once(fetcher=fetch,now_ms=None,symbols=SYMBOLS):
         report['audit']['events_excluded_other_pairs']=len(recorded)-len(eligible)
         REPORT.parent.mkdir(parents=True,exist_ok=True)
         REPORT.write_text(json.dumps(report,indent=2),encoding='utf-8')
-        state='PARTIAL' if errors else ('READY' if eligible else 'NO_SIGNALS')
+        state='PARTIAL' if errors else ('READY' if report['metrics']['trades'] else 'NO_SIGNALS')
         update(status=state,message='Arsip siap; backtest event yang tercatat' if eligible else 'Arsip siap; belum ada event live untuk evaluasi',
                updated_ms=int(time.time()*1000),data=summaries,backtest=report['metrics'],errors=errors)
         return status()
@@ -147,7 +152,7 @@ def _loop():
 
 def start_background():
     global STARTED
-    if os.getenv('RESEARCH_AUTO','1')!='1':
+    if os.getenv('RESEARCH_AUTO','0')!='1':
         update(status='DISABLED',message='RESEARCH_AUTO=0');return
     with LOCK:
         if STARTED:return
