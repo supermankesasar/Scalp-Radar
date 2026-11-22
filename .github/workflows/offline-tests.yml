@@ -1,0 +1,23 @@
+name: Offline regression tests
+on:
+  pull_request:
+  push:
+    branches: [feature/v05-data-backtest-oneclick]
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compile Python modules
+        run: python -m compileall -q app.py signals.py research_engine.py indicator_settings.py test_*.py
+      - name: Run offline tests
+        env:
+          RESEARCH_AUTO: '0'
+          SCANNER_BACKGROUND: '0'
+        run: python -m unittest discover -p "test_*.py" -v
