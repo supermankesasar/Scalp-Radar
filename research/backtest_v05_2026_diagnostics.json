@@ -1,0 +1,205 @@
+{
+  "assumption": "Top5 candidates selected with 5m-close synchronous idealized scanner. No all-market scan latency. Quote proxy at next bar open, costs 0.20% total.",
+  "bySymbol": {
+    "BTCUSDT": {
+      "n": 562,
+      "meanGross": 0.0043,
+      "meanNet_20cost": -0.1957,
+      "profitPct20": 12.46,
+      "targetPct": 1.07,
+      "bull": {
+        "n": 285,
+        "meanGross": 0.0173,
+        "meanNet_20cost": -0.1827,
+        "profitPct20": 10.53,
+        "targetPct": 1.4
+      },
+      "bear": {
+        "n": 277,
+        "meanGross": -0.0091,
+        "meanNet_20cost": -0.2091,
+        "profitPct20": 14.44,
+        "targetPct": 0.72
+      }
+    },
+    "DOGEUSDT": {
+      "n": 420,
+      "meanGross": -0.0017,
+      "meanNet_20cost": -0.2017,
+      "profitPct20": 19.29,
+      "targetPct": 2.14,
+      "bull": {
+        "n": 169,
+        "meanGross": -0.0074,
+        "meanNet_20cost": -0.2074,
+        "profitPct20": 15.38,
+        "targetPct": 1.78
+      },
+      "bear": {
+        "n": 251,
+        "meanGross": 0.002,
+        "meanNet_20cost": -0.198,
+        "profitPct20": 21.91,
+        "targetPct": 2.39
+      }
+    },
+    "SOLUSDT": {
+      "n": 498,
+      "meanGross": 0.0125,
+      "meanNet_20cost": -0.1875,
+      "profitPct20": 21.69,
+      "targetPct": 4.22,
+      "bull": {
+        "n": 233,
+        "meanGross": 0.0171,
+        "meanNet_20cost": -0.1829,
+        "profitPct20": 18.45,
+        "targetPct": 4.29
+      },
+      "bear": {
+        "n": 265,
+        "meanGross": 0.0084,
+        "meanNet_20cost": -0.1916,
+        "profitPct20": 24.53,
+        "targetPct": 4.15
+      }
+    },
+    "ETHUSDT": {
+      "n": 467,
+      "meanGross": 0.0084,
+      "meanNet_20cost": -0.1916,
+      "profitPct20": 20.13,
+      "targetPct": 2.36,
+      "bull": {
+        "n": 206,
+        "meanGross": 0.0106,
+        "meanNet_20cost": -0.1894,
+        "profitPct20": 18.45,
+        "targetPct": 0.97
+      },
+      "bear": {
+        "n": 261,
+        "meanGross": 0.0066,
+        "meanNet_20cost": -0.1934,
+        "profitPct20": 21.46,
+        "targetPct": 3.45
+      }
+    },
+    "XRPUSDT": {
+      "n": 245,
+      "meanGross": 0.0292,
+      "meanNet_20cost": -0.1708,
+      "profitPct20": 24.9,
+      "targetPct": 5.31,
+      "bull": null,
+      "bear": {
+        "n": 245,
+        "meanGross": 0.0292,
+        "meanNet_20cost": -0.1708,
+        "profitPct20": 24.9,
+        "targetPct": 5.31
+      }
+    },
+    "ADAUSDT": {
+      "n": 248,
+      "meanGross": 0.0043,
+      "meanNet_20cost": -0.1957,
+      "profitPct20": 23.39,
+      "targetPct": 4.44,
+      "bull": null,
+      "bear": {
+        "n": 248,
+        "meanGross": 0.0043,
+        "meanNet_20cost": -0.1957,
+        "profitPct20": 23.39,
+        "targetPct": 4.44
+      }
+    },
+    "BNBUSDT": {
+      "n": 271,
+      "meanGross": -0.0102,
+      "meanNet_20cost": -0.2102,
+      "profitPct20": 14.39,
+      "targetPct": 1.11,
+      "bull": null,
+      "bear": {
+        "n": 271,
+        "meanGross": -0.0102,
+        "meanNet_20cost": -0.2102,
+        "profitPct20": 14.39,
+        "targetPct": 1.11
+      }
+    },
+    "LINKUSDT": {
+      "n": 239,
+      "meanGross": 0.0118,
+      "meanNet_20cost": -0.1882,
+      "profitPct20": 24.27,
+      "targetPct": 3.35,
+      "bull": null,
+      "bear": {
+        "n": 239,
+        "meanGross": 0.0118,
+        "meanNet_20cost": -0.1882,
+        "profitPct20": 24.27,
+        "targetPct": 3.35
+      }
+    }
+  },
+  "alternativeTargetsOnSameSelectedEvents": {
+    "tp0.25": {
+      "n": 2950,
+      "meanGross": 0.0058,
+      "meanNet_20cost": -0.1942,
+      "profitPct20": 22.14,
+      "targetPct": 18.88
+    },
+    "tp0.35": {
+      "n": 2950,
+      "meanGross": 0.0064,
+      "meanNet_20cost": -0.1936,
+      "profitPct20": 20.1,
+      "targetPct": 11.63
+    },
+    "tp0.5": {
+      "n": 2950,
+      "meanGross": 0.0071,
+      "meanNet_20cost": -0.1929,
+      "profitPct20": 19.46,
+      "targetPct": 5.97
+    },
+    "tp0.65": {
+      "n": 2950,
+      "meanGross": 0.0081,
+      "meanNet_20cost": -0.1919,
+      "profitPct20": 19.39,
+      "targetPct": 3.42
+    }
+  },
+  "wickConservativeStopFirst": {
+    "BULL_AUG": {
+      "n": 893,
+      "ambiguousBothTouched": 0,
+      "meanNetPct": -0.1875,
+      "targetPct": 5.04,
+      "stopPct": 9.74,
+      "timeoutPct": 85.22
+    },
+    "BEAR_NOV": {
+      "n": 2057,
+      "ambiguousBothTouched": 2,
+      "meanNetPct": -0.1948,
+      "targetPct": 5.25,
+      "stopPct": 14.44,
+      "timeoutPct": 80.31
+    },
+    "COMBINED": {
+      "n": 2950,
+      "ambiguousBothTouched": 2,
+      "meanNetPct": -0.1926,
+      "targetPct": 5.19,
+      "stopPct": 13.02,
+      "timeoutPct": 81.8
+    }
+  }
+}
