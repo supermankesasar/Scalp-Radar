@@ -3,6 +3,8 @@
 1h/15m = trend, 5m = momentum, 1m = entry and 1m event outcomes.
 Not a model prediction; 24h PRICE change and 4h/1d/1w do not enter scalp scoring.
 """
+from rsi_alerts import warning_values
+
 TIMEFRAMES=('1m','5m','15m','1h')
 CANDLE_REQUESTS=(('1m',260),('5m',310),('15m',230),('1h',230))
 MIN_COMPLETED=220
@@ -63,6 +65,7 @@ def score_and_candidates(rows,inds,config,regime,utc_vwap,rsi,rsi_reversal_watch
         longScore=longscore,shortScore=shortscore,
         trend1h=trend1h,trend15m=trend15m,trend4h=None,
         rsi5m=rsi5,rsi15m=fifteen['rsi14'],rsiPrevious5m=prev_rsi5,
+        **warning_values(rsi5,config,'5m'),
         rsiReversalWatch=bool(watch),rsiWatchTimeframe='5m',
         rsiWatchThreshold=config['rsi_watch_threshold'],
         relVolume1m=rel,relVolume5m=five['volumeRatio'],
