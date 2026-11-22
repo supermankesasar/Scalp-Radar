@@ -1,0 +1,729 @@
+{
+  "source": "Binance USD-M historical 5m,1h,4h; 15m via direct/aggregation of 5m",
+  "assumptions": {
+    "data_window": [
+      "research/nov2026_candidates_01.json",
+      "research/nov2026_candidates_02.json",
+      "research/nov2026_candidates_03.json",
+      "research/nov2026_candidates_04.json",
+      "research/aug2026_candidates_01.json",
+      "research/aug2026_candidates_02.json"
+    ],
+    "horizon_minutes": 15,
+    "entry": "next 5m candle open",
+    "exit": "first close matching original ATR-based target/stop, otherwise 15m close",
+    "total_cost_pct": 0.2,
+    "volume_min_24h_usd": 10000000,
+    "signal_cooldown_minutes": 60,
+    "top_slots": 5,
+    "rotation_margin_points": 1,
+    "proxy_chase_at_next_open_pct": 0.3,
+    "delay5m": "exclude trades that hit target/stop before delayed entry; enter at third 5m open after signal"
+  },
+  "metadata": [
+    {
+      "file": "research/nov2026_candidates_01.json",
+      "sha": "d6923e56d25286506f5c3b2a27e37d491789a124",
+      "symbols": [
+        "BTCUSDT",
+        "ETHUSDT"
+      ],
+      "events": 4409,
+      "summary": [
+        {
+          "symbol": "BTCUSDT",
+          "barCounts": [
+            7200,
+            2880,
+            1104,
+            564
+          ],
+          "evaluatedBars": 6043,
+          "potentialUp": 0,
+          "potentialDown": 2369,
+          "rsiReversal": 23
+        },
+        {
+          "symbol": "ETHUSDT",
+          "barCounts": [
+            7200,
+            2880,
+            1104,
+            564
+          ],
+          "evaluatedBars": 6043,
+          "potentialUp": 87,
+          "potentialDown": 1900,
+          "rsiReversal": 30
+        }
+      ]
+    },
+    {
+      "file": "research/nov2026_candidates_02.json",
+      "sha": "eeb0b536530cb3cbe42554a443362d1479a0c5b1",
+      "symbols": [
+        "SOLUSDT",
+        "BNBUSDT"
+      ],
+      "events": 4282,
+      "summary": [
+        {
+          "symbol": "SOLUSDT",
+          "barCounts": [
+            7200,
+            2880,
+            1104,
+            564
+          ],
+          "evaluatedBars": 6043,
+          "potentialUp": 0,
+          "potentialDown": 1949,
+          "rsiReversal": 14
+        },
+        {
+          "symbol": "BNBUSDT",
+          "barCounts": [
+            7200,
+            2880,
+            1104,
+            564
+          ],
+          "evaluatedBars": 6043,
+          "potentialUp": 0,
+          "potentialDown": 2298,
+          "rsiReversal": 21
+        }
+      ]
+    },
+    {
+      "file": "research/nov2026_candidates_03.json",
+      "sha": "c4e82736092072a01a9530853581ac6cf3840e2f",
+      "symbols": [
+        "XRPUSDT",
+        "DOGEUSDT"
+      ],
+      "events": 3715,
+      "summary": [
+        {
+          "symbol": "XRPUSDT",
+          "barCounts": [
+            7200,
+            2880,
+            1104,
+            564
+          ],
+          "evaluatedBars": 6043,
+          "potentialUp": 0,
+          "potentialDown": 1754,
+          "rsiReversal": 17
+        },
+        {
+          "symbol": "DOGEUSDT",
+          "barCounts": [
+            7200,
+            2880,
+            1104,
+            564
+          ],
+          "evaluatedBars": 6043,
+          "potentialUp": 0,
+          "potentialDown": 1929,
+          "rsiReversal": 15
+        }
+      ]
+    },
+    {
+      "file": "research/nov2026_candidates_04.json",
+      "sha": "836676a2a4e2b9cb2354a3f2a33b217dae605b81",
+      "symbols": [
+        "ADAUSDT",
+        "LINKUSDT"
+      ],
+      "events": 3527,
+      "summary": [
+        {
+          "symbol": "ADAUSDT",
+          "barCounts": [
+            7200,
+            2400,
+            1104,
+            564
+          ],
+          "evaluatedBars": 6043,
+          "potentialUp": 0,
+          "potentialDown": 1796,
+          "rsiReversal": 15
+        },
+        {
+          "symbol": "LINKUSDT",
+          "barCounts": [
+            7200,
+            2400,
+            1104,
+            564
+          ],
+          "evaluatedBars": 6043,
+          "potentialUp": 0,
+          "potentialDown": 1702,
+          "rsiReversal": 14
+        }
+      ]
+    },
+    {
+      "file": "research/aug2026_candidates_01.json",
+      "sha": "cfdadfab0d492eaed68aba52609b83bb5455c3a0",
+      "symbols": [
+        "BTCUSDT",
+        "ETHUSDT"
+      ],
+      "events": 4392,
+      "summary": [
+        {
+          "symbol": "BTCUSDT",
+          "barCounts": [
+            7200,
+            2400,
+            1104,
+            552
+          ],
+          "evaluatedBars": 5755,
+          "potentialUp": 1682,
+          "potentialDown": 880,
+          "rsiReversal": 60
+        },
+        {
+          "symbol": "ETHUSDT",
+          "barCounts": [
+            7200,
+            2400,
+            1104,
+            552
+          ],
+          "evaluatedBars": 5755,
+          "potentialUp": 1694,
+          "potentialDown": 32,
+          "rsiReversal": 44
+        }
+      ]
+    },
+    {
+      "file": "research/aug2026_candidates_02.json",
+      "sha": "ee7d6d74fe012efa7de1b83a4e0ab274cd75013c",
+      "symbols": [
+        "SOLUSDT",
+        "DOGEUSDT"
+      ],
+      "events": 3230,
+      "summary": [
+        {
+          "symbol": "SOLUSDT",
+          "barCounts": [
+            7200,
+            2400,
+            1104,
+            552
+          ],
+          "evaluatedBars": 5755,
+          "potentialUp": 1848,
+          "potentialDown": 17,
+          "rsiReversal": 50
+        },
+        {
+          "symbol": "DOGEUSDT",
+          "barCounts": [
+            7200,
+            2400,
+            1104,
+            552
+          ],
+          "evaluatedBars": 5755,
+          "potentialUp": 569,
+          "potentialDown": 702,
+          "rsiReversal": 44
+        }
+      ]
+    }
+  ],
+  "results": {
+    "BEAR_NOV": {
+      "candles": 15784,
+      "reversalRaw": 149,
+      "baseline": {
+        "n": 2065,
+        "meanGrossPct": 0.0044,
+        "meanNetPct": -0.1956,
+        "medianNetPct": -0.202,
+        "netPositivePct": 21.07,
+        "targetPct": 3.15,
+        "stopPct": 9.39,
+        "timeoutPct": 87.46,
+        "replacedPct": 0,
+        "avgScore": 84.9,
+        "avgTargetPct": 0.659
+      },
+      "baselineUp": {
+        "n": 13,
+        "meanGrossPct": -0.0926,
+        "meanNetPct": -0.2926,
+        "medianNetPct": -0.3364,
+        "netPositivePct": 15.38,
+        "targetPct": 0,
+        "stopPct": 0,
+        "timeoutPct": 100,
+        "replacedPct": 0,
+        "avgScore": 81.08,
+        "avgTargetPct": 0.65
+      },
+      "baselineDown": {
+        "n": 2052,
+        "meanGrossPct": 0.0051,
+        "meanNetPct": -0.1949,
+        "medianNetPct": -0.2015,
+        "netPositivePct": 21.1,
+        "targetPct": 3.17,
+        "stopPct": 9.45,
+        "timeoutPct": 87.38,
+        "replacedPct": 0,
+        "avgScore": 84.93,
+        "avgTargetPct": 0.659
+      },
+      "top5": {
+        "n": 2057,
+        "meanGrossPct": 0.005,
+        "meanNetPct": -0.195,
+        "medianNetPct": -0.2017,
+        "netPositivePct": 21,
+        "targetPct": 3.06,
+        "stopPct": 9.24,
+        "timeoutPct": 86.63,
+        "replacedPct": 1.07,
+        "avgScore": 84.96,
+        "avgTargetPct": 0.659
+      },
+      "top5Up": {
+        "n": 13,
+        "meanGrossPct": -0.0926,
+        "meanNetPct": -0.2926,
+        "medianNetPct": -0.3364,
+        "netPositivePct": 15.38,
+        "targetPct": 0,
+        "stopPct": 0,
+        "timeoutPct": 100,
+        "replacedPct": 0,
+        "avgScore": 81.08,
+        "avgTargetPct": 0.65
+      },
+      "top5Down": {
+        "n": 2044,
+        "meanGrossPct": 0.0056,
+        "meanNetPct": -0.1944,
+        "medianNetPct": -0.2,
+        "netPositivePct": 21.04,
+        "targetPct": 3.08,
+        "stopPct": 9.3,
+        "timeoutPct": 86.55,
+        "replacedPct": 1.08,
+        "avgScore": 84.99,
+        "avgTargetPct": 0.659
+      },
+      "top5Sc90": {
+        "n": 607,
+        "meanGrossPct": 0.0142,
+        "meanNetPct": -0.1858,
+        "medianNetPct": -0.219,
+        "netPositivePct": 20.26,
+        "targetPct": 4.78,
+        "stopPct": 7.08,
+        "timeoutPct": 87.81,
+        "replacedPct": 0.33,
+        "avgScore": 96.43,
+        "avgTargetPct": 0.653
+      },
+      "top5ScUnder90": {
+        "n": 1450,
+        "meanGrossPct": 0.0011,
+        "meanNetPct": -0.1989,
+        "medianNetPct": -0.2,
+        "netPositivePct": 21.31,
+        "targetPct": 2.34,
+        "stopPct": 10.14,
+        "timeoutPct": 86.14,
+        "replacedPct": 1.38,
+        "avgScore": 80.16,
+        "avgTargetPct": 0.662
+      },
+      "top5Lag5": {
+        "n": 1897,
+        "meanGrossPct": 0.0039,
+        "meanNetPct": -0.1961,
+        "medianNetPct": -0.2,
+        "netPositivePct": 15.18,
+        "targetPct": 1.58,
+        "stopPct": 7.54,
+        "timeoutPct": 90.88,
+        "replacedPct": 0,
+        "avgScore": 85.06,
+        "avgTargetPct": 0.657
+      },
+      "top5Lag10": {
+        "n": 1741,
+        "meanGrossPct": 0.0094,
+        "meanNetPct": -0.1906,
+        "medianNetPct": -0.1983,
+        "netPositivePct": 8.44,
+        "targetPct": 0.29,
+        "stopPct": 3.62,
+        "timeoutPct": 96.09,
+        "replacedPct": 0,
+        "avgScore": 85.16,
+        "avgTargetPct": 0.655
+      },
+      "lag5Eligible": 1897,
+      "lag10Eligible": 1741,
+      "reversalHypotheticalShort": {
+        "n": 73,
+        "meanGrossPct": -0.0241,
+        "meanNetPct": -0.2241,
+        "medianNetPct": -0.1883,
+        "netPositivePct": 26.03,
+        "targetPct": 4.11,
+        "stopPct": 13.7,
+        "timeoutPct": 82.19,
+        "replacedPct": 0,
+        "avgScore": 0,
+        "avgTargetPct": 0.691
+      },
+      "top5DayBlockCI": {
+        "days": 21,
+        "lower": -0.215,
+        "upper": -0.1732
+      },
+      "rejections": {
+        "chase": 0,
+        "cooldown": 13671,
+        "lowerRank": 56,
+        "alreadyActive": 0
+      }
+    },
+    "BULL_AUG": {
+      "candles": 7424,
+      "reversalRaw": 198,
+      "baseline": {
+        "n": 893,
+        "meanGrossPct": 0.0111,
+        "meanNetPct": -0.1889,
+        "medianNetPct": -0.2,
+        "netPositivePct": 15.34,
+        "targetPct": 2.13,
+        "stopPct": 5.15,
+        "timeoutPct": 92.72,
+        "replacedPct": 0,
+        "avgScore": 83.96,
+        "avgTargetPct": 0.662
+      },
+      "baselineUp": {
+        "n": 716,
+        "meanGrossPct": 0.0123,
+        "meanNetPct": -0.1877,
+        "medianNetPct": -0.2,
+        "netPositivePct": 17.6,
+        "targetPct": 2.65,
+        "stopPct": 6.28,
+        "timeoutPct": 91.06,
+        "replacedPct": 0,
+        "avgScore": 83.85,
+        "avgTargetPct": 0.665
+      },
+      "baselineDown": {
+        "n": 177,
+        "meanGrossPct": 0.0061,
+        "meanNetPct": -0.1939,
+        "medianNetPct": -0.2,
+        "netPositivePct": 6.21,
+        "targetPct": 0,
+        "stopPct": 0.56,
+        "timeoutPct": 99.44,
+        "replacedPct": 0,
+        "avgScore": 84.4,
+        "avgTargetPct": 0.65
+      },
+      "top5": {
+        "n": 893,
+        "meanGrossPct": 0.0111,
+        "meanNetPct": -0.1889,
+        "medianNetPct": -0.2,
+        "netPositivePct": 15.34,
+        "targetPct": 2.13,
+        "stopPct": 5.15,
+        "timeoutPct": 92.72,
+        "replacedPct": 0,
+        "avgScore": 83.96,
+        "avgTargetPct": 0.662
+      },
+      "top5Up": {
+        "n": 716,
+        "meanGrossPct": 0.0123,
+        "meanNetPct": -0.1877,
+        "medianNetPct": -0.2,
+        "netPositivePct": 17.6,
+        "targetPct": 2.65,
+        "stopPct": 6.28,
+        "timeoutPct": 91.06,
+        "replacedPct": 0,
+        "avgScore": 83.85,
+        "avgTargetPct": 0.665
+      },
+      "top5Down": {
+        "n": 177,
+        "meanGrossPct": 0.0061,
+        "meanNetPct": -0.1939,
+        "medianNetPct": -0.2,
+        "netPositivePct": 6.21,
+        "targetPct": 0,
+        "stopPct": 0.56,
+        "timeoutPct": 99.44,
+        "replacedPct": 0,
+        "avgScore": 84.4,
+        "avgTargetPct": 0.65
+      },
+      "top5Sc90": {
+        "n": 230,
+        "meanGrossPct": 0.001,
+        "meanNetPct": -0.199,
+        "medianNetPct": -0.2,
+        "netPositivePct": 17.83,
+        "targetPct": 2.17,
+        "stopPct": 6.09,
+        "timeoutPct": 91.74,
+        "replacedPct": 0,
+        "avgScore": 96.3,
+        "avgTargetPct": 0.655
+      },
+      "top5ScUnder90": {
+        "n": 663,
+        "meanGrossPct": 0.0146,
+        "meanNetPct": -0.1854,
+        "medianNetPct": -0.2,
+        "netPositivePct": 14.48,
+        "targetPct": 2.11,
+        "stopPct": 4.83,
+        "timeoutPct": 93.06,
+        "replacedPct": 0,
+        "avgScore": 79.68,
+        "avgTargetPct": 0.665
+      },
+      "top5Lag5": {
+        "n": 862,
+        "meanGrossPct": 0.0075,
+        "meanNetPct": -0.1925,
+        "medianNetPct": -0.2,
+        "netPositivePct": 12.41,
+        "targetPct": 1.28,
+        "stopPct": 4.99,
+        "timeoutPct": 93.74,
+        "replacedPct": 0,
+        "avgScore": 83.89,
+        "avgTargetPct": 0.659
+      },
+      "top5Lag10": {
+        "n": 797,
+        "meanGrossPct": 0.0047,
+        "meanNetPct": -0.1953,
+        "medianNetPct": -0.1979,
+        "netPositivePct": 6.15,
+        "targetPct": 0.38,
+        "stopPct": 2.51,
+        "timeoutPct": 97.11,
+        "replacedPct": 0,
+        "avgScore": 83.87,
+        "avgTargetPct": 0.659
+      },
+      "lag5Eligible": 862,
+      "lag10Eligible": 797,
+      "reversalHypotheticalShort": {
+        "n": 90,
+        "meanGrossPct": 0.0666,
+        "meanNetPct": -0.1334,
+        "medianNetPct": -0.1592,
+        "netPositivePct": 26.67,
+        "targetPct": 3.33,
+        "stopPct": 4.44,
+        "timeoutPct": 92.22,
+        "replacedPct": 0,
+        "avgScore": 0,
+        "avgTargetPct": 0.721
+      },
+      "top5DayBlockCI": {
+        "days": 20,
+        "lower": -0.2029,
+        "upper": -0.1757
+      },
+      "rejections": {
+        "chase": 0,
+        "cooldown": 6531,
+        "lowerRank": 0,
+        "alreadyActive": 0
+      }
+    },
+    "COMBINED": {
+      "candles": 23208,
+      "reversalRaw": 347,
+      "baseline": {
+        "n": 2958,
+        "meanGrossPct": 0.0064,
+        "meanNetPct": -0.1936,
+        "medianNetPct": -0.2,
+        "netPositivePct": 19.34,
+        "targetPct": 2.84,
+        "stopPct": 8.11,
+        "timeoutPct": 89.05,
+        "replacedPct": 0,
+        "avgScore": 84.62,
+        "avgTargetPct": 0.66
+      },
+      "baselineUp": {
+        "n": 729,
+        "meanGrossPct": 0.0104,
+        "meanNetPct": -0.1896,
+        "medianNetPct": -0.2008,
+        "netPositivePct": 17.56,
+        "targetPct": 2.61,
+        "stopPct": 6.17,
+        "timeoutPct": 91.22,
+        "replacedPct": 0,
+        "avgScore": 83.8,
+        "avgTargetPct": 0.665
+      },
+      "baselineDown": {
+        "n": 2229,
+        "meanGrossPct": 0.0051,
+        "meanNetPct": -0.1949,
+        "medianNetPct": -0.2,
+        "netPositivePct": 19.92,
+        "targetPct": 2.92,
+        "stopPct": 8.75,
+        "timeoutPct": 88.34,
+        "replacedPct": 0,
+        "avgScore": 84.89,
+        "avgTargetPct": 0.659
+      },
+      "top5": {
+        "n": 2950,
+        "meanGrossPct": 0.0068,
+        "meanNetPct": -0.1932,
+        "medianNetPct": -0.2,
+        "netPositivePct": 19.29,
+        "targetPct": 2.78,
+        "stopPct": 8,
+        "timeoutPct": 88.47,
+        "replacedPct": 0.75,
+        "avgScore": 84.66,
+        "avgTargetPct": 0.66
+      },
+      "top5Up": {
+        "n": 729,
+        "meanGrossPct": 0.0104,
+        "meanNetPct": -0.1896,
+        "medianNetPct": -0.2008,
+        "netPositivePct": 17.56,
+        "targetPct": 2.61,
+        "stopPct": 6.17,
+        "timeoutPct": 91.22,
+        "replacedPct": 0,
+        "avgScore": 83.8,
+        "avgTargetPct": 0.665
+      },
+      "top5Down": {
+        "n": 2221,
+        "meanGrossPct": 0.0056,
+        "meanNetPct": -0.1944,
+        "medianNetPct": -0.2,
+        "netPositivePct": 19.86,
+        "targetPct": 2.84,
+        "stopPct": 8.6,
+        "timeoutPct": 87.57,
+        "replacedPct": 0.99,
+        "avgScore": 84.94,
+        "avgTargetPct": 0.659
+      },
+      "top5Sc90": {
+        "n": 837,
+        "meanGrossPct": 0.0106,
+        "meanNetPct": -0.1894,
+        "medianNetPct": -0.2109,
+        "netPositivePct": 19.59,
+        "targetPct": 4.06,
+        "stopPct": 6.81,
+        "timeoutPct": 88.89,
+        "replacedPct": 0.24,
+        "avgScore": 96.4,
+        "avgTargetPct": 0.653
+      },
+      "top5ScUnder90": {
+        "n": 2113,
+        "meanGrossPct": 0.0053,
+        "meanNetPct": -0.1947,
+        "medianNetPct": -0.2,
+        "netPositivePct": 19.17,
+        "targetPct": 2.27,
+        "stopPct": 8.47,
+        "timeoutPct": 88.31,
+        "replacedPct": 0.95,
+        "avgScore": 80.01,
+        "avgTargetPct": 0.663
+      },
+      "top5Lag5": {
+        "n": 2759,
+        "meanGrossPct": 0.0051,
+        "meanNetPct": -0.1949,
+        "medianNetPct": -0.2,
+        "netPositivePct": 14.32,
+        "targetPct": 1.49,
+        "stopPct": 6.74,
+        "timeoutPct": 91.77,
+        "replacedPct": 0,
+        "avgScore": 84.69,
+        "avgTargetPct": 0.658
+      },
+      "top5Lag10": {
+        "n": 2538,
+        "meanGrossPct": 0.0079,
+        "meanNetPct": -0.1921,
+        "medianNetPct": -0.1979,
+        "netPositivePct": 7.72,
+        "targetPct": 0.32,
+        "stopPct": 3.27,
+        "timeoutPct": 96.41,
+        "replacedPct": 0,
+        "avgScore": 84.75,
+        "avgTargetPct": 0.656
+      },
+      "lag5Eligible": 2759,
+      "lag10Eligible": 2538,
+      "reversalHypotheticalShort": {
+        "n": 163,
+        "meanGrossPct": 0.026,
+        "meanNetPct": -0.174,
+        "medianNetPct": -0.1665,
+        "netPositivePct": 26.38,
+        "targetPct": 3.68,
+        "stopPct": 8.59,
+        "timeoutPct": 87.73,
+        "replacedPct": 0,
+        "avgScore": 0,
+        "avgTargetPct": 0.708
+      },
+      "top5DayBlockCI": {
+        "days": 41,
+        "lower": -0.2092,
+        "upper": -0.1784
+      },
+      "rejections": {
+        "chase": 0,
+        "cooldown": 20202,
+        "lowerRank": 56,
+        "alreadyActive": 0
+      }
+    }
+  }
+}
