@@ -16,6 +16,8 @@ jobs:
           python-version: '3.11'
       - name: Compile Python modules
         run: python -m compileall -q app.py signals.py research_engine.py indicator_settings.py test_*.py
+      - name: Check browser JavaScript syntax
+        run: node --check ui.js && node --check indicator_ui.js
       - name: Run offline tests
         env:
           RESEARCH_AUTO: '0'
