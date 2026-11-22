@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scalp Radar — Data & Backtest</title>
+<style>body{font:15px/1.55 system-ui;background:#0b1321;color:#eff5ff;margin:0}main{max-width:960px;margin:30px auto;padding:0 20px}a{color:#83cafa}section{border:1px solid #304159;background:#152136;border-radius:14px;padding:18px;margin:15px 0}h1{font-size:26px}h2{font-size:18px}#status{font-weight:bold}table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid #304159;text-align:left;padding:8px}small,.muted{color:#9caec3}code{color:#b6e0ff}button{background:#294661;color:white;border:1px solid #567e9e;border-radius:8px;padding:9px 12px;cursor:pointer}</style></head>
+<body><main><p><a href="/">← Kembali ke Scanner</a></p><h1>Data Engine + Backtest</h1>
+<p class="muted">Riset read-only. Tidak mengirim order. Histori yang diunduh bukan bukti profitabilitas strategi.</p>
+<section><h2>Status pengumpulan data</h2><p id="status">Memuat...</p><p id="message" class="muted"></p>
+<table><thead><tr><th>Pair</th><th>Candle 5m</th><th>Gap</th><th>Coverage</th></tr></thead><tbody id="data"><tr><td colspan="4">Belum ada data.</td></tr></tbody></table></section>
+<section><h2>Evaluasi sinyal yang pernah dicatat</h2><p id="results">Belum ada hasil.</p>
+<p class="muted">Ini evaluasi event dari database scanner, bukan replay penuh seluruh strategi historis. Target/stop tetap memakai nilai uji tetap 0,65% / 0,40%, biaya asumsi 0,20% per round-trip, belum memasukkan funding, real fill, dan latency.</p></section>
+<section><h2>Kapan diperbarui?</h2><p>Setelah klik START-WINDOWS.bat, server mencoba mengunduh histori 7 hari BTC/ETH/SOL. Selama aplikasi berjalan, arsip diperiksa kembali sekitar setiap jam. Menutup browser saja tidak mematikan server; menutup jendela terminal mematikan server. Saat aplikasi dihidupkan lagi, sinkronisasi melanjutkan berdasarkan candle yang tersimpan.</p>
+<p class="muted">Jika tidak ada event yang cocok atau Binance tidak dapat diakses, status akan menjelaskan penyebabnya. Tidak ada AI training otomatis.</p></section>
+<button onclick="refresh()">Perbarui tampilan</button><p id="updated" class="muted"></p>
+<script>
+function esc(s){return String(s??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function refresh(){
+ try{
+ const response=await fetch('/api/research',{cache:'no-store'});if(!response.ok)throw Error('HTTP '+response.status);
+ const s=await response.json();document.getElementById('status').textContent=s.status||'UNKNOWN';
+ document.getElementById('message').textContent=s.message||'';
+ const rows=Object.entries(s.data||{}).map(([symbol,r])=>'<tr><td>'+esc(symbol)+'</td><td>'+esc(r.bars)+'</td><td>'+esc(r.gaps)+'</td><td>'+esc(r.coverage_pct==null?r.error:r.coverage_pct+'%')+'</td></tr>');
+ document.getElementById('data').innerHTML=rows.join('')||'<tr><td colspan="4">Belum ada data.</td></tr>';
+ const b=s.backtest;document.getElementById('results').textContent=b?('Event tercatat: '+b.recorded_signals+' | Trade dievaluasi: '+b.trades+' | Win rate: '+(b.win_rate_pct??'N/A')+'% | Mean net: '+(b.mean_net_pct??'N/A')+'% | Profit factor: '+(b.profit_factor??'N/A')):'Belum ada event yang bisa dievaluasi.';
+ document.getElementById('updated').textContent='Update: '+(s.updated_ms?new Date(s.updated_ms).toLocaleString('id-ID'):'belum tersedia');
+ }catch(e){document.getElementById('status').textContent='ERROR';document.getElementById('message').textContent=e.message;}
+}
+refresh();setInterval(refresh,30000);
+</script></main></body></html>
