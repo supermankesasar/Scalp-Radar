@@ -15,6 +15,7 @@ from pathlib import Path
 import re
 from signals import SignalStore
 import research_engine
+import indicator_settings
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request, urlopen
@@ -194,6 +195,7 @@ def interest_metrics(hist):
 
 
 def build_analysis(data):
+    cfg = indicator_settings.current()['values']
     ind = data['indicators']
     trend1 = regime(ind['1h'])
     trend4 = regime(ind['4h'])
@@ -206,9 +208,9 @@ def build_analysis(data):
     rsi15 = i15['rsi14']
     vrel = i5['volumeRatio']
     long_ok = (mode == "BULLISH" and close > i5['ema21'] and (vwap is not None and close > vwap)
-        and 50 <= rsi15 <= 70 and i5['macdHistogram'] > 0 and vrel >= 1.1)
+        and 50 <= rsi15 <= cfg['rsi_long_max'] and i5['macdHistogram'] > 0 and vrel >= cfg['volume_full_score_min'])
     short_ok = (mode == "BEARISH" and close < i5['ema21'] and (vwap is not None and close < vwap)
-        and 30 <= rsi15 <= 50 and i5['macdHistogram'] < 0 and vrel >= 1.1)
+        and 30 <= rsi15 <= 50 and i5['macdHistogram'] < 0 and vrel >= cfg['volume_full_score_min'])
     if mode == "MIXED":
         reasons.append("Tren EMA200 1H dan 4H belum searah; hindari memaksakan entry.")
     else:
@@ -279,6 +281,13 @@ def snapshot(symbol):
 # --------------------- Scanner otomatis: universe & kategori ---------------------
 CATEGORIES = ("POTENSI_NAIK", "SUDAH_NAIK", "POTENSI_TURUN", "SUDAH_TURUN", "NETRAL")
 SCAN_LOCK = threading.Lock()
+ACTIVE_SCAN_SETTINGS = None
+
+
+def effective_scan_settings():
+    # Snapshot frozen for the running scan; next generation applies saved changes.
+    return (ACTIVE_SCAN_SETTINGS or indicator_settings.current())['values']
+
 SCAN_STATE = {
     'running': False, 'rows': [], 'processed': 0, 'total': 0, 'eligible': 0,
     'universe': 0, 'missingTicker': 0, 'trackedExtra': 0,
@@ -366,6 +375,7 @@ def price_return(rows, back):
 def scan_symbol(ticker, is_tracked=False):
     """Closed candles only; OI intentionally optional and queried for classified rows."""
     symbol = ticker['symbol']
+    cfg = effective_scan_settings()
     now = int(time.time() * 1000)
     sets = {}
     # Small bounded queries, sequential by symbol; executor provides controlled parallelism.
@@ -390,7 +400,7 @@ def scan_symbol(ticker, is_tracked=False):
     dist_ema = 100 * (i15['close'] / i15['ema21'] - 1)
     # Separate experimental overbought-rejection watch. This is NOT a short signal.
     previous_rsi15 = rsi([x['close'] for x in sets['15m'][:-1]])
-    reversal_rsi70 = rsi_reversal_watch(previous_rsi15, rsi15, c5[-1], i5['macdHistogram'])
+    reversal_rsi70 = rsi_reversal_watch(previous_rsi15, rsi15, c5[-1], i5['macdHistogram'], cfg['rsi_watch_threshold'])
     # Scores are descriptive heuristics; NOT calibrated probabilities of success.
     def score_for(up):
         sign = 1 if up else -1
@@ -401,16 +411,16 @@ def scan_symbol(ticker, is_tracked=False):
         s += 14 if sign*(i15['close']-i15['ema21']) > 0 else 0
         s += 11 if sign*(px-i5['ema21']) > 0 else 0
         s += 10 if sign*i5['macdHistogram'] > 0 else 0
-        s += 10 if (47 <= rsi15 <= 70 if up else 30 <= rsi15 <= 53) else 0
-        s += 11 if vratio >= 1.1 else 6 if vratio >= .85 else 0
+        s += 10 if (47 <= rsi15 <= cfg['rsi_long_max'] if up else 30 <= rsi15 <= 53) else 0
+        s += 11 if vratio >= cfg['volume_full_score_min'] else 6 if vratio >= .85 else 0
         s += 8 if vwap is not None and sign*(px-vwap) > 0 else 0
         return s
     long_score, short_score = score_for(True), score_for(False)
     # Independent potential flags; reaching a move NEVER directly creates a 'Sudah' tab.
     # 'Sudah' is solely assigned by a prior stored potential signal + later closed candles.
-    potential_up = (t1 == 'BULLISH' and t4 != 'BEARISH' and long_score >= 68
+    potential_up = (t1 == 'BULLISH' and t4 != 'BEARISH' and long_score >= cfg['min_score']
             and 0 <= dist_ema <= max(.75, 1.4*atr_pct) and -0.4 <= ret15 <= threshold15)
-    potential_down = (t1 == 'BEARISH' and t4 != 'BULLISH' and short_score >= 68
+    potential_down = (t1 == 'BEARISH' and t4 != 'BULLISH' and short_score >= cfg['min_score']
             and -max(.75, 1.4*atr_pct) <= dist_ema <= 0 and -threshold15 <= ret15 <= .4)
     # OI intentionally not used to assign direction. It simply provides confirmation context.
     oi = {'available': False, 'reason': 'Hanya diambil untuk hasil terklasifikasi'}
@@ -432,16 +442,17 @@ def scan_symbol(ticker, is_tracked=False):
         'oi15mPct': oi.get('delta15mPct') if oi.get('available') else None,
         'oiAvailable': oi.get('available', False),
         'rsiPrevious15m': previous_rsi15, 'rsiReversalWatch': bool(reversal_rsi70),
+        'settingsRevision': (ACTIVE_SCAN_SETTINGS or indicator_settings.current())['revision'],
         'oiNote': oi.get('reason') if not oi.get('available') else None,
         'lastClosed5m': i5['time'],
         '_recent5m': [{'closeTime':r['closeTime'],'close':r['close'],'high':r['high'],'low':r['low']} for r in c5],
     }
 
 
-def rsi_reversal_watch(previous_rsi, current_rsi, bar, macd_histogram):
+def rsi_reversal_watch(previous_rsi, current_rsi, bar, macd_histogram, threshold=70):
     """Unproven short-reversal / LONG-TP watch. Never a standalone SHORT."""
     return bool(previous_rsi is not None and current_rsi is not None
-                and 70 <= previous_rsi <= 80 and current_rsi < previous_rsi
+                and previous_rsi >= threshold and current_rsi < previous_rsi
                 and bar['close'] < bar['open'] and macd_histogram < 0)
 
 
@@ -452,6 +463,7 @@ def promotion_candidates(rows, now_ms=None, quote_prices=None):
     assert any probability or attempt to place orders.
     """
     now_ms = int(time.time()*1000) if now_ms is None else now_ms
+    max_chase = effective_scan_settings()['max_chase_pct']
     quote_prices = quote_prices or {}
     candidates = []
     for r in rows:
@@ -473,7 +485,7 @@ def promotion_candidates(rows, now_ms=None, quote_prices=None):
             chase_pct = 100 * (quote / px - 1) * (1 if direction == 'UP' else -1)
             # Avoid chasing and also avoid an adverse move that has already hit
             # the paper-stop, to avoid advertising an invalidated baseline.
-            if chase_pct > MAX_CHASE_PCT or chase_pct < -max(.40, r['atr5mPct']):
+            if chase_pct > max_chase or chase_pct < -max(.40, r['atr5mPct']):
                 continue
             candidates.append((int(score), r.get('turnover24h') or 0, direction, r))
     candidates.sort(key=lambda e:(-e[0],-e[1],e[3]['symbol'],e[2]))
@@ -610,7 +622,9 @@ def _saved_visible(rows, mode, min_turnover):
 
 
 def read_scanner(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
+    global ACTIVE_SCAN_SETTINGS
     validate_scan_options(mode, min_turnover)
+    latest_settings = indicator_settings.current()
     now_ms = int(time.time()*1000)
     with SCAN_LOCK:
         SCAN_STATE['requestedMode'] = mode
@@ -618,16 +632,19 @@ def read_scanner(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
         running = SCAN_STATE['running']
         new_filters = (mode, min_turnover if mode == 'liquid' else None) != (
             SCAN_STATE['mode'], SCAN_STATE['minTurnover'] if SCAN_STATE['mode'] == 'liquid' else None)
+        settings_changed = SCAN_STATE.get('settingsRevision', 0) != latest_settings['revision']
         elapsed = now_ms - (SCAN_STATE['completedAt'] or 0)
         started_age = now_ms - (SCAN_STATE['startedAt'] or 0)
         need_start = (not running and (SCAN_STATE['completedAt'] is None or new_filters
-                                      or elapsed >= SCAN_REFRESH_MS or (force and started_age >= 60000)))
+                                      or elapsed >= SCAN_REFRESH_MS or settings_changed or (force and started_age >= 60000)))
         if need_start:
+            ACTIVE_SCAN_SETTINGS = latest_settings
             SCAN_STATE.update({
                 'running': True, 'rows': [], 'processed': 0, 'total': 0, 'eligible': 0,
                 'universe': 0, 'missingTicker': 0, 'trackedExtra': 0,
                 'errors': [], 'startedAt': now_ms, 'completedAt': None,
                 'mode': mode, 'minTurnover': min_turnover,
+                'settingsRevision': latest_settings['revision'],
                 'generation': SCAN_STATE['generation']+1,
                 'message': 'Mengambil daftar USDT perpetual Binance',
             })
@@ -669,6 +686,8 @@ def read_scanner(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
             'categories': list(CATEGORIES),
             'tracking': 'SQLite: status Sudah memerlukan sinyal Potensi lebih dulu dan candle berikutnya',
             'scoring': 'Aturan heuristik, bukan probabilitas atau sinyal tervalidasi',
+            'settingsRevision': SCAN_STATE.get('settingsRevision',0),
+            'settingsPending': settings_changed and SCAN_STATE['running'],
         }
 
 
@@ -698,6 +717,8 @@ class Handler(BaseHTTPRequestHandler):
             self._reply(200, (ROOT/'icon.png').read_bytes(), 'image/png')
         elif route.path == '/api/health':
             self._reply(200, json.dumps({'ok':True,'version':'0.5','storage':'SQLite','activeTracked':len(STORE.active_symbols())}).encode(), 'application/json')
+        elif route.path == '/api/settings':
+            self._reply(200, json.dumps(indicator_settings.current()).encode(), 'application/json; charset=utf-8')
         elif route.path == '/api/research':
             self._reply(200, json.dumps(research_engine.status(), allow_nan=False).encode(), 'application/json; charset=utf-8')
         elif route.path == '/api/events':
@@ -724,6 +745,27 @@ class Handler(BaseHTTPRequestHandler):
                 self._reply(502, json.dumps({'error':str(e)}).encode(), 'application/json; charset=utf-8')
         else:
             self._reply(404, b'Not found', 'text/plain; charset=utf-8')
+
+    def do_POST(self):
+        if urlparse(self.path).path != '/api/settings':
+            self._reply(404, b'Not found', 'text/plain');return
+        # No auth in this demo; only allow writes from the local Windows browser.
+        host = self.headers.get('Host','')
+        origin = self.headers.get('Origin')
+        if (self.client_address[0] not in ('127.0.0.1','::1')
+            or not re.fullmatch(r'(?:localhost|127\\.0\\.0\\.1|\\[::1\\])(?::[0-9]{1,5})?',host)
+            or (origin and origin != 'http://' + host)):
+            self._reply(403,b'Local settings only','text/plain');return
+        if self.headers.get('Content-Type','').split(';')[0].strip() != 'application/json':
+            self._reply(415,b'Expected application/json','text/plain');return
+        try:
+            size=int(self.headers.get('Content-Length','0'))
+            if size <= 0 or size > 4096: raise ValueError('Ukuran data pengaturan tidak valid')
+            payload=json.loads(self.rfile.read(size))
+            result=indicator_settings.save(payload)
+            self._reply(200,json.dumps(result).encode(),'application/json; charset=utf-8')
+        except (ValueError,TypeError,json.JSONDecodeError) as e:
+            self._reply(400,json.dumps({'error':str(e)}).encode(),'application/json; charset=utf-8')
 
     def log_message(self, fmt, *args):
         if self.path.startswith('/api/') or self.path == '/':
