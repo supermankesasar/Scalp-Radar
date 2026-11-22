@@ -443,6 +443,7 @@ def scan_symbol(ticker, is_tracked=False):
         'oiAvailable': oi.get('available', False),
         'rsiPrevious15m': previous_rsi15, 'rsiReversalWatch': bool(reversal_rsi70),
         'settingsRevision': (ACTIVE_SCAN_SETTINGS or indicator_settings.current())['revision'],
+        'rsiWatchThreshold': cfg['rsi_watch_threshold'],
         'oiNote': oi.get('reason') if not oi.get('available') else None,
         'lastClosed5m': i5['time'],
         '_recent5m': [{'closeTime':r['closeTime'],'close':r['close'],'high':r['high'],'low':r['low']} for r in c5],
@@ -687,7 +688,7 @@ def read_scanner(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
             'tracking': 'SQLite: status Sudah memerlukan sinyal Potensi lebih dulu dan candle berikutnya',
             'scoring': 'Aturan heuristik, bukan probabilitas atau sinyal tervalidasi',
             'settingsRevision': SCAN_STATE.get('settingsRevision',0),
-            'settingsPending': settings_changed and SCAN_STATE['running'],
+            'settingsPending': SCAN_STATE.get('settingsRevision',0) != latest_settings['revision'] and SCAN_STATE['running'],
         }
 
 
@@ -753,7 +754,7 @@ class Handler(BaseHTTPRequestHandler):
         host = self.headers.get('Host','')
         origin = self.headers.get('Origin')
         if (self.client_address[0] not in ('127.0.0.1','::1')
-            or not re.fullmatch(r'(?:localhost|127\\.0\\.0\\.1|\\[::1\\])(?::[0-9]{1,5})?',host)
+            or not re.fullmatch(r'(?:localhost|127[.]0[.]0[.]1)(?::[0-9]{1,5})?',host)
             or (origin and origin != 'http://' + host)):
             self._reply(403,b'Local settings only','text/plain');return
         if self.headers.get('Content-Type','').split(';')[0].strip() != 'application/json':
