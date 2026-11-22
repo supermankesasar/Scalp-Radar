@@ -128,6 +128,9 @@ class CandidateTests(unittest.TestCase):
         self.assertFalse(app.rsi_reversal_watch(76,77,candle,-0.2))
         self.assertFalse(app.rsi_reversal_watch(76,71,{'open':99,'close':100},-0.2))
         self.assertFalse(app.rsi_reversal_watch(76,71,candle,+0.2))
-        self.assertFalse(app.rsi_reversal_watch(84,71,candle,-0.2))
+        self.assertTrue(app.rsi_reversal_watch(84,71,candle,-0.2))
+        self.assertFalse(app.rsi_reversal_watch(69,65,candle,-0.2))
+        self.assertTrue(app.rsi_reversal_watch(76,71,candle,-0.2,75))
+        self.assertFalse(app.rsi_reversal_watch(74,71,candle,-0.2,75))
 
 if __name__=='__main__':unittest.main()
