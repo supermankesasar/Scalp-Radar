@@ -372,6 +372,19 @@ def price_return(rows, back):
     return 100.0 * (rows[-1]['close'] / rows[-1-back]['close'] - 1.0)
 
 
+def intraday_24h_confirms(direction, change_pct):
+    """Intraday confirmation only: 24h change must align with trade direction.
+
+    Absolute 24h turnover remains a liquidity filter in BOTH modes.
+    This is not part of the base 0-100 indicator score.
+    """
+    if isinstance(change_pct, bool) or not isinstance(change_pct, (float,int)):
+        return False
+    if not math.isfinite(change_pct):
+        return False
+    return change_pct > 0 if direction == 'UP' else change_pct < 0
+
+
 def scan_symbol(ticker, is_tracked=False):
     """Closed candles only; OI intentionally optional and queried for classified rows."""
     symbol = ticker['symbol']
@@ -435,6 +448,10 @@ def scan_symbol(ticker, is_tracked=False):
         'longScore': long_score, 'shortScore': short_score,
         'price': px, 'pct5m': ret5, 'pct15m': ret15, 'pct60m': ret60,
         'pct24h': ticker['change24h'], 'turnover24h': ticker['turnover24h'],
+        'intraday24hLong': intraday_24h_confirms('UP', ticker.get('change24h')),
+        'intraday24hShort': intraday_24h_confirms('DOWN', ticker.get('change24h')),
+        'intradayPotentialUp': bool(potential_up and intraday_24h_confirms('UP', ticker.get('change24h'))),
+        'intradayPotentialDown': bool(potential_down and intraday_24h_confirms('DOWN', ticker.get('change24h'))),
         'atr5mPct': atr_pct, 'trigger15mPct': threshold15, 'trigger60mPct': threshold60,
         'trend1h': t1, 'trend4h': t4, 'rsi15m': rsi15,
         'relVolume5m': vratio, 'ema15mDistancePct': dist_ema,
