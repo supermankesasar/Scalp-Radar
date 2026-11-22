@@ -710,6 +710,8 @@ class Handler(BaseHTTPRequestHandler):
             self._reply(200, (ROOT/'research.html').read_bytes(), 'text/html; charset=utf-8')
         elif route.path == '/manifest.webmanifest':
             self._reply(200, (ROOT/'manifest.webmanifest').read_bytes(), 'application/manifest+json')
+        elif route.path == '/indicator_ui.js':
+            self._reply(200, (ROOT/'indicator_ui.js').read_bytes(), 'text/javascript; charset=utf-8')
         elif route.path == '/ui.js':
             self._reply(200, (ROOT/'ui.js').read_bytes(), 'text/javascript; charset=utf-8')
         elif route.path == '/sw.js':
