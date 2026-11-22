@@ -55,12 +55,12 @@ def save(payload):
         with sqlite3.connect(DB_PATH,timeout=15) as db:
             _init(db)
             previous=db.execute('SELECT revision,payload FROM config WHERE id=1').fetchone()
-            if values==validate(json.loads(previous[1])):
-                return current()
-            revision=previous[0]+1
-            stamp=int(time.time()*1000)
-            serialized=json.dumps(values,sort_keys=True)
-            db.execute('UPDATE config SET payload=?,revision=?,updated_ms=? WHERE id=1',
-                       (serialized,revision,stamp))
-            db.execute('INSERT INTO history VALUES(?,?,?)',(revision,serialized,stamp))
+            if values!=validate(json.loads(previous[1])):
+                revision=previous[0]+1
+                stamp=int(time.time()*1000)
+                serialized=json.dumps(values,sort_keys=True)
+                db.execute('UPDATE config SET payload=?,revision=?,updated_ms=? WHERE id=1',
+                           (serialized,revision,stamp))
+                db.execute('INSERT INTO history VALUES(?,?,?)',(revision,serialized,stamp))
+        # Reopen only after the first connection's transaction has committed.
         return current()
