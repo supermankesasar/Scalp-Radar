@@ -21,10 +21,14 @@ ROTATION_MARGIN = 1
 
 
 class SignalStore:
-    def __init__(self, path, bar_time_key='lastClosed5m'):
+    def __init__(self, path, bar_time_key='lastClosed5m', pending_ms=PENDING_MS,
+                 reached_ms=REACHED_MS, cooldown_ms=RECENT_COOLDOWN_MS):
         self.path = str(path)
         # Scalping follows CLOSED 1m candles, legacy Intraday follows 5m.
         self.bar_time_key = bar_time_key
+        self.pending_ms = int(pending_ms)
+        self.reached_ms = int(reached_ms)
+        self.cooldown_ms = int(cooldown_ms)
         Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         self.lock = threading.RLock()
         with self._conn() as db:
@@ -71,7 +75,7 @@ class SignalStore:
             now = int(time.time()*1000)
             live = db.execute('''SELECT id FROM events WHERE status='PENDING'
                      AND started_at>=? ORDER BY last_score DESC,started_at DESC''',
-                     (now-PENDING_MS,)).fetchall()
+                     (now-self.pending_ms,)).fetchall()
             for old in live[ACTIVE_LIMIT:]:
                 db.execute('''UPDATE events SET status='EXPIRED', ended_at=?,
                             end_reason='MIGRATION_TOP5' WHERE id=?''',
@@ -136,7 +140,7 @@ class SignalStore:
         return db.execute('''SELECT * FROM events WHERE symbol=? AND (
             (status='PENDING' AND started_at>=?) OR
             (status='REACHED' AND confirmed_at>=?)) ORDER BY started_at DESC''',
-            (symbol, now-PENDING_MS, now-REACHED_MS)).fetchall()
+            (symbol, now-self.pending_ms, now-self.reached_ms)).fetchall()
 
     def active_symbols(self, now_ms=None):
         now = int(time.time()*1000) if now_ms is None else now_ms
@@ -145,7 +149,7 @@ class SignalStore:
             return {r[0] for r in db.execute('''SELECT DISTINCT symbol FROM events WHERE
                (status='PENDING' AND started_at>=?) OR
                (status='REACHED' AND confirmed_at>=?)''',
-               (now-PENDING_MS, now-REACHED_MS))}
+               (now-self.pending_ms, now-self.reached_ms))}
 
     def watch_symbols(self, max_symbols=20, now_ms=None):
         """Prioritize active (max 5) plus recently reached for light quote monitoring."""
@@ -154,10 +158,10 @@ class SignalStore:
             self._expire_unobserved(db, now)
             pending = [r[0] for r in db.execute('''SELECT DISTINCT symbol FROM events
                 WHERE status='PENDING' AND started_at>=?
-                ORDER BY started_at DESC''',(now-PENDING_MS,))]
+                ORDER BY started_at DESC''',(now-self.pending_ms,))]
             reached = [r[0] for r in db.execute('''SELECT symbol FROM events WHERE
                 status='REACHED' AND confirmed_at>=? ORDER BY confirmed_at DESC''',
-                (now-REACHED_MS,))]
+                (now-self.reached_ms,))]
             return list(dict.fromkeys(pending+reached))[:max_symbols]
 
     def active_pending(self, now_ms=None):
@@ -165,7 +169,7 @@ class SignalStore:
         with self.lock, self._conn() as db:
             self._expire_unobserved(db, now)
             return [self._public(r) for r in db.execute('''SELECT * FROM events WHERE status='PENDING'
-                     AND started_at>=? ORDER BY last_score DESC, started_at DESC''', (now-PENDING_MS,))]
+                     AND started_at>=? ORDER BY last_score DESC, started_at DESC''', (now-self.pending_ms,))]
 
     def _progress(self, db, symbol, candles, price, now, current=None):
         """Progress pending/reached events, using closed candles only for outcomes.
@@ -175,7 +179,7 @@ class SignalStore:
         """
         for e in db.execute("""SELECT * FROM events WHERE symbol=? AND (status='PENDING' OR
                               (status='REACHED' AND confirmed_at>=?)) ORDER BY started_at""",
-                            (symbol, now-REACHED_MS)).fetchall():
+                            (symbol, now-self.reached_ms)).fetchall():
             status = e['status']
             future = [c for c in candles if c['closeTime'] > e['baseline_time']]
             change = lambda px: self._signed(e['direction'], e['baseline_price'], px)
@@ -184,7 +188,7 @@ class SignalStore:
             confirmed_at, ended_at, end_reason = e['confirmed_at'], e['ended_at'], e['end_reason']
             if status == 'PENDING':
                 for c in future:
-                    if c['closeTime'] > e['started_at'] + PENDING_MS:
+                    if c['closeTime'] > e['started_at'] + self.pending_ms:
                         break
                     delta = change(c['close'])
                     if delta >= e['trigger_pct']:
@@ -193,7 +197,7 @@ class SignalStore:
                     if delta <= -e['stop_pct']:
                         status, ended_at, end_reason = 'EXPIRED', c['closeTime'], 'STOP_HIT'
                         break
-                if status == 'PENDING' and now >= e['started_at'] + PENDING_MS:
+                if status == 'PENDING' and now >= e['started_at'] + self.pending_ms:
                     status, ended_at, end_reason = 'EXPIRED', now, 'TIMEOUT'
             active = e['setup_active'] if not current else (current['potentialUp'] if e['direction']=='UP' else current['potentialDown'])
             score = e['last_score'] if not current else (current['longScore'] if e['direction']=='UP' else current['shortScore'])
@@ -234,17 +238,17 @@ class SignalStore:
             return payload
 
     def _create_events(self, db, row, now):
-        pending = db.execute("SELECT COUNT(*) FROM events WHERE status='PENDING' AND started_at>=?", (now-PENDING_MS,)).fetchone()[0]
+        pending = db.execute("SELECT COUNT(*) FROM events WHERE status='PENDING' AND started_at>=?", (now-self.pending_ms,)).fetchone()[0]
         for direction, valid in (('UP',row.get('potentialUp')),('DOWN',row.get('potentialDown'))):
             if not valid or pending >= ACTIVE_LIMIT:
                 continue
             prior = db.execute('''SELECT id FROM events WHERE symbol=? AND direction=? AND started_at>=?
-                                  LIMIT 1''',(row['symbol'],direction,now-RECENT_COOLDOWN_MS)).fetchone()
+                                  LIMIT 1''',(row['symbol'],direction,now-self.cooldown_ms)).fetchone()
             if prior:continue
             score = row['longScore'] if direction=='UP' else row['shortScore']
             atrpct = row['atr5mPct']
-            trigger = max(0.65, 1.5*atrpct)
-            stop = max(0.40, atrpct)
+            trigger = float(row.get('triggerPct', max(0.65, 1.5*atrpct)))
+            stop = float(row.get('stopPct', max(0.40, atrpct)))
             db.execute('''INSERT INTO events(symbol,direction,status,started_at,baseline_time,baseline_price,
                    trigger_pct,stop_pct,initial_score,last_price,last_seen,last_score,setup_active)
                    VALUES(?,?,'PENDING',?,?,?,?,?,?,?,?,?,1)''',
@@ -266,7 +270,7 @@ class SignalStore:
             with self._conn() as db:
                 self._expire_unobserved(db, now)
                 recent = db.execute('''SELECT 1 FROM events WHERE symbol=? AND direction=? AND started_at>=? LIMIT 1''',
-                                    (row['symbol'],direction,now-RECENT_COOLDOWN_MS)).fetchone()
+                                    (row['symbol'],direction,now-self.cooldown_ms)).fetchone()
                 if recent:
                     return False
                 active = db.execute("SELECT id,last_score FROM events WHERE status='PENDING' ORDER BY last_score ASC,started_at ASC").fetchall()
