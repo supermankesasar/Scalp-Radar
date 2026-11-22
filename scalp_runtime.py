@@ -7,7 +7,8 @@ from concurrent.futures import ThreadPoolExecutor,as_completed
 import threading,time
 from signals import SignalStore
 
-TIMEFRAMES=('1m','3m','5m','15m','1h')
+TIMEFRAMES=('1m','5m','15m','1h')
+SWING_TIMEFRAMES=('15m','1h','4h','8h','1d','1w')
 FRESH_1M_MS=110_000
 SCAN_REFRESH_MS=60_000
 BATCH_SIZE=12
@@ -15,8 +16,19 @@ BATCH_INTERVAL=7.0
 WORKERS=4
 
 class ScalpRuntime:
-    def __init__(self,db_path,active_tickers,scan_symbol,latest_quotes,promotion_candidates,settings):
-        self.store=SignalStore(db_path,bar_time_key='lastClosed1m')
+    def __init__(self,db_path,active_tickers,scan_symbol,latest_quotes,promotion_candidates,settings,
+                 strategy='scalping'):
+        if strategy not in ('scalping','swing'):raise ValueError('Invalid strategy')
+        self.strategy=strategy
+        self.timeframes=TIMEFRAMES if strategy=='scalping' else SWING_TIMEFRAMES
+        self.bar_time_key='lastClosed1m' if strategy=='scalping' else 'lastClosed1h'
+        self.recent_bars_key='_recent1m' if strategy=='scalping' else '_recent1h'
+        self.fresh_candle_ms=FRESH_1M_MS if strategy=='scalping' else 80*60_000
+        self.refresh_ms=SCAN_REFRESH_MS if strategy=='scalping' else 15*60_000
+        self.store=SignalStore(db_path,bar_time_key=self.bar_time_key,
+            pending_ms=15*60_000 if strategy=='scalping' else 3*24*60*60_000,
+            reached_ms=6*60*60_000 if strategy=='scalping' else 7*24*60*60_000,
+            cooldown_ms=60*60_000 if strategy=='scalping' else 24*60*60_000)
         self.active_tickers=active_tickers
         self.scan_symbol=scan_symbol
         self.latest_quotes=latest_quotes
@@ -44,7 +56,7 @@ class ScalpRuntime:
                 if generation!=self.state['generation']:return
                 self.state['total']=len(tickers)
                 self.state.update(info)
-                self.state['message']='Scalping: memindai candle 1m/3m/5m/15m/1H'
+                self.state['message']=self.strategy.title()+': memindai '+','.join(self.timeframes)
             if not tickers:raise RuntimeError('Tidak ada pair sesuai mode.')
             stop_for_limit=False
             eligible_rows=[]
@@ -61,7 +73,7 @@ class ScalpRuntime:
                         sym=futures[fut]
                         try:
                             result=fut.result()
-                            bars=result.pop('_recent1m')
+                            bars=result.pop(self.recent_bars_key)
                             recent[sym]=bars
                             result=store.refresh(result,bars,allow_new=False)
                             if result.get('potentialUp') or result.get('potentialDown'):
@@ -79,13 +91,13 @@ class ScalpRuntime:
                             if err:self.state['errors'].append(err)
                     if stop_for_limit:
                         with self.lock:
-                            self.state['errors'].append('Rate limit Binance; scanning scalping dihentikan.')
+                            self.state['errors'].append('Rate limit Binance; scan dihentikan.')
                         break
                     try:
                         quotes=self.latest_quotes({r['symbol'] for r in eligible_rows})
                         options=self.promotion_candidates(eligible_rows,
-                            quote_prices=quotes,bar_time_key='lastClosed1m',
-                            fresh_candle_ms=FRESH_1M_MS,
+                            quote_prices=quotes,bar_time_key=self.bar_time_key,
+                            fresh_candle_ms=self.fresh_candle_ms,
                             max_chase_pct=self.settings_snapshot['values']['max_chase_pct'])
                         for score,turnover,direction,candidate in options:
                             sym=candidate['symbol']
@@ -98,14 +110,14 @@ class ScalpRuntime:
                                             if latest:self.state['rows'][i]=latest
                                             break
                     except Exception as exc:
-                        with self.lock:self.state['errors'].append('Ranking scalping: '+str(exc)[:120])
+                        with self.lock:self.state['errors'].append('Ranking '+self.strategy+': '+str(exc)[:120])
                     if offset+BATCH_SIZE<len(tickers):
                         remaining=BATCH_INTERVAL-(time.monotonic()-started)
                         if remaining>0:time.sleep(remaining)
         except Exception as exc:
             with self.lock:
                 if generation==self.state['generation']:
-                    self.state['errors'].append('Scanner scalp: '+str(exc)[:160])
+                    self.state['errors'].append('Scanner '+self.strategy+': '+str(exc)[:160])
         finally:
             with self.lock:
                 if generation==self.state['generation']:
@@ -114,7 +126,7 @@ class ScalpRuntime:
                     stopped=self.state['processed']<self.state['total']
                     self.state['message']=('Scalp scan berhenti sebelum selesai' if stopped
                         else 'Scalp scan selesai' if self.state['rows']
-                        else 'Belum ada data 1m yang berhasil dipindai')
+                        else 'Belum ada data yang berhasil dipindai')
 
     def read(self,mode='top80',min_turnover=30_000_000,force=False):
         if mode not in ('all','liquid','top80'):raise ValueError('Mode tidak dikenal')
@@ -131,7 +143,7 @@ class ScalpRuntime:
             age=now-(s['completedAt'] or 0)
             start_age=now-(s['startedAt'] or 0)
             restart=not s['running'] and (
-                s['completedAt'] is None or new_filters or changed or age>=SCAN_REFRESH_MS
+                s['completedAt'] is None or new_filters or changed or age>=self.refresh_ms
                 or (force and start_age>=30_000))
             if restart:
                 self.settings_snapshot=current
@@ -159,7 +171,7 @@ class ScalpRuntime:
             combined.extend(dict(row,stale=True) for row in by_symbol.values())
             active=self.store.active_pending(now)
             return {
-                'strategy':'scalping','timeframes':list(TIMEFRAMES),
+                'strategy':self.strategy,'timeframes':list(self.timeframes),
                 'running':s['running'],'rows':combined,
                 'activeSignals':len(active),'activeLimit':5,'signals':active,
                 'processed':s['processed'],'total':s['total'],'successful':len(fresh),
@@ -172,7 +184,7 @@ class ScalpRuntime:
                 'minTurnover':s['minTurnover'],'requestedMinTurnover':min_turnover,
                 'message':s['message'],'source':'Binance USD-M Futures public REST',
                 'categories':['POTENSI_NAIK','SUDAH_NAIK','POTENSI_TURUN','SUDAH_TURUN','NETRAL'],
-                'tracking':'Scalp SQLite: event outcome uses CLOSED 1m candles',
+                'tracking':self.strategy.title()+' SQLite: event outcome uses CLOSED '+('1m' if self.strategy=='scalping' else '1h')+' candles',
                 'scoring':'Heuristic 0-100; NOT a verified profit probability',
                 'settingsRevision':s.get('settingsRevision',-1),
                 'settingsPending':s.get('settingsRevision')!=current['revision'] and s['running'],
