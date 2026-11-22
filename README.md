@@ -113,3 +113,17 @@ Kedua mode memakai satu web dan satu launcher `START-WINDOWS.bat`, tetapi **scan
 Tabel **Scalping/Swing**, bar **High Move**, dan detail coin sekarang menampilkan logo koin otomatis dari pustaka open-source `spothq/cryptocurrency-icons` melalui jsDelivr. Tidak perlu API key atau mengganti database. Gambar dimuat secara lazy-load. Kontrak Binance berawalan `1000` dicoba dengan simbol token dasarnya (mis. `1000PEPEUSDT` → `pepe.png`). Simbol tidak valid tidak dimasukkan ke URL. Jika logo koin tidak ada atau CDN tidak bisa diakses, otomatis muncul inisial simbol dalam lingkaran.
 
 Logo bersifat dekoratif dan tidak boleh dianggap verifikasi identitas token. Pengambilan gambar dari CDN memerlukan internet dan bisa gagal untuk token baru; scanner market dan backtest tetap berfungsi tanpa logo. File `coin_logos.js` harus ikut diunduh bersama `ui.js` dan `index.html` (tersedia otomatis pada ZIP branch terbaru).
+
+
+## Alarm RSI pada Potensi Naik / Potensi Turun
+
+Di kedua profil, ada badge oranye **peringatan RSI** terpisah dari sinyal dan dari alarm reversal lama (RSI 70). Alarm ini tidak memengaruhi nilai skor, status event, Top 5, TP/SL, atau pembentukan order.
+
+| Kategori event saat ini | Aturan default (ketat) | Badge |
+| --- | --- | --- |
+| `POTENSI_NAIK` | RSI > **60** | `RSI 5m/1H … > 60 · LONG mulai panas` |
+| `POTENSI_TURUN` | RSI < **40** | `RSI 5m/1H … < 40 · SHORT mulai jenuh` |
+
+Sumber RSI sesuai strategi: **Scalping memakai RSI14 dari candle 5m tertutup**, **Swing memakai RSI14 dari candle 1H tertutup**. Ini bukan data RSI live setiap tick; peringatan di baris bertanda stale diberi label `data lama`. Peringatan hanya terlihat selama event berada dalam kategori `POTENSI_NAIK` atau `POTENSI_TURUN`; signal yang selesai tidak diubah menjadi status baru.
+
+Kedua batas **60 dan 40 bisa diubah** lewat panel Pengaturan indikator. Pengaturan lama lima parameter tetap terbaca dari SQLite dan dua nilai baru diisi default; tidak perlu menghapus database. Pengujian peringatan ini belum membuktikan perbaikan keuntungan trading.
