@@ -14,6 +14,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import re
 from signals import SignalStore
+import research_engine
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request, urlopen
@@ -695,6 +696,8 @@ class Handler(BaseHTTPRequestHandler):
             self._reply(200, (ROOT/'icon.png').read_bytes(), 'image/png')
         elif route.path == '/api/health':
             self._reply(200, json.dumps({'ok':True,'version':'0.5','storage':'SQLite','activeTracked':len(STORE.active_symbols())}).encode(), 'application/json')
+        elif route.path == '/api/research':
+            self._reply(200, json.dumps(research_engine.status(), allow_nan=False).encode(), 'application/json; charset=utf-8')
         elif route.path == '/api/events':
             self._reply(200, json.dumps({'events':STORE.audit_events(200)}).encode(), 'application/json')
         elif route.path == '/api/scan':
@@ -764,6 +767,7 @@ def scheduler_loop():
 
 
 def serve():
+    research_engine.start_background()
     host = os.getenv('HOST', '0.0.0.0')
     port = int(os.getenv('PORT', '8765'))
     if os.getenv('SCANNER_BACKGROUND', '1') == '1':
