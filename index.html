@@ -44,15 +44,28 @@
 .indicator-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
 .indicator-actions button{border:1px solid #4e7897;border-radius:8px;padding:9px 13px;background:#1b3950;color:#e3f7ff;font-weight:700}
 #indicatorStatus{font-size:12px;color:#b7d4e5}
+
+/* Strategy tabs only change live eligibility; existing event archive is shared. */
+.strategy-switch{display:flex;gap:9px;margin:0 0 7px}
+.strategy-switch button{background:#142239;color:#bad0e4;border:1px solid #344c68;border-radius:10px;padding:11px 18px;font-weight:800;cursor:pointer;min-width:140px}
+.strategy-switch button[aria-selected="true"]{background:#1a3a52;border-color:#76bce0;color:#e5f7ff;box-shadow:inset 0 0 0 1px #416b89}
+.strategy-note{color:#a0b8cf;font-size:12px;margin-bottom:15px}
+body[data-strategy="scalping"] .table-scroll th:nth-child(7),
+body[data-strategy="scalping"] .table-scroll td:nth-child(7){display:none!important}
+@media(max-width:700px){.strategy-switch button{flex:1;min-width:0}}
 </style>
 </head>
-<body>
+<body data-strategy="scalping">
 <main>
 <p style="margin:0 0 14px"><a href="/research.html" style="display:inline-block;background:#173149;border:1px solid #487592;padding:9px 14px;border-radius:9px;color:#bfe9ff;font-weight:750;text-decoration:none">Data Engine + Backtest →</a></p>
 <header>
   <div class="brand"><div class="logo">↗</div><div><h1>Scalp Radar <span style="color:#8498ad;font-size:12px;font-weight:500">v0.5</span></h1><p class="tagline">5 peluang teratas · cek cepat sebelum entry.</p></div></div>
   <div class="live-line"><span class="dot busy" id="dot"></span><span class="tiny" id="live">Menghubungkan…</span><button class="pill-btn" id="refresh">↻ Scan</button></div>
 </header>
+<div class="strategy-switch" role="tablist" aria-label="Jenis analisis">
+<button type="button" role="tab" aria-selected="true" data-strategy="scalping">Scalping</button>
+<button type="button" role="tab" aria-selected="false" data-strategy="intraday">Intraday</button></div>
+<p id="strategyNote" class="strategy-note">Scalping: perubahan harga 24H tidak dipakai untuk menyeleksi sinyal. Filter likuiditas 24H tetap aktif.</p>
 <details class="indicator-panel" id="indicatorPanel">
 <summary>⚙ Pengaturan indikator manual <span style="font-weight:400;color:#93b3ca">(nilai default tersedia)</span></summary>
 <p>Ubah angka, klik Simpan. Pengaturan berlaku pada putaran scan berikutnya; histori sinyal lama tidak ditulis ulang. RSI Watch adalah alarm, bukan perintah SHORT.</p>
@@ -68,7 +81,7 @@
 <section class="status"><div><strong id="message">Mengambil daftar market</strong><p class="status-note" id="scanDetails">Sinyal disimpan di server — tab Sudah berasal dari Potensi</p></div><div style="display:flex;align-items:center;gap:10px"><div class="track"><span id="progress"></span></div><span class="tiny" id="time">—</span></div></section>
 <div class="scan-stats" id="scanStats" aria-label="Ringkasan cakupan scanner"></div>
 <div class="error" id="error" role="alert"></div>
-<div class="headline"><div class="section-title" style="margin:0">Top 5 watchlist</div><span class="tiny">Maks. 5 Potensi aktif total · Sudah ditampilkan 6 jam · detail & arsip tetap ada</span></div>
+<div class="headline"><div class="section-title" style="margin:0">Top 5 watchlist <span style="font-weight:500;text-transform:none;letter-spacing:0;color:#91a9be">(shared)</span></div><span class="tiny">Maks. 5 Potensi aktif total · Sudah ditampilkan 6 jam · detail & arsip tetap ada</span></div>
 <div class="tabs" id="tabs">
  <button class="tab up" data-category="POTENSI_NAIK"><div class="top"><span class="name">↗ Potensi Naik</span><span class="tiny">WATCH</span></div><div class="number" id="countPN">0</div><div class="bottom" id="topPN">Menunggu sinyal</div></button>
  <button class="tab done" data-category="SUDAH_NAIK"><div class="top"><span class="name">↑ Sudah Naik</span><span class="tiny">REACHED</span></div><div class="number" id="countSN">0</div><div class="bottom" id="topSN">Dari potensi naik</div></button>
