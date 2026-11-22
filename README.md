@@ -1,4 +1,4 @@
-# Scalp Radar v0.4 — Full Market Scanner
+# Scalp Radar v0.5 — Top 5 Scalp Watchlist
 
 **Fase 1 · Binance USDⓈ-M Futures · read-only · tanpa Binance API key · tidak mengirim order.**
 
@@ -20,13 +20,18 @@ ALL PAIRS memerlukan 4 rangkaian candle (5m, 15m, 1h, 4h) per pair. Untuk membat
 
 Endpoint futures klines Binance menggunakan bobot request menurut `limit`, dan exchangeInfo memiliki kuota berbasis IP. Limit, kondisi koneksi, dan respons aktual harus dipantau saat deployment. Lihat: [Market Data Binance USD-M](https://developers.binance.com/en/docs/derivatives/usds-margined-futures/market-data/rest-api/Kline-Candlestick-Data).
 
-## Empat daftar dan histori sinyal (tetap seperti v0.3)
+## Top 5 dan perjalanan sinyal — v0.5
 
-- **Potensi Naik/Turun**: indikator dan market regime memenuhi aturan heuristic lalu timestamp, harga baseline, arah, skor, dan target dicatat di SQLite.
-- **Sudah Naik/Turun**: hanya berasal dari **sinyal Potensi sebelumnya** yang kemudian tercapai pada **harga penutupan candle 5m berikutnya**. High/low wick tanpa close yang memenuhi ambang tidak cukup.
-- Satu koin boleh berada di beberapa kategori sekaligus, misalnya **Sudah Naik + Potensi Turun**. Target sejak sinyal adalah `max(0,65%, 1,5 × ATR 5m dalam %)`, disimpan saat event dibuat. Event Potensi bertahan paling lama 12 jam; status Sudah bertahan 24 jam setelah konfirmasi. Satu sinyal baru tiap arah per koin per 24 jam. Riwayat event tersimpan 30 hari.
-- **Highlight**: perubahan 15m ≥2%, 1H ≥4%, 24H ≥8%, atau perubahan sejak sinyal ≥2%; ticker HIGH MOVE untuk 1H ≥2%. Momentum dan OI 15m tetap terlihat. HIGH MOVE *bukan* otomatis masuk ke tab Sudah.
-- Data OI adalah **perubahan total posisi terbuka**, bukan bukti long/short tertentu. Semua sinyal adalah **heuristik**, bukan probabilitas sukses atau rekomendasi trading. Belum backtest atau hitung biaya, slippage, dan likuidasi.
+- **Potensi Naik/Turun:** mesin menghitung skor teknikal lama 0–100 dan aturan tren. Kandidat dibatasi secara global menjadi **maksimal 5 sinyal aktif gabungan naik + turun**, bukan 5 per tab. Setiap batch 20 pair diperingkat; kandidat lebih kuat dapat mengganti yang terlemah **jika skor lebih tinggi ≥1 poin**. Hasilnya adalah Top 5 **bergulir dari kandidat yang sudah dipindai**, bukan klaim bahwa 5 itu tertinggi di seluruh market pada satu timestamp yang sama.
+- **Filter anti-terlambat:** kandidat minimal quote turnover **$10 juta / 24h**, candle tertutup tidak lebih dari **8 menit**, tersedia quote terbaru Binance; saat quote telah bergerak searah >**0,30%** dari harga candle pemicu, kandidat tidak dipromosikan (`chase`). Pergerakan negatif yang sudah melewati `max(0,40%, ATR 5m%)` juga ditolak. Semua ini aturan uji, bukan patokan profit.
+- **Fast Watch (sekitar 30 detik):** pantau maksimal 20 pair ber-event terkini lewat bulk quote + candle 5m yang telah tertutup, **tanpa harus mengulang analisis seluruh market**. Quote dapat memperbarui posisi harga sejak sinyal, tetapi **tidak** dapat sendiri mengubah status Potensi → Sudah; hanya close candle 5m setelah baseline yang dapat mencapainya. Refresh 30 detik adalah polling, bukan eksekusi detik-level atau websocket.
+- **Lama Potensi:** maksimal **15 menit** untuk mencapai target sejak sinyal; kandidat yang umur sinyalnya **≥8 menit** ditandai terlalu tua untuk entry, dan yang harga quote sudah melesat **>0,30%** ditandai **Jangan kejar**. Status dapat berakhir `TARGET_REACHED`, `STOP_HIT`, `TIMEOUT`, `TIMEOUT_UNOBSERVED`, atau `RANK_REPLACED` di arsip. Stop/target adalah outcome berdasarkan **close**, bukan order fill nyata.
+- **Sudah Naik/Turun:** hanya berasal dari sinyal Potensi sebelumnya ketika penutupan candle 5m berikutnya bergerak searah minimal `max(0,65%, 1,5 × ATR 5m dalam %)`. Status **Sudah tetap ditampilkan 6 jam** setelah konfirmasi, lalu hilang dari daftar aktif; event tersimpan sebagai riwayat **30 hari** di SQLite, dengan **30 event terbaru** bisa dilihat di panel Riwayat (API `/api/events` mengembalikan maksimum 200 event).
+- **Simulasi stop:** `max(0,40%, ATR 5m%)` pergerakan merugikan dari baseline; status diarsipkan bila **close** candle 5m mencapai stop lebih dahulu daripada target. **Bukan perintah stop dan bukan hasil P&L**, terutama jika harga sempat bergerak melewati level di antara candle.
+- Satu pair dapat menempati beberapa tab (contohnya **Sudah Naik + Potensi Turun**), jika berasal dari dua peristiwa berbeda. Jeda pembuatan event baru untuk arah yang sama: **60 menit** untuk mengurangi spam.
+- **RSI 70–80 reversal watch:** ketika RSI 15m sebelumnya berada pada 70–80 lalu turun, disertai candle 5m bearish dan MACD histogram 5m negatif, tampil label **RSI 70–80 ↘ · Watch**. Ini **bukan SHORT otomatis**, tidak mendapat poin ekstra, dan bisa lebih bermanfaat sebagai **alarm evaluasi TP LONG**. Sinyal SHORT utama masih memakai RSI 15m di rentang 30–53 sesuai bobot skor, mengikuti filter tren.
+- **Highlight:** perubahan 15m ≥2%, 1H ≥4%, 24H ≥8%, atau sejak sinyal ≥2%; ticker HIGH MOVE 1H ≥2%. OI 15m tetap sebagai informasi, **bukan** input ranking, karena OI agregat tidak menentukan siapa lebih dominan long/short.
+- **Batasan:** skor adalah bobot heuristik, bukan probabilitas; belum backtest profitabilitas, fee/spread/slippage, funding/liquidation, ataupun deploy/live market verification.
 
 ## Menjalankan aplikasi
 
@@ -43,7 +48,7 @@ Penting: jika Binance Futures membatasi IP/region hosting, frontend menampilkan 
 - `index.html`, `ui.js`: dashboard desktop/mobile.
 - `icon.png`, `manifest.webmanifest`, `sw.js`: PWA. Offline shell tidak berpura-pura punya data Binance live.
 - `render.yaml`, `START-WINDOWS.bat`, `DEPLOY_ONLINE.md`: deployment.
-- `test_app.py`, `test_http.py`, `test_signals.py`: regresi offline.
+- `test_app.py`, `test_http.py`, `test_signals.py`, `test_v05.py`: regresi offline.
 
 Endpoint:
 - `GET /api/scan?mode=all&min_turnover=30000000` — default full market, mengembalikan progress dan rows multi-kategori.
@@ -53,4 +58,4 @@ Endpoint:
 - `GET /api/events` — audit signal.
 - `GET /api/health` — status hidup server, bukan bukti Binance live.
 
-Untuk menjalankan tes: `python -m unittest -v test_app.py test_signals.py test_http.py`. **17 tes offline lulus** pada pengembangan v0.4; browser desktop dan mobile diperiksa dengan mock Binance. **Koneksi langsung v0.4 ke Binance dari server hosting produksi belum diverifikasi.**
+Untuk menjalankan tes: `python -m unittest discover -p "test_*.py" -v`. **24 tes offline lulus** untuk v0.5, termasuk Top 5, harga live bukan konfirmasi target, anti-chase, timeout, dan RSI reversal watch. Koneksi Binance live pada server produksi **belum diverifikasi**. Untuk scalping sungguhan, prioritas berikutnya adalah backtest dan paper trading; sistem saat ini hanya watchlist riset.

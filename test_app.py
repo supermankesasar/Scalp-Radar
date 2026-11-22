@@ -56,7 +56,8 @@ def fake_market(endpoint, params, ttl=0):
     if endpoint.endswith('premiumIndex'):
         return {'markPrice':'101','lastFundingRate':'0.0001'}
     if endpoint.endswith('ticker/price'):
-        return {'price':'101'}
+        if params.get('symbol'): return {'price':'101'}
+        return [{'symbol':sym,'price':'103'} for sym in BASE_SYMBOLS]
     raise AssertionError(endpoint)
 
 

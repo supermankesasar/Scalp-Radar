@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scalp Radar v0.4 — full-universe Binance Futures scanner, read-only."""
+"""Scalp Radar v0.5 — Top 5 active journeys, fast watch, read-only."""
 from __future__ import annotations
 
 import json
@@ -31,6 +31,11 @@ SCAN_BATCH_SIZE = 20
 SCAN_BATCH_INTERVAL = 7.0
 SCAN_MAX_WORKERS = 4
 SCAN_REFRESH_MS = 180000
+ACTIVE_FAST_POLL_SECONDS = 30
+FRESH_CANDLE_MS = 8 * 60_000
+PROMOTION_MIN_TURNOVER = 10_000_000
+# A live move this far in the proposed trade direction is too extended to promote.
+MAX_CHASE_PCT = 0.30
 CACHE = {}
 CACHE_LOCK = threading.Lock()
 
@@ -382,6 +387,9 @@ def scan_symbol(ticker, is_tracked=False):
     vratio = i5['volumeRatio'] or 0
     rsi15 = i15['rsi14']
     dist_ema = 100 * (i15['close'] / i15['ema21'] - 1)
+    # Separate experimental overbought-rejection watch. This is NOT a short signal.
+    previous_rsi15 = rsi([x['close'] for x in sets['15m'][:-1]])
+    reversal_rsi70 = rsi_reversal_watch(previous_rsi15, rsi15, c5[-1], i5['macdHistogram'])
     # Scores are descriptive heuristics; NOT calibrated probabilities of success.
     def score_for(up):
         sign = 1 if up else -1
@@ -422,10 +430,71 @@ def scan_symbol(ticker, is_tracked=False):
         'vwapBias': 'ABOVE' if vwap is not None and px > vwap else 'BELOW' if vwap is not None else 'N/A',
         'oi15mPct': oi.get('delta15mPct') if oi.get('available') else None,
         'oiAvailable': oi.get('available', False),
+        'rsiPrevious15m': previous_rsi15, 'rsiReversalWatch': bool(reversal_rsi70),
         'oiNote': oi.get('reason') if not oi.get('available') else None,
         'lastClosed5m': i5['time'],
         '_recent5m': [{'closeTime':r['closeTime'],'close':r['close'],'high':r['high'],'low':r['low']} for r in c5],
     }
+
+
+def rsi_reversal_watch(previous_rsi, current_rsi, bar, macd_histogram):
+    """Unproven short-reversal / LONG-TP watch. Never a standalone SHORT."""
+    return bool(previous_rsi is not None and current_rsi is not None
+                and 70 <= previous_rsi <= 80 and current_rsi < previous_rsi
+                and bar['close'] < bar['open'] and macd_histogram < 0)
+
+
+def promotion_candidates(rows, now_ms=None, quote_prices=None):
+    """Rank fresh, liquid potential candidates for up to five watch slots.
+
+    Candidate must still be near the baseline at the latest quote. Does not
+    assert any probability or attempt to place orders.
+    """
+    now_ms = int(time.time()*1000) if now_ms is None else now_ms
+    quote_prices = quote_prices or {}
+    candidates = []
+    for r in rows:
+        if (r.get('turnover24h') or 0) < PROMOTION_MIN_TURNOVER:
+            continue
+        closed = r.get('lastClosed5m') or 0
+        if closed > now_ms or now_ms - closed > FRESH_CANDLE_MS:
+            continue
+        px = r.get('price')
+        quote = quote_prices.get(r['symbol'])
+        if not px or not quote or quote <= 0:
+            continue
+        for direction, flag, score in (
+            ('UP', r.get('potentialUp'), r.get('longScore',0)),
+            ('DOWN', r.get('potentialDown'), r.get('shortScore',0)),
+        ):
+            if not flag:
+                continue
+            chase_pct = 100 * (quote / px - 1) * (1 if direction == 'UP' else -1)
+            # Avoid chasing and also avoid an adverse move that has already hit
+            # the paper-stop, to avoid advertising an invalidated baseline.
+            if chase_pct > MAX_CHASE_PCT or chase_pct < -max(.40, r['atr5mPct']):
+                continue
+            candidates.append((int(score), r.get('turnover24h') or 0, direction, r))
+    candidates.sort(key=lambda e:(-e[0],-e[1],e[3]['symbol'],e[2]))
+    return candidates
+
+
+def latest_quotes(symbols=None):
+    """Binance bulk lightweight current price endpoint; quote only, not fill."""
+    response = request_market('/fapi/v1/ticker/price', {}, ttl=15)
+    if not isinstance(response, list):
+        raise RuntimeError('Harga terkini bulk tidak tersedia')
+    keep = None if symbols is None else set(symbols)
+    result = {}
+    for t in response:
+        sym = t.get('symbol')
+        if keep is not None and sym not in keep:
+            continue
+        try:
+            result[sym] = float(t['price'])
+        except (KeyError,ValueError,TypeError):
+            pass
+    return result
 
 
 def _same_generation(generation):
@@ -449,6 +518,8 @@ def scan_job(generation, mode, min_turnover):
         # Limited batches avoid flooding futures kline endpoints when ALL is
         # selected. Rate-limit errors interrupt the remaining cycle for safety.
         stop_for_limit = False
+        eligible_rows = []  # rolling pool of fresh potential setups
+        recent_candles = {}
         with ThreadPoolExecutor(max_workers=SCAN_MAX_WORKERS) as executor:
             for offset in range(0, len(tickers), SCAN_BATCH_SIZE):
                 if not _same_generation(generation):
@@ -461,7 +532,12 @@ def scan_job(generation, mode, min_turnover):
                         return
                     try:
                         res = future.result()
-                        res = STORE.refresh(res, res['_recent5m'])
+                        # Advance existing journeys, but don't flood active tab with
+                        # first-come events: rank across completed batch candidates.
+                        recent_candles[res['symbol']] = res['_recent5m']
+                        res = STORE.refresh(res, res['_recent5m'], allow_new=False)
+                        if res.get('potentialUp') or res.get('potentialDown'):
+                            eligible_rows.append(res)
                         error = None
                     except Exception as exc:
                         res = None
@@ -480,6 +556,24 @@ def scan_job(generation, mode, min_turnover):
                     with SCAN_LOCK:
                         SCAN_STATE['errors'].append('Rate limit Binance terdeteksi; siklus scan dihentikan untuk melindungi koneksi API.')
                     break
+                # Promote at most five highest scores seen SO FAR (rolling Top 5).
+                # Fresh quote check stops misleading old candle entries.
+                try:
+                    quotes = latest_quotes({r['symbol'] for r in eligible_rows})
+                    for score, turnover, direction, candidate in promotion_candidates(eligible_rows, quote_prices=quotes):
+                        sym = candidate['symbol']
+                        if STORE.activate_top_candidate(candidate, recent_candles[sym], direction):
+                            with SCAN_LOCK:
+                                for i, prior in enumerate(SCAN_STATE['rows']):
+                                    if prior['symbol'] == sym:
+                                        # Re-read persisted snapshot with just-created event.
+                                        match = next((r for r in STORE.latest_rows() if r['symbol']==sym), None)
+                                        if match:
+                                            SCAN_STATE['rows'][i] = match
+                                        break
+                except Exception as exc:
+                    with SCAN_LOCK:
+                        SCAN_STATE['errors'].append('Peringatan ranking/kutipan: '+str(exc)[:120])
                 # Track the signal journeys already found while scanning the
                 # next batch; no need for the browser to stay open.
                 if offset + SCAN_BATCH_SIZE < len(tickers):
@@ -543,11 +637,23 @@ def read_scanner(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
         # While the scan progresses, snapshots may be up to 36h old: explicitly
         # mark them stale, never mistake them for fresh candle data.
         visible_disk = _saved_visible(from_disk, mode, min_turnover)
-        fresh_ids = {x['symbol'] for x in fresh}
-        combined = fresh + [dict(x, stale=True) for x in visible_disk if x['symbol'] not in fresh_ids]
+        # Quote watcher updates can be newer than the full scanner result; use
+        # persisted quote+journey when its quote timestamp is newer than the row.
+        persisted = {x['symbol']: x for x in visible_disk}
+        combined = []
+        for x in fresh:
+            cached = persisted.pop(x['symbol'], None)
+            if cached and (cached.get('quoteAt') or 0) > (x.get('quoteAt') or 0):
+                combined.append(cached)
+            else:
+                combined.append(x)
+        combined.extend(dict(x, stale=True) for x in persisted.values())
         pending = SCAN_STATE['running'] and new_filters
+        active = STORE.active_pending(now_ms)
         return {
             'running': SCAN_STATE['running'], 'rows': combined,
+            'activeSignals': len(active), 'activeLimit': 5,
+            'signals': active,
             'processed': SCAN_STATE['processed'], 'total': SCAN_STATE['total'],
             'successful': len(fresh),
             'failed': SCAN_STATE['processed'] - len(fresh),
@@ -588,7 +694,7 @@ class Handler(BaseHTTPRequestHandler):
         elif route.path == '/icon.png':
             self._reply(200, (ROOT/'icon.png').read_bytes(), 'image/png')
         elif route.path == '/api/health':
-            self._reply(200, json.dumps({'ok':True,'version':'0.4','storage':'SQLite','activeTracked':len(STORE.active_symbols())}).encode(), 'application/json')
+            self._reply(200, json.dumps({'ok':True,'version':'0.5','storage':'SQLite','activeTracked':len(STORE.active_symbols())}).encode(), 'application/json')
         elif route.path == '/api/events':
             self._reply(200, json.dumps({'events':STORE.audit_events(200)}).encode(), 'application/json')
         elif route.path == '/api/scan':
@@ -619,6 +725,32 @@ class Handler(BaseHTTPRequestHandler):
             super().log_message(fmt, *args)
 
 
+def fast_watch_loop():
+    """Update ACTIVE signal price and 5m outcomes every 30s, independently
+    of the slower full-market scanner. Closed candle determines outcome.
+    """
+    while True:
+        try:
+            symbols = STORE.watch_symbols(max_symbols=20)
+            if symbols:
+                quotes = latest_quotes(symbols)
+                now = int(time.time()*1000)
+                with ThreadPoolExecutor(max_workers=4) as pool:
+                    tasks = {pool.submit(request_market, '/fapi/v1/klines',
+                              {'symbol':s,'interval':'5m','limit':20}, 12):s for s in symbols if quotes.get(s)}
+                    for fut in as_completed(tasks):
+                        symbol = tasks[fut]
+                        try:
+                            candles = parse_klines(fut.result(), now)
+                            if candles:
+                                STORE.fast_update(symbol, candles, quotes[symbol], now_ms=now)
+                        except Exception as exc:
+                            print('Fast watch',symbol,str(exc)[:90],flush=True)
+        except Exception as exc:
+            print('Fast watch error:', str(exc)[:140],flush=True)
+        time.sleep(ACTIVE_FAST_POLL_SECONDS)
+
+
 def scheduler_loop():
     """Always-on server-side scanning independent from whether phone/browser is open."""
     while True:
@@ -636,8 +768,9 @@ def serve():
     port = int(os.getenv('PORT', '8765'))
     if os.getenv('SCANNER_BACKGROUND', '1') == '1':
         threading.Thread(target=scheduler_loop, daemon=True, name='scan-scheduler').start()
+        threading.Thread(target=fast_watch_loop, daemon=True, name='fast-watch').start()
     server = ThreadingHTTPServer((host, port), Handler)
-    print('Scalp Radar v0.4: host %s port %d' % (host,port),flush=True)
+    print('Scalp Radar v0.5: host %s port %d' % (host,port),flush=True)
     print('DB:',STORE.path,'| background scanner:',os.getenv('SCANNER_BACKGROUND','1'),flush=True)
     try:
         server.serve_forever()

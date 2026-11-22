@@ -1,13 +1,13 @@
-Scalp Radar v0.4 — 22 November 2026
-- MODE ALL PAIRS (default), memindai semua USDT perpetual aktif tanpa cutoff turnover atau top-N tersembunyi.
-- MODE LIQUID: filter turnover >= $10M/$30M/$100M; mode TOP 80: 80 kontrak terlikuid tanpa cutoff $30M.
-- Filter Tampilkan Volume hanya mengatur layar, tidak mengurangi cakupan scan.
-- Transparansi Pair aktif / Sesuai mode / Total / Diproses / Sukses / Gagal / Tanpa ticker.
-- Batch 20 pair dengan maksimal 4 worker dan >=7 detik antar awal batch; berhenti saat Binance rate-limit.
-- Pair bersejarah sinyal tetap dipantau meskipun keluar dari filter LIQUID atau TOP80.
-- Pergantian mode saat scan berlangsung diantrikan; histori signal Potensi→Sudah tidak diubah.
-- UI dipisah ke ui.js dan di-cache oleh PWA v4; desktop & mobile browser smoke test dengan mock data.
-- 17 pengujian offline lulus. Binance live hosting belum diverifikasi.
+Scalp Radar v0.5 — 22 November 2026
+- Top 5 sinyal aktif global (gabungan LONG/SHORT), ranking skor secara bergulir per batch.
+- Kondisi harga terkini/umur candle memfilter sinyal basi atau sudah jauh dikejar.
+- Fast watcher quote dan candle tertutup tiap sekitar 30 detik untuk sinyal aktif.
+- Potensi berlaku sampai 15 menit; Sudah terlihat 6 jam; arsip tersimpan 30 hari.
+- Hasil STOP_HIT/TIMEOUT/TIMEOUT_UNOBSERVED/RANK_REPLACED dipisahkan dari TARGET_REACHED.
+- UI status anti-chase, harga quote, risiko terlambat dan panel Riwayat.
+- RSI 70–80: reversal watch / peringatan evaluasi TP LONG; BUKAN sinyal SHORT.
+- 24 offline tests, live Binance & profitability belum divalidasi.
 
-v0.3 — Signal Journey Scanner
-- SQLite perjalanan sinyal dan kategori Potensi→Sudah, PWA, UI mobile, highlight harga besar.
+v0.4 — 22 November 2026
+- ALL PAIRS, LIQUID, TOP 80, scan batching, cakupan pair dan errors.
+- Empat tab Potensi→Sudah dengan SQLite, multi-kategori, dashboard mobile.

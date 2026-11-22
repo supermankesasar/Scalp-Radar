@@ -29,7 +29,7 @@ class HttpApiTests(unittest.TestCase):
                 with patch.object(app,'request_market',side_effect=fake_market):
                     health=json.load(urllib.request.urlopen(base+'/api/health',timeout=3))
                     self.assertTrue(health['ok'])
-                    self.assertEqual(health['version'],'0.4')
+                    self.assertEqual(health['version'],'0.5')
                     js=urllib.request.urlopen(base+'/ui.js',timeout=3).read().decode()
                     self.assertIn('modeLabel',js)
                     result={}
