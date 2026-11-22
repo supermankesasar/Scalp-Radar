@@ -45,7 +45,7 @@
 .indicator-actions button{border:1px solid #4e7897;border-radius:8px;padding:9px 13px;background:#1b3950;color:#e3f7ff;font-weight:700}
 #indicatorStatus{font-size:12px;color:#b7d4e5}
 
-/* Strategy tabs only change live eligibility; existing event archive is shared. */
+/* Strategy tabs have independent live scans and event archives. */
 .strategy-switch{display:flex;gap:9px;margin:0 0 7px}
 .strategy-switch button{background:#142239;color:#bad0e4;border:1px solid #344c68;border-radius:10px;padding:11px 18px;font-weight:800;cursor:pointer;min-width:140px}
 .strategy-switch button[aria-selected="true"]{background:#1a3a52;border-color:#76bce0;color:#e5f7ff;box-shadow:inset 0 0 0 1px #416b89}
@@ -64,13 +64,13 @@ body[data-strategy="scalping"] .table-scroll td:nth-child(7){display:none!import
 </header>
 <div class="strategy-switch" role="tablist" aria-label="Jenis analisis">
 <button type="button" role="tab" aria-selected="true" data-strategy="scalping">Scalping</button>
-<button type="button" role="tab" aria-selected="false" data-strategy="intraday">Intraday</button></div>
-<p id="strategyNote" class="strategy-note">Scalping: perubahan harga 24H tidak dipakai untuk menyeleksi sinyal. Filter likuiditas 24H tetap aktif.</p>
+<button type="button" role="tab" aria-selected="false" data-strategy="swing">Swing</button></div>
+<p id="strategyNote" class="strategy-note">Scalping: 1m, 5m, 15m, 1H. Event berdasarkan candle 1m. Tanpa pergerakan harga 24H.</p>
 <details class="indicator-panel" id="indicatorPanel">
 <summary>⚙ Pengaturan indikator manual <span style="font-weight:400;color:#93b3ca">(nilai default tersedia)</span></summary>
 <p>Ubah angka, klik Simpan. Pengaturan berlaku pada putaran scan berikutnya; histori sinyal lama tidak ditulis ulang. RSI Watch adalah alarm, bukan perintah SHORT.</p>
 <form id="indicatorForm"><div class="indicator-grid">
-<label>RSI Overbought Watch ≥<small>Default 70, RSI 15m sebelumnya lalu melemah</small><input type="number" name="rsi_watch_threshold" min="50" max="95" step="0.5" value="70" required></label>
+<label>RSI Overbought Watch ≥<small>Default 70, RSI 5m (Scalping) atau 1H (Swing) lalu melemah</small><input type="number" name="rsi_watch_threshold" min="50" max="95" step="0.5" value="70" required></label>
 <label>RSI LONG skor maksimal<small>Default 70, rentang skor LONG dari 47</small><input type="number" name="rsi_long_max" min="47" max="90" step="0.5" value="70" required></label>
 <label>Skor minimal kandidat<small>Default 68 / 100</small><input type="number" name="min_score" min="50" max="95" step="1" value="68" required></label>
 <label>Volume relatif penuh ≥<small>Default 1,10× (5m terhadap rata-rata 20 candle)</small><input type="number" name="volume_full_score_min" min="0.85" max="5" step="0.05" value="1.1" required></label>
@@ -90,7 +90,7 @@ body[data-strategy="scalping"] .table-scroll td:nth-child(7){display:none!import
 </div>
 <div class="movers"><strong>⚡ HIGH MOVE · 1H</strong><div class="mover-items" id="movers"><span class="tiny">Memantau pergerakan…</span></div></div>
 <section>
- <div class="tools"><button class="ghost active" id="allBtn">Semua sinyal</button><button class="ghost" id="neutralBtn">Semua pair</button><input id="search" aria-label="Cari pair" placeholder="Cari coin… contoh SOL"><select id="sort" aria-label="Urutkan"><option value="change">Perubahan dari sinyal</option><option value="pct60m">Gerak 1 jam</option><option value="pct15m">Gerak 15 menit</option><option value="score" selected>Skor sinyal</option><option value="newest">Sinyal terbaru</option></select><div class="grow"></div><select id="mode" aria-label="Cakupan scanner"><option value="all" selected>ALL PAIRS</option><option value="liquid">LIQUID</option><option value="top80">TOP 80</option></select><select id="turnover" aria-label="Minimum volume untuk mode Liquid" hidden><option value="10000000">Min $10M / 24h</option><option value="30000000" selected>Min $30M / 24h</option><option value="100000000">Min $100M / 24h</option></select><select id="minDisplay" aria-label="Filter volume hasil yang ditampilkan"><option value="0" selected>Tampilkan: Semua Volume</option><option value="10000000">Tampilkan: ≥ $10M</option><option value="30000000">Tampilkan: ≥ $30M</option><option value="100000000">Tampilkan: ≥ $100M</option></select></div>
+ <div class="tools"><button class="ghost active" id="allBtn">Semua sinyal</button><button class="ghost" id="neutralBtn">Semua pair</button><input id="search" aria-label="Cari pair" placeholder="Cari coin… contoh SOL"><select id="sort" aria-label="Urutkan"><option value="change">Perubahan dari sinyal</option><option value="pct60m">Gerak 1 jam</option><option value="pct15m">Gerak 15 menit</option><option value="score" selected>Skor sinyal</option><option value="newest">Sinyal terbaru</option></select><div class="grow"></div><select id="mode" aria-label="Cakupan scanner"><option value="all">ALL PAIRS</option><option value="liquid">LIQUID</option><option value="top80" selected>TOP 80</option></select><select id="turnover" aria-label="Minimum volume untuk mode Liquid" hidden><option value="10000000">Min $10M / 24h</option><option value="30000000" selected>Min $30M / 24h</option><option value="100000000">Min $100M / 24h</option></select><select id="minDisplay" aria-label="Filter volume hasil yang ditampilkan"><option value="0" selected>Tampilkan: Semua Volume</option><option value="10000000">Tampilkan: ≥ $10M</option><option value="30000000">Tampilkan: ≥ $30M</option><option value="100000000">Tampilkan: ≥ $100M</option></select></div>
  <div class="tablewrap"><div class="table-scroll"><table><thead><tr><th>Coin</th><th>Sinyal</th><th>Sejak sinyal</th><th>Terbaik sejak sinyal</th><th>15m</th><th>1H</th><th>24H</th><th>Volume 5m</th><th>OI 15m</th><th>EMA 1H/4H</th><th>Skor</th><th></th></tr></thead><tbody id="rows"><tr><td colspan="12" class="empty">Menunggu hasil scanner…</td></tr></tbody></table></div><div class="count-line"><span id="countNote">—</span><span>Waktu WIB · candle 5m tertutup</span></div></div>
 <div class="history-panel"><button class="pill-btn" id="historyToggle">Riwayat sinyal 30 hari ▾</button><div class="history-rows" id="historyRows" hidden></div><p class="tiny">Target/stop hanya berdasar close candle 5m. Riwayat bukan catatan profit atau order yang dieksekusi.</p></div>
 </section>
