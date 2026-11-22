@@ -16,6 +16,9 @@ import re
 from signals import SignalStore
 import research_engine
 import indicator_settings
+import scalp_engine
+import swing_engine
+from scalp_runtime import ScalpRuntime
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request, urlopen
@@ -474,21 +477,23 @@ def rsi_reversal_watch(previous_rsi, current_rsi, bar, macd_histogram, threshold
                 and bar['close'] < bar['open'] and macd_histogram < 0)
 
 
-def promotion_candidates(rows, now_ms=None, quote_prices=None):
+def promotion_candidates(rows, now_ms=None, quote_prices=None,
+                         bar_time_key='lastClosed5m', fresh_candle_ms=FRESH_CANDLE_MS,
+                         max_chase_pct=None):
     """Rank fresh, liquid potential candidates for up to five watch slots.
 
     Candidate must still be near the baseline at the latest quote. Does not
     assert any probability or attempt to place orders.
     """
     now_ms = int(time.time()*1000) if now_ms is None else now_ms
-    max_chase = effective_scan_settings()['max_chase_pct']
+    max_chase = (effective_scan_settings()['max_chase_pct'] if max_chase_pct is None else max_chase_pct)
     quote_prices = quote_prices or {}
     candidates = []
     for r in rows:
         if (r.get('turnover24h') or 0) < PROMOTION_MIN_TURNOVER:
             continue
-        closed = r.get('lastClosed5m') or 0
-        if closed > now_ms or now_ms - closed > FRESH_CANDLE_MS:
+        closed = r.get(bar_time_key) or 0
+        if closed > now_ms or now_ms - closed > fresh_candle_ms:
             continue
         px = r.get('price')
         quote = quote_prices.get(r['symbol'])
@@ -526,6 +531,38 @@ def latest_quotes(symbols=None):
         except (KeyError,ValueError,TypeError):
             pass
     return result
+
+
+
+def scan_symbol_scalping(ticker, is_tracked=False, settings_snapshot=None):
+    cfg = settings_snapshot or indicator_settings.current()
+    return scalp_engine.scan_symbol(
+        ticker, request_market, parse_klines, indicators, regime, utc_vwap, rsi,
+        rsi_reversal_watch, interest_metrics, cfg['values'],
+        settings_revision=cfg['revision'], is_tracked=is_tracked)
+
+
+def scan_symbol_swing(ticker, is_tracked=False, settings_snapshot=None):
+    cfg = settings_snapshot or indicator_settings.current()
+    return swing_engine.scan_symbol(
+        ticker, request_market, parse_klines, indicators, regime, ema, rsi,
+        rsi_reversal_watch, interest_metrics, cfg['values'],
+        settings_revision=cfg['revision'], is_tracked=is_tracked)
+
+
+def profile_snapshot(symbol, strategy):
+    if not re.fullmatch(r'[A-Z0-9]{3,30}', symbol) or symbol not in active_symbols():
+        raise ValueError('Pair USDT perpetual tidak aktif')
+    ticker = request_market('/fapi/v1/ticker/24hr', {'symbol':symbol},ttl=35)
+    info = {'symbol':symbol, 'change24h':float(ticker['priceChangePercent']),
+            'turnover24h':float(ticker['quoteVolume'])}
+    data = (scan_symbol_scalping(info) if strategy=='scalping'
+            else scan_symbol_swing(info))
+    # Optional data OI is not required to render this read-only analysis.
+    return {'strategy':strategy, 'symbol':symbol,
+            'timeframes':data['timeframes'], 'metrics':data,
+            'status':'WATCH LONG' if data['potentialUp'] else
+                     'WATCH SHORT' if data['potentialDown'] else 'WAIT'}
 
 
 def _same_generation(generation):
@@ -709,6 +746,18 @@ def read_scanner(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
         }
 
 
+
+# Each strategy uses its own SQLite archive and independent Top-5 event queue.
+# The legacy v0.5 store is preserved, not migrated/deleted.
+SCALP=ScalpRuntime(ROOT/'data'/'signals_scalping.sqlite3',active_tickers,
+    scan_symbol_scalping,latest_quotes,promotion_candidates,indicator_settings.current,
+    strategy='scalping')
+SWING=ScalpRuntime(ROOT/'data'/'signals_swing.sqlite3',active_tickers,
+    scan_symbol_swing,latest_quotes,promotion_candidates,indicator_settings.current,
+    strategy='swing')
+ACTIVE_PROFILE='scalping'
+
+
 class Handler(BaseHTTPRequestHandler):
     def _reply(self, code, content, ctype):
         self.send_response(code)
@@ -742,22 +791,45 @@ class Handler(BaseHTTPRequestHandler):
         elif route.path == '/api/research':
             self._reply(200, json.dumps(research_engine.status(), allow_nan=False).encode(), 'application/json; charset=utf-8')
         elif route.path == '/api/events':
-            self._reply(200, json.dumps({'events':STORE.audit_events(200)}).encode(), 'application/json')
+            strategy=parse_qs(route.query).get('strategy',['legacy'])[0]
+            if strategy not in ('legacy','scalping','swing'):
+                self._reply(400,b'Invalid strategy','text/plain; charset=utf-8');return
+            store=(SCALP.store if strategy=='scalping' else
+                   SWING.store if strategy=='swing' else STORE)
+            self._reply(200, json.dumps({'events':store.audit_events(200),
+                                          'strategy':strategy}).encode(), 'application/json')
         elif route.path == '/api/scan':
+            global ACTIVE_PROFILE
             args = parse_qs(route.query)
             try:
+                strategy=args.get('strategy',['legacy'])[0].lower()
+                if strategy not in ('legacy','scalping','swing'):
+                    raise ValueError('Strategi tidak dikenal')
                 mode = args.get('mode', [DEFAULT_MODE])[0].lower()
                 turnover = int(args.get('min_turnover', [str(DEFAULT_TURNOVER)])[0])
-                payload = read_scanner(mode, turnover, args.get('force', ['0'])[0] == '1')
+                if strategy=='scalping':
+                    ACTIVE_PROFILE='scalping'
+                    payload=SCALP.read(mode,turnover,args.get('force',['0'])[0]=='1')
+                elif strategy=='swing':
+                    ACTIVE_PROFILE='swing'
+                    payload=SWING.read(mode,turnover,args.get('force',['0'])[0]=='1')
+                else:
+                    payload=read_scanner(mode, turnover, args.get('force', ['0'])[0] == '1')
+                    payload['strategy']='legacy'
+                    payload['timeframes']=['5m','15m','1h','4h']
                 self._reply(200, json.dumps(payload, allow_nan=False).encode(), 'application/json; charset=utf-8')
             except (ValueError, TypeError) as e:
                 self._reply(400, json.dumps({'error': str(e)}).encode(), 'application/json; charset=utf-8')
             except Exception as e:
                 self._reply(502, json.dumps({'error': str(e)}).encode(), 'application/json; charset=utf-8')
         elif route.path == '/api/snapshot':
-            symbol = parse_qs(route.query).get('symbol', ['BTCUSDT'])[0]
+            query=parse_qs(route.query)
+            symbol = query.get('symbol', ['BTCUSDT'])[0]
+            strategy=query.get('strategy',['legacy'])[0]
             try:
-                payload = snapshot(symbol)
+                if strategy not in ('legacy','scalping','swing'):
+                    raise ValueError('Strategi tidak dikenal')
+                payload = snapshot(symbol) if strategy=='legacy' else profile_snapshot(symbol,strategy)
                 self._reply(200, json.dumps(payload, allow_nan=False).encode(), 'application/json; charset=utf-8')
             except ValueError as e:
                 self._reply(400, json.dumps({'error':str(e)}).encode(), 'application/json; charset=utf-8')
@@ -793,40 +865,52 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def fast_watch_loop():
-    """Update ACTIVE signal price and 5m outcomes every 30s, independently
-    of the slower full-market scanner. Closed candle determines outcome.
-    """
+    """Closed-candle outcome tracking; does not create signals or orders."""
+    cycles=0
     while True:
         try:
-            symbols = STORE.watch_symbols(max_symbols=20)
-            if symbols:
-                quotes = latest_quotes(symbols)
-                now = int(time.time()*1000)
+            cycles+=1
+            # 1h Swing bars change slowly; query them only every 5 minutes.
+            sources=((SCALP.store,'1m',25), (STORE,'5m',20))
+            if cycles%10==1:
+                sources+=( (SWING.store,'1h',96), )
+            for store,interval,limit in sources:
+                symbols=store.watch_symbols(max_symbols=20)
+                if not symbols:continue
+                quotes=latest_quotes(symbols)
+                now=int(time.time()*1000)
                 with ThreadPoolExecutor(max_workers=4) as pool:
-                    tasks = {pool.submit(request_market, '/fapi/v1/klines',
-                              {'symbol':s,'interval':'5m','limit':20}, 12):s for s in symbols if quotes.get(s)}
-                    for fut in as_completed(tasks):
-                        symbol = tasks[fut]
+                    pending={pool.submit(request_market,'/fapi/v1/klines',
+                             {'symbol':s,'interval':interval,'limit':limit},12):s
+                             for s in symbols if quotes.get(s)}
+                    for fut in as_completed(pending):
+                        symbol=pending[fut]
                         try:
-                            candles = parse_klines(fut.result(), now)
-                            if candles:
-                                STORE.fast_update(symbol, candles, quotes[symbol], now_ms=now)
+                            bars=parse_klines(fut.result(),now)
+                            if bars:store.fast_update(symbol,bars,quotes[symbol],now_ms=now)
                         except Exception as exc:
-                            print('Fast watch',symbol,str(exc)[:90],flush=True)
+                            print('Fast watch',interval,symbol,str(exc)[:100],flush=True)
         except Exception as exc:
-            print('Fast watch error:', str(exc)[:140],flush=True)
+            print('Fast watch error:',str(exc)[:130],flush=True)
         time.sleep(ACTIVE_FAST_POLL_SECONDS)
 
 
 def scheduler_loop():
-    """Always-on server-side scanning independent from whether phone/browser is open."""
+    """Refresh ONLY the selected profile, to avoid parallel high-weight scans."""
     while True:
         try:
-            with SCAN_LOCK:
-                mode, turnover = SCAN_STATE['requestedMode'], SCAN_STATE['requestedMinTurnover']
-            read_scanner(mode, turnover)
+            if ACTIVE_PROFILE=='scalping':runtime=SCALP
+            else:runtime=SWING
+            other=SWING if runtime is SCALP else SCALP
+            with other.lock:
+                other_busy=other.state['running']
+            if not other_busy:
+                with runtime.lock:
+                    mode=runtime.state['requestedMode']
+                    turnover=runtime.state['requestedMinTurnover']
+                runtime.read(mode,turnover)
         except Exception as exc:
-            print('Background scheduler:',str(exc),flush=True)
+            print('Profile scheduler:',str(exc)[:140],flush=True)
         time.sleep(12)
 
 
