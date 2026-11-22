@@ -29,7 +29,7 @@ Endpoint futures klines Binance menggunakan bobot request menurut `limit`, dan e
 - **Sudah Naik/Turun:** hanya berasal dari sinyal Potensi sebelumnya ketika penutupan candle 5m berikutnya bergerak searah minimal `max(0,65%, 1,5 × ATR 5m dalam %)`. Status **Sudah tetap ditampilkan 6 jam** setelah konfirmasi, lalu hilang dari daftar aktif; event tersimpan sebagai riwayat **30 hari** di SQLite, dengan **30 event terbaru** bisa dilihat di panel Riwayat (API `/api/events` mengembalikan maksimum 200 event).
 - **Simulasi stop:** `max(0,40%, ATR 5m%)` pergerakan merugikan dari baseline; status diarsipkan bila **close** candle 5m mencapai stop lebih dahulu daripada target. **Bukan perintah stop dan bukan hasil P&L**, terutama jika harga sempat bergerak melewati level di antara candle.
 - Satu pair dapat menempati beberapa tab (contohnya **Sudah Naik + Potensi Turun**), jika berasal dari dua peristiwa berbeda. Jeda pembuatan event baru untuk arah yang sama: **60 menit** untuk mengurangi spam.
-- **RSI 70–80 reversal watch:** ketika RSI 15m sebelumnya berada pada 70–80 lalu turun, disertai candle 5m bearish dan MACD histogram 5m negatif, tampil label **RSI 70–80 ↘ · Watch**. Ini **bukan SHORT otomatis**, tidak mendapat poin ekstra, dan bisa lebih bermanfaat sebagai **alarm evaluasi TP LONG**. Sinyal SHORT utama masih memakai RSI 15m di rentang 30–53 sesuai bobot skor, mengikuti filter tren.
+- **RSI ≥70 reversal watch:** ketika RSI 15m sebelumnya berada pada atau di atas ambang (default 70) lalu turun, disertai candle 5m bearish dan MACD histogram 5m negatif, tampil label **RSI 70–80 ↘ · Watch**. Ini **bukan SHORT otomatis**, tidak mendapat poin ekstra, dan bisa lebih bermanfaat sebagai **alarm evaluasi TP LONG**. Sinyal SHORT utama masih memakai RSI 15m di rentang 30–53 sesuai bobot skor, mengikuti filter tren.
 - **Highlight:** perubahan 15m ≥2%, 1H ≥4%, 24H ≥8%, atau sejak sinyal ≥2%; ticker HIGH MOVE 1H ≥2%. OI 15m tetap sebagai informasi, **bukan** input ranking, karena OI agregat tidak menentukan siapa lebih dominan long/short.
 - **Batasan:** skor adalah bobot heuristik, bukan probabilitas; belum backtest profitabilitas, fee/spread/slippage, funding/liquidation, ataupun deploy/live market verification.
 
@@ -58,4 +58,22 @@ Endpoint:
 - `GET /api/events` — audit signal.
 - `GET /api/health` — status hidup server, bukan bukti Binance live.
 
-Untuk menjalankan tes: `python -m unittest discover -p "test_*.py" -v`. **24 tes offline lulus** untuk v0.5, termasuk Top 5, harga live bukan konfirmasi target, anti-chase, timeout, dan RSI reversal watch. Koneksi Binance live pada server produksi **belum diverifikasi**. Untuk scalping sungguhan, prioritas berikutnya adalah backtest dan paper trading; sistem saat ini hanya watchlist riset.
+Untuk menjalankan tes: `python -m unittest discover -p "test_*.py" -v`. **24 tes offline lulus** untuk v0.5 sebelum upgrade; jalankan ulang seluruh tes setelah perubahan, termasuk Top 5, harga live bukan konfirmasi target, anti-chase, timeout, dan RSI reversal watch. Koneksi Binance live pada server produksi **belum diverifikasi**. Untuk scalping sungguhan, prioritas berikutnya adalah backtest dan paper trading; sistem saat ini hanya watchlist riset.
+
+## Upgrade experimental — indikator manual + data riset
+
+Tersedia pada branch `feature/v05-data-backtest-oneclick` (belum digabung ke main).
+
+Setelah klik `START-WINDOWS.bat`, web lokal menyediakan panel **Pengaturan indikator manual**. Konfigurasi disimpan di `data/indicator_settings.sqlite3` dan digunakan pada **putaran scan berikutnya**. Tombol **Reset ke default** mengembalikan angka bawaan. Perubahan disimpan dengan revision history, bukan mengedit event lama.
+
+| Parameter | Default | Makna |
+| --- | ---: | --- |
+| RSI overbought watch | 70 | RSI 15m sebelumnya >= ambang, menurun, candle bearish dan MACD histogram negatif. Alarm saja, bukan SHORT |
+| RSI maksimal untuk skor LONG | 70 | RSI 15m 47 sampai ambang mendapat 10 poin dalam skor LONG |
+| Skor minimal kandidat | 68 | Batas skor untuk mempertimbangkan potensi naik/turun |
+| Volume relatif mendapat poin penuh | 1.10x | Perbandingan volume 5m saat ini dengan rata-rata 20 candle sebelumnya |
+| Max anti-chase | 0.30% | Batas harga quote sudah bergerak searah sejak candle sinyal sebelum promosi Top 5 |
+
+Perubahan **tidak mengaktifkan AI trading**. Engine historical research hanya mengevaluasi event tercatat dengan asumsi eksekusi sederhana; perubahan parameter belum otomatis dites ulang dengan replay historis seluruh market. Uji parameter di paper trading/holdout sebelum dipercaya. Perubahan parameter dari browser **hanya diizinkan pada localhost** sampai autentikasi remote dibuat; tidak boleh memberi izin tulis anonim dari internet.
+
+Setelah mengganti parameter, gunakan riwayat revisi untuk menandai periode hasil yang dibandingkan; angka hasil strategi lama dan baru tidak otomatis setara.
