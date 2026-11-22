@@ -13,7 +13,7 @@ class EventExpiryTests(unittest.TestCase):
                 db.execute("""INSERT INTO events(
                     symbol,direction,status,started_at,baseline_time,baseline_price,
                     trigger_pct,initial_score,last_price,last_seen,last_score,setup_active)
-                    VALUES('BTCUSDT','UP','PENDING',?,?,?,?,?,?,?,1)""",
+                    VALUES('BTCUSDT','UP','PENDING',?,?,?,?,?,?,?,?,1)""",
                     (now-2*60*60_000,now-2*60*60_000,100,2,81,100,now,81))
             self.assertIn('BTCUSDT',store.active_symbols(now_ms=now))
             self.assertEqual(store.audit_events(1)[0]['status'],'PENDING')
@@ -31,7 +31,7 @@ class EventExpiryTests(unittest.TestCase):
                 db.execute("""INSERT INTO events(
                     symbol,direction,status,started_at,baseline_time,baseline_price,
                     trigger_pct,initial_score,last_price,last_seen,last_score,setup_active)
-                    VALUES('ETHUSDT','DOWN','PENDING',?,?,?,?,?,?,?,1)""",
+                    VALUES('ETHUSDT','DOWN','PENDING',?,?,?,?,?,?,?,?,1)""",
                     (now-20*60_000,now-20*60_000,100,.65,73,100,now,73))
             self.assertNotIn('ETHUSDT',store.active_symbols(now_ms=now))
             self.assertEqual(store.audit_events(1)[0]['endReason'],'TIMEOUT_UNOBSERVED')
