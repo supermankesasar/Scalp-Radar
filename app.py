@@ -807,12 +807,17 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError('Strategi tidak dikenal')
                 mode = args.get('mode', [DEFAULT_MODE])[0].lower()
                 turnover = int(args.get('min_turnover', [str(DEFAULT_TURNOVER)])[0])
-                if strategy=='scalping':
-                    ACTIVE_PROFILE='scalping'
-                    payload=SCALP.read(mode,turnover,args.get('force',['0'])[0]=='1')
-                elif strategy=='swing':
-                    ACTIVE_PROFILE='swing'
-                    payload=SWING.read(mode,turnover,args.get('force',['0'])[0]=='1')
+                if strategy in ('scalping','swing'):
+                    ACTIVE_PROFILE=strategy
+                    runtime=SCALP if strategy=='scalping' else SWING
+                    other=SWING if strategy=='scalping' else SCALP
+                    with other.lock:
+                        other_busy=other.state['running']
+                    payload=runtime.read(mode,turnover,
+                        args.get('force',['0'])[0]=='1',allow_start=not other_busy)
+                    if other_busy and not payload['running']:
+                        payload['message']='Menunggu scan '+other.strategy+' selesai sebelum scan '+strategy
+                    payload['otherModeScanning']=other_busy
                 else:
                     payload=read_scanner(mode, turnover, args.get('force', ['0'])[0] == '1')
                     payload['strategy']='legacy'
