@@ -686,6 +686,8 @@ class Handler(BaseHTTPRequestHandler):
         route = urlparse(self.path)
         if route.path in ('/', '/index.html'):
             self._reply(200, (ROOT/'index.html').read_bytes(), 'text/html; charset=utf-8')
+        elif route.path == '/research.html':
+            self._reply(200, (ROOT/'research.html').read_bytes(), 'text/html; charset=utf-8')
         elif route.path == '/manifest.webmanifest':
             self._reply(200, (ROOT/'manifest.webmanifest').read_bytes(), 'application/manifest+json')
         elif route.path == '/ui.js':
