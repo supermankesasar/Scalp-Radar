@@ -26,6 +26,10 @@
 @media(max-width:700px){.scan-stats{gap:6px}.stat-item{padding:4px 7px;font-size:10px}.tools select#mode{max-width:100%}}
 /* v0.5: clear quote freshness, short RSI reversal watch, compact archive */
 .chip.RSIWATCH{background:#47351e;color:#ffd497;border:1px solid #866638}
+.chip.RSI_RISK_UP,.chip.RSI_RISK_DOWN{background:#513a20;color:#ffdd9e;border:1px solid #b77e31;max-width:100%;white-space:normal;line-height:1.4}
+.chip.RSI_RISK_UP::before,.chip.RSI_RISK_DOWN::before{content:"⚠ ";font-weight:900}
+.chip.RSI_RISK_DOWN{background:#442e24;border-color:#a86850;color:#ffd4ae}
+.cats:has(.RSI_RISK_UP),.cats:has(.RSI_RISK_DOWN){max-width:270px}
 .history-panel{padding:12px 0;margin-top:12px;border-top:1px solid #253c52}
 .history-panel .tiny{margin:9px 0;color:#7895ac}
 .history-rows{margin-top:10px;max-height:290px;overflow:auto;border:1px solid #294057;border-radius:10px;background:#111d2c}
@@ -85,9 +89,11 @@ body[data-strategy="scalping"] .table-scroll td:nth-child(7){display:none!import
 <p id="strategyNote" class="strategy-note">Scalping: 1m, 5m, 15m, 1H. Event berdasarkan candle 1m. Tanpa pergerakan harga 24H.</p>
 <details class="indicator-panel" id="indicatorPanel">
 <summary>⚙ Pengaturan indikator manual <span style="font-weight:400;color:#93b3ca">(nilai default tersedia)</span></summary>
-<p>Ubah angka, klik Simpan. Pengaturan berlaku pada putaran scan berikutnya; histori sinyal lama tidak ditulis ulang. RSI Watch adalah alarm, bukan perintah SHORT.</p>
+<p>Ubah angka, klik Simpan. Nilai berlaku pada putaran scan berikutnya; histori lama tidak diubah. Alarm RSI 60/40 hanya memberi peringatan di Potensi Naik/Turun; RSI reversal 70 adalah alarm terpisah, bukan perintah SHORT.</p>
 <form id="indicatorForm"><div class="indicator-grid">
 <label>RSI Overbought Watch ≥<small>Default 70, RSI 5m (Scalping) atau 1H (Swing) lalu melemah</small><input type="number" name="rsi_watch_threshold" min="50" max="95" step="0.5" value="70" required></label>
+<label>Alarm RSI Potensi Naik &gt;<small>Default 60 · peringatan LONG mulai panas, bukan filter</small><input type="number" name="rsi_warning_long" min="50" max="90" step="0.5" value="60" required></label>
+<label>Alarm RSI Potensi Turun &lt;<small>Default 40 · peringatan SHORT mulai jenuh, bukan filter</small><input type="number" name="rsi_warning_short" min="10" max="50" step="0.5" value="40" required></label>
 <label>RSI LONG skor maksimal<small>Default 70, rentang skor LONG dari 47</small><input type="number" name="rsi_long_max" min="47" max="90" step="0.5" value="70" required></label>
 <label>Skor minimal kandidat<small>Default 68 / 100</small><input type="number" name="min_score" min="50" max="95" step="1" value="68" required></label>
 <label>Volume relatif penuh ≥<small>Default 1,10× (5m terhadap rata-rata 20 candle)</small><input type="number" name="volume_full_score_min" min="0.85" max="5" step="0.05" value="1.1" required></label>
