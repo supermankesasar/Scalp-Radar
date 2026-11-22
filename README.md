@@ -77,3 +77,14 @@ Setelah klik `START-WINDOWS.bat`, web lokal menyediakan panel **Pengaturan indik
 Perubahan **tidak mengaktifkan AI trading**. Engine historical research hanya mengevaluasi event tercatat dengan asumsi eksekusi sederhana; perubahan parameter belum otomatis dites ulang dengan replay historis seluruh market. Uji parameter di paper trading/holdout sebelum dipercaya. Perubahan parameter dari browser **hanya diizinkan pada localhost** sampai autentikasi remote dibuat; tidak boleh memberi izin tulis anonim dari internet.
 
 Setelah mengganti parameter, gunakan riwayat revisi untuk menandai periode hasil yang dibandingkan; angka hasil strategi lama dan baru tidak otomatis setara.
+
+
+## Mode analisis: Scalping vs Intraday (experimental)
+
+Dua tab pada dashboard memakai **scanner dan database event yang sama**. Pergantian tab langsung memfilter hasil yang sudah dipindai, tidak menyebabkan request Binance baru. Default tampilan: **Scalping**.
+
+- **Scalping**: aturan sinyal historis v0.5 (EMA, RSI, MACD, VWAP, volume, skor), **tidak memakai persentase perubahan harga 24 jam sebagai input skor ataupun konfirmasi sinyal**. Kolom persentase 24H disembunyikan di tab ini.
+- **Intraday**: aturan/scoring sama, ditambah **konfirmasi arah perubahan harga 24 jam (rolling ticker)**: kandidat LONG memerlukan `change24h > 0`, SHORT memerlukan `change24h < 0`. Jika data 24H tidak tersedia atau 0, sinyal tidak mendapat konfirmasi. Konfirmasi ini berupa **gate/filter kelayakan**, **bukan bobot angka tambahan**.
+- Kedua mode tetap memakai turnover USDT 24 jam untuk filter **likuiditas**, yang berbeda dari indikator perubahan harga 24H. TP, SL, aturan candlestick, dan horizon 15m **tidak berubah** walaupun nama tab Intraday.
+- Intraday saat ini adalah **filter baca** pada sinyal yang dihasilkan scanner bersama. Maksimal lima event aktif tetap **global, bukan lima per mode**. Simulasi histori Intraday independen, penyimpanan mode saat event dibuat, dan uji performa per mode masih pekerjaan berikutnya. Badge **24H sekarang searah** menunjukkan konfirmasi pada data yang terakhir dipindai, bukan verifikasi bahwa pada waktu event historis dibuat kondisi 24H sama.
+- Bila perlu hasil backtest yang sah, catat `change24h` **pada waktu sinyal**, per mode, lalu replay dari kline dengan dataset point-in-time dan walk-forward. Jangan menilai event lampau memakai 24H hari ini.
