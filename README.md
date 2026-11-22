@@ -79,12 +79,30 @@ Perubahan **tidak mengaktifkan AI trading**. Engine historical research hanya me
 Setelah mengganti parameter, gunakan riwayat revisi untuk menandai periode hasil yang dibandingkan; angka hasil strategi lama dan baru tidak otomatis setara.
 
 
-## Mode analisis: Scalping vs Intraday (experimental)
+## Mode baru: Scalping dan Swing (eksperimental)
 
-Dua tab pada dashboard memakai **scanner dan database event yang sama**. Pergantian tab langsung memfilter hasil yang sudah dipindai, tidak menyebabkan request Binance baru. Default tampilan: **Scalping**.
+Kedua mode memakai satu web dan satu launcher `START-WINDOWS.bat`, tetapi **scanner dan event database terpisah**. Memilih tab mengganti mesin aktif. Mesin yang tidak dipilih tidak melakukan full-market scan rutin. Secara default pakai TOP 80 agar permintaan API tidak berlebihan; mode ALL PAIRS tetap tersedia.
 
-- **Scalping**: aturan sinyal historis v0.5 (EMA, RSI, MACD, VWAP, volume, skor), **tidak memakai persentase perubahan harga 24 jam sebagai input skor ataupun konfirmasi sinyal**. Kolom persentase 24H disembunyikan di tab ini.
-- **Intraday**: aturan/scoring sama, ditambah **konfirmasi arah perubahan harga 24 jam (rolling ticker)**: kandidat LONG memerlukan `change24h > 0`, SHORT memerlukan `change24h < 0`. Jika data 24H tidak tersedia atau 0, sinyal tidak mendapat konfirmasi. Konfirmasi ini berupa **gate/filter kelayakan**, **bukan bobot angka tambahan**.
-- Kedua mode tetap memakai turnover USDT 24 jam untuk filter **likuiditas**, yang berbeda dari indikator perubahan harga 24H. TP, SL, aturan candlestick, dan horizon 15m **tidak berubah** walaupun nama tab Intraday.
-- Intraday saat ini adalah **filter baca** pada sinyal yang dihasilkan scanner bersama. Maksimal lima event aktif tetap **global, bukan lima per mode**. Simulasi histori Intraday independen, penyimpanan mode saat event dibuat, dan uji performa per mode masih pekerjaan berikutnya. Badge **24H sekarang searah** menunjukkan konfirmasi pada data yang terakhir dipindai, bukan verifikasi bahwa pada waktu event historis dibuat kondisi 24H sama.
-- Bila perlu hasil backtest yang sah, catat `change24h` **pada waktu sinyal**, per mode, lalu replay dari kline dengan dataset point-in-time dan walk-forward. Jangan menilai event lampau memakai 24H hari ini.
+| | Scalping | Swing |
+| --- | --- | --- |
+| Timeframe data & logika | **1m, 5m, 15m, 1h** saja | **15m, 1h, 4h, 8h, 1d, 1w** saja |
+| Konteks tren | EMA200 1h dan 15m | EMA21 mingguan, EMA200 1d/8h/4h |
+| Sinyal & momentum | EMA21 5m/1m, MACD 1m, RSI 5m, rel. volume 1m, VWAP 5m | EMA21 1h, MACD 15m, RSI 1h, rel. volume 15m |
+| Perubahan harga 24h | **Tidak digunakan**, tidak diminta untuk keputusan arah (ticker API tetap memberi nilai saat universe discovery) | Konfirmasi arah positif untuk LONG, negatif untuk SHORT |
+| Turnover 24h USDT | Filter likuiditas saja | Filter likuiditas saja |
+| Score | 0–100 heuristik | 0–100 heuristik berbeda |
+| Konfirmasi event | **CLOSE 1m** sesudah sinyal | **CLOSE 1h** sesudah sinyal |
+| Batas event PENDING | **15 menit** | **3 hari** awal, belum divalidasi |
+| Kandidat TP indikatif | max(0.65%,1.5×ATR5m%) | max(2%,1.5×ATR1d%) |
+| Kandidat SL indikatif | max(0.40%,ATR5m%) | max(1%,ATR1d%) |
+| Event SQLite | `data/signals_scalping.sqlite3` | `data/signals_swing.sqlite3` |
+
+*Penting*: Timeframe merupakan interval candle yang **telah ditutup**, bukan laju refresh browser atau jaminan entry real-time. Scanner tetap polling per batch dan mungkin menunda sinyal. 1H dan timeframe lain tidak dikeluarkan dari data sumber untuk Swing; 3m/4h/dll dikeluarkan dari penghitungan Scalping. RSI Watch threshold default 70 tetap dapat diubah melalui panel pengaturan; RSI Watch adalah alarm, bukan sinyal SHORT independen.
+
+**Data coverage:** Swing memerlukan minimal 30 candle mingguan tertutup untuk EMA21 dan sekitar 220 candle tertutup untuk indikator EMA200 pada 15m/1h/4h/8h/1d. Pair yang belum punya cukup histori ditandai gagal dianalisis; tidak disubstitusi dengan harga rekaan. `8h` dan `1w` adalah interval historis Binance yang valid.
+
+**Pemisahan event:** Arsitektur lama `data/signals.sqlite3` disimpan tanpa migrasi/destruksi sebagai arsip legacy. Dua mode baru tidak memakai Top 5 atau event lama dari database ini. Selama transisi tab, scanner lama yang masih berlangsung dapat menyelesaikan pekerjaannya; versi mendatang perlu pembatalan job yang lebih cermat.
+
+**Backtest:** Modul `research_engine.py` sebelumnya hanya mengoleksi 5m 7 hari dan mengevaluasi event legacy, **belum** menjalankan full historical replay atau backtest baru per mode. Angka backtest v0.5 sebelumnya tidak berlaku untuk strategi baru tanpa pengujian ulang. Tidak ada AI trading ataupun eksekusi order otomatis.
+
+**Pengaturan indikator:** Default disimpan pada `data/indicator_settings.sqlite3`; perubahan manual dipakai pada siklus scan berikutnya, dan kedua mode berbagi parameter seperti batas skor dan RSI, sementara rumus fitur setiap mode berbeda. Backup seluruh folder `data` sebelum mengganti versi.
