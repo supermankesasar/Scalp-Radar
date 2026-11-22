@@ -128,7 +128,7 @@ class ScalpRuntime:
                         else 'Scalp scan selesai' if self.state['rows']
                         else 'Belum ada data yang berhasil dipindai')
 
-    def read(self,mode='top80',min_turnover=30_000_000,force=False):
+    def read(self,mode='top80',min_turnover=30_000_000,force=False,allow_start=True):
         if mode not in ('all','liquid','top80'):raise ValueError('Mode tidak dikenal')
         if min_turnover not in (10_000_000,30_000_000,100_000_000):
             raise ValueError('Turnover minimum tidak valid.')
@@ -142,7 +142,7 @@ class ScalpRuntime:
             changed=s.get('settingsRevision')!=current['revision']
             age=now-(s['completedAt'] or 0)
             start_age=now-(s['startedAt'] or 0)
-            restart=not s['running'] and (
+            restart=allow_start and not s['running'] and (
                 s['completedAt'] is None or new_filters or changed or age>=self.refresh_ms
                 or (force and start_age>=30_000))
             if restart:
