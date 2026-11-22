@@ -53,6 +53,22 @@
 body[data-strategy="scalping"] .table-scroll th:nth-child(7),
 body[data-strategy="scalping"] .table-scroll td:nth-child(7){display:none!important}
 @media(max-width:700px){.strategy-switch button{flex:1;min-width:0}}
+
+/* Coin symbols: lazy colorful token icon with accessible ticker beside it. */
+.coin-identity{display:flex;align-items:center;gap:9px;min-height:32px}
+.coin-identity strong{font-size:14px;font-weight:850}
+.coin-logo{width:28px;height:28px;flex:0 0 28px;position:relative;display:inline-grid;place-items:center;overflow:hidden;border-radius:50%;background:#24364f;border:1px solid #42617c;vertical-align:middle}
+.coin-logo__fallback{font-size:9px;line-height:1;font-weight:850;letter-spacing:-.03em;color:#d8ebff;text-align:center}
+.coin-logo__image{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#16243b;border-radius:50%;display:block}
+.coin-logo--small{width:22px;height:22px;flex-basis:22px}
+.coin-logo--small .coin-logo__fallback{font-size:8px}
+.coin-logo--large{width:43px;height:43px;flex-basis:43px}
+.coin-logo--large .coin-logo__fallback{font-size:12px}
+.detail-title-row{display:flex;align-items:center;gap:11px}
+.detail-title-row h2{min-width:0;overflow-wrap:anywhere}
+.mover .coin-logo{flex-shrink:0}
+.mover strong{font-size:12px}
+@media(max-width:700px){.coin-identity{gap:7px}.coin-logo{width:27px;height:27px;flex-basis:27px}}
 </style>
 </head>
 <body data-strategy="scalping">
@@ -94,9 +110,10 @@ body[data-strategy="scalping"] .table-scroll td:nth-child(7){display:none!import
  <div class="tablewrap"><div class="table-scroll"><table><thead><tr><th>Coin</th><th>Sinyal</th><th>Sejak sinyal</th><th>Terbaik sejak sinyal</th><th>15m</th><th>1H</th><th>24H</th><th>Volume 5m</th><th>OI 15m</th><th>EMA 1H/4H</th><th>Skor</th><th></th></tr></thead><tbody id="rows"><tr><td colspan="12" class="empty">Menunggu hasil scanner…</td></tr></tbody></table></div><div class="count-line"><span id="countNote">—</span><span>Waktu WIB · candle 5m tertutup</span></div></div>
 <div class="history-panel"><button class="pill-btn" id="historyToggle">Riwayat sinyal 30 hari ▾</button><div class="history-rows" id="historyRows" hidden></div><p class="tiny">Target/stop hanya berdasar close candle 5m. Riwayat bukan catatan profit atau order yang dieksekusi.</p></div>
 </section>
-<section id="detail" class="detail"><div class="detail-head"><div><div class="section-title" style="margin-bottom:3px">Coin deep dive</div><h2 id="detailSymbol">—</h2><p class="tiny" id="detailTime">—</p></div><button class="pill-btn" id="closeDetail">Tutup ×</button></div><div id="detailError" class="error"></div><div class="detail-grid"><div class="panel"><div class="headline" style="margin-bottom:12px"><div><div class="section-title" style="margin:0">Chart 5m</div><strong id="priceDetail">—</strong></div><span class="tiny">80 candle terakhir</span></div><svg id="chart" class="chart" viewBox="0 0 740 255" role="img" aria-label="Grafik harga penutupan 5 menit"></svg><div class="analysis"><h3 id="statusDetail">—</h3><ul id="reasons"></ul><p id="levels" class="risk"></p><p id="issues" class="risk"></p></div></div><div class="panel"><div class="section-title">Indicators & Futures flow</div><div class="detail-data" id="detailData"></div></div></div></section>
+<section id="detail" class="detail"><div class="detail-head"><div><div class="section-title" style="margin-bottom:3px">Coin deep dive</div><div class="detail-title-row"><span id="detailCoinLogo"></span><h2 id="detailSymbol">—</h2></div><p class="tiny" id="detailTime">—</p></div><button class="pill-btn" id="closeDetail">Tutup ×</button></div><div id="detailError" class="error"></div><div class="detail-grid"><div class="panel"><div class="headline" style="margin-bottom:12px"><div><div class="section-title" style="margin:0">Chart 5m</div><strong id="priceDetail">—</strong></div><span class="tiny">80 candle terakhir</span></div><svg id="chart" class="chart" viewBox="0 0 740 255" role="img" aria-label="Grafik harga penutupan 5 menit"></svg><div class="analysis"><h3 id="statusDetail">—</h3><ul id="reasons"></ul><p id="levels" class="risk"></p><p id="issues" class="risk"></p></div></div><div class="panel"><div class="section-title">Indicators & Futures flow</div><div class="detail-data" id="detailData"></div></div></div></section>
 <div class="footer"><b>Fase 1 · Read-only Binance USDⓈ-M.</b> Kategori <b>Sudah Naik/Turun</b> muncul setelah sinyal Potensi tercatat dan penutupan candle 5m berikutnya mencapai target. Maksimal 5 Potensi aktif gabungan naik/turun. Status Sudah tampil 6 jam lalu tersimpan di arsip 30 hari. Koin dapat muncul di beberapa kategori. Kolom sejak sinyal menunjukkan perubahan harga bertanda (+ naik / − turun). Highlight pergerakan tinggi menggunakan data harga, bukan prediksi keberhasilan. Skor masih heuristik, belum backtest, bukan rekomendasi membuka posisi. Riwayat disimpan di server; akses HP publik membutuhkan deployment HTTPS dan penyimpanan persisten. Open Interest tidak membuktikan arah posisi individu.</div>
 </main>
+<script src="/coin_logos.js" defer></script>
 <script src="/ui.js" defer></script>
 <script src="/indicator_ui.js" defer></script>
 </body>
