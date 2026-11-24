@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#090e19"><meta name="description" content="Scalp Radar: scanner sinyal berbasis riwayat, tren, momentum, dan open interest Binance Futures.">
+<meta name="color-scheme" content="dark light"><meta name="theme-color" content="#090e19" media="(prefers-color-scheme: dark)"><meta name="theme-color" content="#f4f7fb" media="(prefers-color-scheme: light)"><meta name="description" content="Scalp Radar: scanner sinyal berbasis riwayat, tren, momentum, dan open interest Binance Futures.">
 <link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/icon.png">
 <title>Scalp Radar v0.5 — Full Market Scanner</title>
 <style>
@@ -32,6 +32,68 @@
 .history-item{display:flex;justify-content:space-between;gap:10px;padding:8px 12px;border-bottom:1px solid #22364a;font-size:12px}
 .history-item:last-child{border-bottom:0}.history-item span{color:#9aadc2}
 @media(max-width:700px){.history-item{flex-direction:column;gap:2px}}
+
+/* System theme: follow browser/OS automatically; dark palette remains the default. */
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme:light;
+    --bg:#f4f7fb;--surface:#ffffff;--soft:#edf2f8;--stroke:#d0dbe8;
+    --text:#19283b;--dim:#52647b;--green:#08764e;--red:#b4233b;
+    --yellow:#8a5800;--cyan:#145c9f;
+  }
+  body{background:linear-gradient(145deg,#e8f0fa 0%,var(--bg) 34%,var(--bg) 100%)}
+  .logo{border-color:#8eb9ce;color:#12556f;background:linear-gradient(125deg,#d8edf7,#e5effa 55%,#d9efe5)}
+  .brand h1 span{color:var(--dim)!important}
+  .pill-btn{background:var(--soft);border-color:#bacbde;color:var(--text)}
+  .pill-btn:hover{border-color:#50799b;background:#dfeaf5}
+  .section-title{color:#45576d}
+  .status,.tab,.panel,.stat-item{background:var(--surface);border-color:var(--stroke)}
+  .track{background:#dce6f0}
+  .track>span{background:linear-gradient(90deg,#167aaa,#13835c)}
+  .dot{box-shadow:none}.dot.busy,.dot.bad{box-shadow:none}
+  .error{background:#fff0f1;color:#982035;border-color:#e1a3ad}
+  .tab:hover{background:#eef4fa}
+  .tab.active{border-color:#4381ac;box-shadow:0 0 0 1px #b6d3e6 inset;background:#eaf3fa}
+  .movers{border-color:var(--stroke);background:radial-gradient(circle at 100% 0,#dcecf9 0,#ffffff 60%)}
+  .mover{background:#edf3f9;border-color:var(--stroke)}
+  .hot{color:#885000!important;text-shadow:none}
+  .tools input,.tools select{background:var(--surface);border-color:#b9c9da;color:var(--text)}
+  .tools .ghost{color:#36536c}
+  .tools .ghost.active{background:#e3eef8;border-color:#79a4c5;color:#194d76}
+  .tools select#mode{background:#e5eff8;border-color:#85abc8;color:#194d76}
+  .tablewrap{background:var(--surface)}
+  thead{background:#e8eff7}th{color:#4b5d73}td,th{border-bottom-color:#e0e7ef}
+  tbody tr:hover{background:#eef4fa}
+  .subline,.empty{color:var(--dim)}
+  .chip.POTENSI_NAIK{background:#def3e9;color:#086341}
+  .chip.SUDAH_NAIK{background:#ccebdc;color:#075c3a}
+  .chip.POTENSI_TURUN{background:#fce6e9;color:#9e2137}
+  .chip.SUDAH_TURUN{background:#f9dce2;color:#a01c36}
+  .chip.NETRAL{background:#e7edf5;color:#45566a}
+  .chip.RSIWATCH{background:#fff1d7;color:#805006;border-color:#dbb878}
+  .delta.super.up{color:#076442!important;background:#d8f1e4;box-shadow:0 0 0 1px #9bceb7}
+  .delta.super.down{color:#a01c36!important;background:#fce0e5;box-shadow:0 0 0 1px #e5a9b5}
+  .weight,.analysis li,.risk{color:#3c5067}
+  .score{background:#eaf0f8;border-color:#b5c7db;color:#233f5d}
+  .view{color:#175f96}
+  .mini-stat{background:#f3f6fa;border-color:var(--stroke)}
+  .analysis{background:#edf4fa;border-color:#c7d9e9}
+  .footer,.history-panel .tiny,.history-item span{color:var(--dim)}
+  .footer b,.stat-item b{color:#243a53}
+  .history-panel{border-top-color:var(--stroke)}
+  .history-rows{background:var(--surface);border-color:var(--stroke)}
+  .history-item{border-bottom-color:#e0e7ef}
+  #chart line{stroke:#cbd8e6}
+  #chart text{fill:#52647b}
+  #chart path{stroke:#087e72}
+  #chart circle{fill:#087e72}
+}
+@media (prefers-color-scheme: light) and (max-width:700px) {
+  .tablewrap{background:none}
+  tbody tr,.count-line{background:var(--surface)}
+  tbody tr:hover{background:#eef4fa}
+  td::before{color:var(--dim)}
+}
 </style>
 </head>
 <body>
