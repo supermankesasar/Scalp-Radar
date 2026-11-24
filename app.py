@@ -16,6 +16,7 @@ import re
 from signals import SignalStore
 from filters.registry import evaluate as evaluate_filters
 from research_history import ResearchHistory
+from market_archive import MarketArchive, crypto_universe
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request, urlopen
@@ -23,8 +24,9 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parent
 STORE = SignalStore(os.getenv('SCANNER_DB', str(ROOT / 'data' / 'signals.sqlite3')))
 HISTORY = ResearchHistory(STORE.path, STORE.lock)
-# Only new research cohort receives experimental timing candidates. Production baseline is unchanged.
-SHADOW_SYMBOLS = frozenset(x['symbol'] for x in json.loads((ROOT/'research'/'cohorts'/'r06_30.json').read_text(encoding='utf-8'))['chosen'])
+OVERNIGHT = os.getenv('SCANNER_OVERNIGHT', '0') == '1'
+ARCHIVE = MarketArchive(STORE.path, STORE.lock) if OVERNIGHT else None
+# Research cohort is a historical experiment only; live shadow rules apply to all scanned crypto pairs.
 BASE = "https://fapi.binance.com"
 SCAN_MODES = ('all', 'liquid', 'top80')
 DEFAULT_MODE = 'all'
@@ -296,12 +298,7 @@ SCAN_STATE = {
 def active_symbols():
     """USDT-margined perpetual in TRADING status; no predefined watchlist."""
     exchange = request_market('/fapi/v1/exchangeInfo', {}, ttl=3600)
-    return {
-        s['symbol'] for s in exchange.get('symbols', [])
-        if s.get('status') == 'TRADING'
-        and s.get('contractType') == 'PERPETUAL'
-        and s.get('quoteAsset') == 'USDT'
-    }
+    return crypto_universe(exchange)
 
 
 def validate_scan_options(mode, min_turnover):
@@ -375,6 +372,9 @@ def scan_symbol(ticker, is_tracked=False):
     # Small bounded queries, sequential by symbol; executor provides controlled parallelism.
     for tf, limit in (('5m', 310), ('15m', 230), ('1h', 230), ('4h', 230)):
         candles = request_market('/fapi/v1/klines', {'symbol': symbol, 'interval': tf, 'limit': limit}, ttl=140)
+        received = int(time.time()*1000)
+        if ARCHIVE is not None:
+            ARCHIVE.warmup(symbol, tf, candles, received)
         rows = parse_klines(candles, now)
         if len(rows) < 220:
             raise ValueError('Candle %s tidak cukup: %s' % (tf, len(rows)))
@@ -410,7 +410,7 @@ def scan_symbol(ticker, is_tracked=False):
         'rsi15':rsi15, 'macd5':i5['macdHistogram'], 'rvol5':vratio,
         'vwap':vwap, 'atr_pct':atr_pct, 'ret15':ret15, 'dist_ema15':dist_ema,
     }
-    evaluation = evaluate_filters(features, shadow=symbol in SHADOW_SYMBOLS)
+    evaluation = evaluate_filters(features, shadow=True)
     long_score = evaluation['baseline']['UP']['score']
     short_score = evaluation['baseline']['DOWN']['score']
     potential_up = evaluation['baseline']['UP']['potential']
@@ -624,6 +624,8 @@ def _saved_visible(rows, mode, min_turnover):
 
 
 def read_scanner(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
+    if OVERNIGHT:
+        mode = 'all'  # browser filters must not reduce the overnight scan universe
     validate_scan_options(mode, min_turnover)
     now_ms = int(time.time()*1000)
     with SCAN_LOCK:
@@ -710,6 +712,12 @@ class Handler(BaseHTTPRequestHandler):
             self._reply(200, (ROOT/'icon.png').read_bytes(), 'image/png')
         elif route.path == '/api/health':
             self._reply(200, json.dumps({'ok':True,'version':'0.5','storage':'SQLite','activeTracked':len(STORE.active_symbols())}).encode(), 'application/json')
+        elif route.path == '/api/overnight':
+            try:
+                result = ARCHIVE.status() if ARCHIVE is not None else {'enabled':False}
+                self._reply(200, json.dumps(dict(result, enabled=OVERNIGHT), allow_nan=False).encode(), 'application/json; charset=utf-8')
+            except Exception as exc:
+                self._reply(502, json.dumps({'error':str(exc)}).encode(), 'application/json; charset=utf-8')
         elif route.path == '/api/research':
             try:
                 self._reply(200, json.dumps(HISTORY.summary(), allow_nan=False).encode(), 'application/json; charset=utf-8')
@@ -790,6 +798,9 @@ def serve():
         threading.Thread(target=scheduler_loop, daemon=True, name='scan-scheduler').start()
         threading.Thread(target=fast_watch_loop, daemon=True, name='fast-watch').start()
     server = ThreadingHTTPServer((host, port), Handler)
+    if ARCHIVE is not None:
+        threading.Thread(target=ARCHIVE.collect_forever, daemon=True, name='all-pair-archive').start()
+        print('OVERNIGHT ALL crypto pairs enabled; status /api/overnight',flush=True)
     print('Scalp Radar v0.5: host %s port %d' % (host,port),flush=True)
     print('DB:',STORE.path,'| background scanner:',os.getenv('SCANNER_BACKGROUND','1'),flush=True)
     try:
@@ -797,6 +808,8 @@ def serve():
     except KeyboardInterrupt:
         print('Server stopped')
     finally:
+        if ARCHIVE is not None:
+            ARCHIVE.stop.set()
         server.server_close()
 
 if __name__ == '__main__':
