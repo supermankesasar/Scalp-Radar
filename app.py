@@ -14,12 +14,17 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import re
 from signals import SignalStore
+from filters.registry import evaluate as evaluate_filters
+from research_history import ResearchHistory
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parent
 STORE = SignalStore(os.getenv('SCANNER_DB', str(ROOT / 'data' / 'signals.sqlite3')))
+HISTORY = ResearchHistory(STORE.path, STORE.lock)
+# Only new research cohort receives experimental timing candidates. Production baseline is unchanged.
+SHADOW_SYMBOLS = frozenset(x['symbol'] for x in json.loads((ROOT/'research'/'cohorts'/'r06_30.json').read_text(encoding='utf-8'))['chosen'])
 BASE = "https://fapi.binance.com"
 SCAN_MODES = ('all', 'liquid', 'top80')
 DEFAULT_MODE = 'all'
@@ -390,27 +395,26 @@ def scan_symbol(ticker, is_tracked=False):
     # Separate experimental overbought-rejection watch. This is NOT a short signal.
     previous_rsi15 = rsi([x['close'] for x in sets['15m'][:-1]])
     reversal_rsi70 = rsi_reversal_watch(previous_rsi15, rsi15, c5[-1], i5['macdHistogram'])
-    # Scores are descriptive heuristics; NOT calibrated probabilities of success.
-    def score_for(up):
-        sign = 1 if up else -1
-        trend = 'BULLISH' if up else 'BEARISH'
-        s = 0
-        s += 24 if t1 == trend else 0
-        s += 12 if t4 == trend else 5 if t4 == 'MIXED' else 0
-        s += 14 if sign*(i15['close']-i15['ema21']) > 0 else 0
-        s += 11 if sign*(px-i5['ema21']) > 0 else 0
-        s += 10 if sign*i5['macdHistogram'] > 0 else 0
-        s += 10 if (47 <= rsi15 <= 70 if up else 30 <= rsi15 <= 53) else 0
-        s += 11 if vratio >= 1.1 else 6 if vratio >= .85 else 0
-        s += 8 if vwap is not None and sign*(px-vwap) > 0 else 0
-        return s
-    long_score, short_score = score_for(True), score_for(False)
-    # Independent potential flags; reaching a move NEVER directly creates a 'Sudah' tab.
-    # 'Sudah' is solely assigned by a prior stored potential signal + later closed candles.
-    potential_up = (t1 == 'BULLISH' and t4 != 'BEARISH' and long_score >= 68
-            and 0 <= dist_ema <= max(.75, 1.4*atr_pct) and -0.4 <= ret15 <= threshold15)
-    potential_down = (t1 == 'BEARISH' and t4 != 'BULLISH' and short_score >= 68
-            and -max(.75, 1.4*atr_pct) <= dist_ema <= 0 and -threshold15 <= ret15 <= .4)
+    # Pure independent filter modules consume one point-in-time snapshot.
+    e9_5 = ema([x['close'] for x in c5], 9)
+    e21_5 = ema([x['close'] for x in c5], 21)
+    e21_1h = ema([x['close'] for x in sets['1h']], 21)
+    features = {
+        'trend1h':t1, 'trend4h':t4, 'close5':px, 'close15':i15['close'],
+        'ema21_5':i5['ema21'], 'ema21_15':i15['ema21'],
+        'ema9_5':e9_5[-1], 'prev_ema9_5':e9_5[-2],
+        'prev_ema21_5':e21_5[-2], 'prev_close5':c5[-2]['close'],
+        'low5':c5[-1]['low'], 'high5':c5[-1]['high'],
+        'close1h':ins['1h']['close'], 'ema21_1h':e21_1h[-1],
+        'ema21_1h_prev6':e21_1h[-7],
+        'rsi15':rsi15, 'macd5':i5['macdHistogram'], 'rvol5':vratio,
+        'vwap':vwap, 'atr_pct':atr_pct, 'ret15':ret15, 'dist_ema15':dist_ema,
+    }
+    evaluation = evaluate_filters(features, shadow=symbol in SHADOW_SYMBOLS)
+    long_score = evaluation['baseline']['UP']['score']
+    short_score = evaluation['baseline']['DOWN']['score']
+    potential_up = evaluation['baseline']['UP']['potential']
+    potential_down = evaluation['baseline']['DOWN']['potential']
     # OI intentionally not used to assign direction. It simply provides confirmation context.
     oi = {'available': False, 'reason': 'Hanya diambil untuk hasil terklasifikasi'}
     if potential_up or potential_down or is_tracked:
@@ -433,6 +437,9 @@ def scan_symbol(ticker, is_tracked=False):
         'rsiPrevious15m': previous_rsi15, 'rsiReversalWatch': bool(reversal_rsi70),
         'oiNote': oi.get('reason') if not oi.get('available') else None,
         'lastClosed5m': i5['time'],
+        'researchCandidates':evaluation['candidates'],
+        'researchFeatures':features, 'filterBreakdown':evaluation['baseline'],
+        'volumePhase':evaluation['volumePhase'], 'vwapDistanceATR':evaluation['vwapDistanceATR'],
         '_recent5m': [{'closeTime':r['closeTime'],'close':r['close'],'high':r['high'],'low':r['low']} for r in c5],
     }
 
@@ -505,7 +512,8 @@ def _same_generation(generation):
 def scan_job(generation, mode, min_turnover):
     try:
         tracked = STORE.active_symbols()
-        tickers, info = active_tickers(mode, min_turnover, tracked)
+        research_pending = HISTORY.pending_symbols(int(time.time()*1000))
+        tickers, info = active_tickers(mode, min_turnover, tracked | research_pending)
         with SCAN_LOCK:
             if generation != SCAN_STATE['generation']:
                 return
@@ -535,6 +543,13 @@ def scan_job(generation, mode, min_turnover):
                         # Advance existing journeys, but don't flood active tab with
                         # first-come events: rank across completed batch candidates.
                         recent_candles[res['symbol']] = res['_recent5m']
+                        # Ledger records all rules before Top5 ranking or journey rotation.
+                        # Failure is visible but must not corrupt production tracking.
+                        try:
+                            HISTORY.record_and_evaluate(res, res['_recent5m'], int(time.time()*1000))
+                        except Exception as history_error:
+                            with SCAN_LOCK:
+                                SCAN_STATE['errors'].append('Research ledger: '+str(history_error)[:150])
                         res = STORE.refresh(res, res['_recent5m'], allow_new=False)
                         if res.get('potentialUp') or res.get('potentialDown'):
                             eligible_rows.append(res)
@@ -695,6 +710,11 @@ class Handler(BaseHTTPRequestHandler):
             self._reply(200, (ROOT/'icon.png').read_bytes(), 'image/png')
         elif route.path == '/api/health':
             self._reply(200, json.dumps({'ok':True,'version':'0.5','storage':'SQLite','activeTracked':len(STORE.active_symbols())}).encode(), 'application/json')
+        elif route.path == '/api/research':
+            try:
+                self._reply(200, json.dumps(HISTORY.summary(), allow_nan=False).encode(), 'application/json; charset=utf-8')
+            except Exception as exc:
+                self._reply(502, json.dumps({'error':str(exc)}).encode(), 'application/json; charset=utf-8')
         elif route.path == '/api/events':
             self._reply(200, json.dumps({'events':STORE.audit_events(200)}).encode(), 'application/json')
         elif route.path == '/api/scan':
