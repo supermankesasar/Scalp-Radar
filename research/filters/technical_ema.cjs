@@ -1,0 +1,2 @@
+// Independent entry-timing research control, not a full v0.5 reproduction.
+module.exports=function technical(c){let a=[];if(!Number.isFinite(c.ema9)||!Number.isFinite(c.ema21))return a;for(let dir of [1,-1]){if(dir*(c.price-c.ema9)>0&&dir*(c.prevPrice-c.prevEma9)<=0)a.push({id:'EMA9_CROSS',dir});if(c.low<=c.prevEma21&&c.high>=c.prevEma21&&dir*(c.price-c.ema21)>0&&dir*(c.prevPrice-c.prevEma21)>0)a.push({id:'EMA21_PULLBACK',dir});}return a};
