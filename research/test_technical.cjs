@@ -6,7 +6,7 @@ const k5=bars(1500,S,end-1500*S,100,0.004);
 const k1h=bars(1050,H,end-1050*H,100,0.004);
 const windows=[['anchor','2026-11-24T08:00:00Z']];
 const r=technicalReplay({symbol:'TESTUSDT',k5,k1h},{end,windows});
-assert.equal(r.coverage[0].valid,12);assert.equal(r.coverage[0].liquid,12);
+assert.equal(r.coverage[0].valid,12);assert.ok(r.records.length>0,'non-vacuous future isolation test');assert.equal(r.coverage[0].liquid,12);
 const altered=k5.map(x=>x.slice());let mid=end-H;
 for(const x of altered)if(x[0]>=mid){x[1]*=2;x[2]*=2;x[3]*=2;x[4]*=2;}
 const q=technicalReplay({symbol:'TESTUSDT',k5:altered,k1h},{end,windows});
