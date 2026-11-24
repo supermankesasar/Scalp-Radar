@@ -3,7 +3,7 @@ import os,sqlite3,zipfile,tempfile
 from datetime import datetime
 from pathlib import Path
 ROOT=Path(__file__).resolve().parent
-source=Path(os.getenv('SCANNER_DB',str(ROOT/'data'/'signals.sqlite3')))
+source=Path(os.getenv('SCANNER_DB',str(ROOT/'data'/'signals.sqlite3'))).resolve()
 if not source.is_file(): raise SystemExit('Database not found: '+str(source))
 out=ROOT/'exports'
 out.mkdir(exist_ok=True)
