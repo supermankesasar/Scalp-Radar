@@ -839,16 +839,26 @@ def scheduler_loop():
 def serve():
     host = os.getenv('HOST', '0.0.0.0')
     port = int(os.getenv('PORT', '8765'))
+    server = ThreadingHTTPServer((host, port), Handler)
+    # Bind successfully before starting workers or launching a browser.
     if os.getenv('SCANNER_BACKGROUND', '1') == '1':
         threading.Thread(target=scheduler_loop, daemon=True, name='scan-scheduler').start()
         threading.Thread(target=fast_watch_loop, daemon=True, name='fast-watch').start()
-    server = ThreadingHTTPServer((host, port), Handler)
     if ARCHIVE is not None:
         threading.Thread(target=ARCHIVE.collect_forever, daemon=True, name='all-pair-archive').start()
         print('OVERNIGHT ALL crypto pairs enabled; status /api/overnight',flush=True)
     print('Scalp Radar v0.5: host %s port %d' % (host,port),flush=True)
     print('DB:',STORE.path,'| background scanner:',os.getenv('SCANNER_BACKGROUND','1'),flush=True)
     try:
+        if os.getenv('SCANNER_OPEN_BROWSER','0') == '1':
+            import webbrowser
+            url='http://127.0.0.1:%d' % server.server_address[1]
+            def open_dashboard():
+                try:
+                    webbrowser.open(url)
+                except Exception as exc:
+                    print('Open browser manually:',url,str(exc),flush=True)
+            threading.Thread(target=open_dashboard,daemon=True,name='open-dashboard').start()
         server.serve_forever()
     except KeyboardInterrupt:
         print('Server stopped')
