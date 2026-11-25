@@ -37,6 +37,7 @@ class StreamTests(unittest.TestCase):
         e=StreamEngine();e.set_symbols({'AAAUSDT'})
         rows=fake_candles('1m',count=105)
         cut=int(rows[-16][6]);e.seed('AAAUSDT','1m',rows,cut+1)
+        e.candle_received[('AAAUSDT','1m')]={cut:cut+100}
         with tempfile.TemporaryDirectory() as d:
             h=StreamResearch(Path(d)/'test.db',threading.RLock())
             from unittest.mock import patch
@@ -48,4 +49,27 @@ class StreamTests(unittest.TestCase):
             end=int(rows[-1][6]);e.seed('AAAUSDT','1m',rows,end+1)
             h.process(e,end,end+5000,app.ema,app.atr,app.parse_klines)
             self.assertTrue(any(x['filter_id']=='R09_TEST' and x['horizon']==15 for x in h.summary()['comparison']))
+    def test_event_shapes_and_no_open_candles(self):
+        e=StreamEngine();e.set_symbols({'AAAUSDT'});start=1800000000000;cut=start+59999
+        e.connection('depth',['AAAUSDT'],True,start-1)
+        e.connection('liquidations',['AAAUSDT'],True,start-1)
+        k={'i':'1m','t':start,'T':cut,'o':'100','h':'102','l':'99','c':'101','v':'10','q':'1000','n':5,'V':'5','Q':'500','x':False}
+        e.ingest({'e':'kline','s':'AAAUSDT','k':k},cut+1)
+        self.assertIsNone(e.candles('AAAUSDT','1m',1,cut+1))
+        k['x']=True;e.ingest({'data':{'e':'kline','s':'AAAUSDT','k':k}},cut+2)
+        self.assertEqual(e.receipt('AAAUSDT','1m',cut),cut+2)
+        for i in range(3):
+            t=cut-2000+i*500
+            e.ingest({'e':'depthUpdate','s':'AAAUSDT','T':t,'u':i+1,'b':[['100','10']],'a':[['101','1']]},t+10)
+        event={'e':'forceOrder','o':{'s':'AAAUSDT','S':'BUY','ap':'100','z':'200','T':cut-100}}
+        e.ingest(event,cut+5);e.ingest(event,cut+6)
+        m=e.minute('AAAUSDT',cut,cut+5000)
+        self.assertGreater(m['imbalance'],.5)
+        self.assertEqual(m['liqBuy'],20000)
+        self.assertEqual(m['liqCount'],1)
+        self.assertIsNone(m['flow'])
+    def test_hybrid_requires_independent_coverage(self):
+        self.assertIsNone(microstructure.hybrid({},100,1,True)['score'])
+        self.assertTrue(microstructure.hybrid({'flow':.5,'imbalance':.5},80,1,True)['potential'])
+        self.assertFalse(microstructure.hybrid({'flow':.5,'imbalance':-.5},100,1,True)['potential'])
 if __name__=='__main__':unittest.main()

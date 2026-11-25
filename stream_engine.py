@@ -34,6 +34,9 @@ class StreamEngine:
         self.buckets={}
         self.last_trade={}
         self.last_depth={}
+        self.last_liq={}
+        self.candle_received={}
+        self.last_prune=0
         self.connected={}
         self.conn={}
         self.errors=[]
@@ -45,10 +48,10 @@ class StreamEngine:
     def set_symbols(self,symbols):
         with self.lock:
             self.symbols=set(symbols)
-            for mapping in (self.bars,self.buckets,self.connected):
+            for mapping in (self.bars,self.buckets,self.connected,self.candle_received):
                 for k in list(mapping):
                     if k[0] not in self.symbols: del mapping[k]
-            for mapping in (self.quotes,self.last_trade,self.last_depth):
+            for mapping in (self.quotes,self.last_trade,self.last_depth,self.last_liq):
                 for k in list(mapping):
                     if k not in self.symbols: del mapping[k]
     def seed(self,symbol,tf,rows,now):
@@ -107,6 +110,8 @@ class StreamEngine:
                 if not all(finite(float(raw[i])) for i in (1,2,3,4,5,7,9,10)) or float(raw[4])<=0:return
                 d=self.bars.setdefault((s,tf),{})
                 d[t]=raw;self.trim(d,LIMIT[tf]+5)
+                receipts=self.candle_received.setdefault((s,tf),{})
+                receipts.setdefault(t,received);self.trim(receipts,LIMIT[tf]+5)
             return
         if kind=='24hrTicker':
             p=float(e['c']); t=int(e['E'])
@@ -144,7 +149,10 @@ class StreamEngine:
             if b['depthTs'] is None or t>=b['depthTs']:
                 b['depthLast']=total;b['spreadLast']=100*(ask-bid)/((ask+bid)/2);b['depthTs']=t
         elif kind=='forceOrder':
-            o=e['o'];q=float(o['ap'])*float(o['z'])
+            o=e['o'];key=(t,o['S'],o['ap'],o['z'])
+            if self.last_liq.get(s)==key:return
+            self.last_liq[s]=key
+            q=float(o['ap'])*float(o['z'])
             if q<=0 or not finite(q):return
             b=self.bucket(s,t);b['liqBuy' if o['S']=='BUY' else 'liqSell']+=q;b['liqCount']+=1
     def connection(self,kind,group,online,now):
@@ -160,15 +168,20 @@ class StreamEngine:
         with self.lock:
             b=dict(self.buckets.get((s,start),{}))
             past=[dict(self.buckets.get((s,start-i*60000),{})) for i in range(1,21)]
-            coverage={kind:self.connected.get((s,kind),now+1)<=start for kind in ('trades','depth','liquidations')}
-            for k in list(self.buckets):
-                if k[1]<start-22*60000:del self.buckets[k]
+            connected={kind:self.connected.get((s,kind),now+1) for kind in ('trades','depth','liquidations')}
+            coverage={kind:t<=start for kind,t in connected.items()}
+            if start>self.last_prune:
+                for k in list(self.buckets):
+                    if k[1]<start-22*60000:del self.buckets[k]
+                self.last_prune=start
         trade=coverage['trades'] and not b.get('tradeGap') and b.get('count',0)>0
         depth=coverage['depth'] and b.get('depthCount',0)>=3 and b.get('depthTs',0)>=cutoff-5000
         liq=coverage['liquidations']
-        sizes=[(x['buy']+x['sell'])/x['count'] for x in past if x.get('count',0)>0 and not x.get('tradeGap')]
-        volumes=[x['buy']+x['sell'] for x in past if x.get('count',0)>0 and not x.get('tradeGap')]
-        depths=[x['depthSum']/x['depthCount'] for x in past if x.get('depthCount',0)>=3]
+        trade_past=[x for i,x in enumerate(past,1) if connected['trades']<=start-i*60000 and x.get('count',0)>0 and not x.get('tradeGap')]
+        depth_past=[x for i,x in enumerate(past,1) if connected['depth']<=start-i*60000 and x.get('depthCount',0)>=3]
+        sizes=[(x['buy']+x['sell'])/x['count'] for x in trade_past]
+        volumes=[x['buy']+x['sell'] for x in trade_past]
+        depths=[x['depthSum']/x['depthCount'] for x in depth_past]
         # Compare to prior complete windows only after 10 observed minutes.
         if not coverage['trades'] or self.connected_since(s,'trades')>start-10*60000:sizes=[];volumes=[]
         if not coverage['depth'] or self.connected_since(s,'depth')>start-10*60000:depths=[]
@@ -185,12 +198,14 @@ class StreamEngine:
           'depthRatio':b['depthLast']/median(depths) if depth and len(depths)>=10 and median(depths)>0 else None,
           'liqBuy':b.get('liqBuy',0.) if liq else None,'liqSell':b.get('liqSell',0.) if liq else None,
           'liqCount':b.get('liqCount',0) if liq else None}
+    def receipt(self,s,tf,cutoff):
+        with self.lock:return self.candle_received.get((s,tf),{}).get(cutoff)
     def connected_since(self,s,kind):
         with self.lock:return self.connected.get((s,kind),ms()+1)
     def status(self):
         with self.lock:
             return {'enabled':True,'symbols':len(self.symbols),'cachedSymbols':len({k[0] for k in self.bars}),
-              'connections':dict(self.conn),'messages':self.messages,'lateEvents':self.late,'tradeIdGaps':self.gaps,
+              'connections':dict(self.conn),'onlineConnections':sum(v=='connected' for v in self.conn.values()),'messages':self.messages,'lateEvents':self.late,'tradeIdGaps':self.gaps,
               'restKlineRequests':self.rest_hits,'wsCacheHits':self.cache_hits,'recentErrors':list(self.errors)}
     async def session(self,route,kind,group,streams,delay):
         from websockets.asyncio.client import connect

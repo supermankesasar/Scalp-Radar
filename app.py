@@ -15,7 +15,7 @@ from pathlib import Path
 import re
 from signals import SignalStore
 from filters.registry import evaluate as evaluate_filters
-from filters import scalp_v2, multifactor
+from filters import scalp_v2, multifactor, microstructure
 from research_history import ResearchHistory
 from market_archive import MarketArchive, crypto_universe
 from stream_engine import StreamEngine, LIMIT as WS_LIMIT, close_at
@@ -29,7 +29,7 @@ STORE = SignalStore(os.getenv('SCANNER_DB', str(ROOT / 'data' / 'signals.sqlite3
 HISTORY = ResearchHistory(STORE.path, STORE.lock)
 OVERNIGHT = os.getenv('SCANNER_OVERNIGHT', '0') == '1'
 LIVE_FILTER = os.getenv('SCANNER_LIVE_FILTER', 'BASELINE').upper()
-if LIVE_FILTER not in ('BASELINE','SCALP_V2','R08_MULTI_CORE','R08_MULTI_FULL'):
+if LIVE_FILTER not in ('BASELINE','SCALP_V2','R08_MULTI_CORE','R08_MULTI_FULL','R09_HYBRID'):
     raise ValueError('Unknown SCANNER_LIVE_FILTER')
 ARCHIVE = MarketArchive(STORE.path, STORE.lock) if OVERNIGHT else None
 STREAM = StreamEngine() if os.getenv('SCANNER_WEBSOCKET','0')=='1' else None
@@ -66,7 +66,7 @@ def request_market(endpoint: str, params: dict, ttl: int = 20):
     key = endpoint + "?" + urlencode(params)
     with CACHE_LOCK:
         hit = CACHE.get(key)
-        if hit and hit[0] > time.monotonic():
+        if hit and hit[0] > time.monotonic() and not ws_kline:
             return hit[1]
     url = BASE + endpoint + "?" + urlencode(params)
     req = Request(url, headers={"User-Agent": "ScalpMonitor/1.0 (market-data-only)", "Accept": "application/json"})
@@ -456,12 +456,25 @@ def scan_symbol(ticker, is_tracked=False):
             features['derivatives'],features['breadth']=ARCHIVE.research_context(symbol,i5['time'],int(time.time()*1000),ticker.get('_universe_size',0))
         except Exception as exc:
             context_error=str(exc)[:140]
+    if STREAM is not None:
+        decision=int(time.time()*1000)
+        receipt=STREAM.receipt(symbol,'1m',i5['time'])
+        features['micro']=STREAM.minute(symbol,i5['time'],decision) if receipt is not None and receipt<=decision and 0<=decision-i5['time']<=15000 else {}
+    else:features['micro']={}
     evaluation = evaluate_filters(features, shadow=True)
+    hybrid={}
+    for sign,key in ((1,'UP'),(-1,'DOWN')):
+        base=evaluation['r08'][key]
+        hybrid[key]=microstructure.hybrid(features['micro'],base['core'],sign,base.get('setup',False) and base.get('fresh',False) and not base.get('trap',True))
+        if hybrid[key]['potential']:
+            evaluation['candidates'].append({'id':'R09_HYBRID','version':microstructure.VERSION,'direction':key,'score':hybrid[key]['score']})
     selected=evaluation['v2' if LIVE_FILTER=='SCALP_V2' else 'baseline']
     if LIVE_FILTER.startswith('R08_'):
         full=LIVE_FILTER=='R08_MULTI_FULL'
         selected={k:{'score':int(v['full'] or 0) if full else v['core'],
                      'potential':v['fullPotential'] if full else v['potential']} for k,v in evaluation['r08'].items()}
+    if LIVE_FILTER=='R09_HYBRID':
+        selected={k:{'score':int(v['score'] or 0),'potential':v['potential']} for k,v in hybrid.items()}
     long_score = selected['UP']['score']
     short_score = selected['DOWN']['score']
     potential_up = selected['UP']['potential']
@@ -495,7 +508,8 @@ def scan_symbol(ticker, is_tracked=False):
         'researchFeatures':features, 'filterBreakdown':evaluation['baseline'],
         'v2Breakdown':evaluation['v2'], 'liveFilter':LIVE_FILTER,
         'minuteError':minute_error, 'contextError':context_error,
-        'r08Breakdown':evaluation['r08'],
+        'r08Breakdown':evaluation['r08'], 'r09Breakdown':hybrid,
+        'candleSource':'websocket' if STREAM is not None and STREAM.receipt(symbol,'5m',i5['time']) is not None else 'rest',
         'volumePhase':evaluation['volumePhase'], 'vwapDistanceATR':evaluation['vwapDistanceATR'],
         '_recent5m': [{'closeTime':r['closeTime'],'close':r['close'],'high':r['high'],'low':r['low']} for r in c5],
     }
@@ -704,7 +718,7 @@ def read_scanner(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
             SCAN_STATE['mode'], SCAN_STATE['minTurnover'] if SCAN_STATE['mode'] == 'liquid' else None)
         elapsed = now_ms - (SCAN_STATE['completedAt'] or 0)
         started_age = now_ms - (SCAN_STATE['startedAt'] or 0)
-        new_ws_bar=STREAM is not None and close_at(now_ms-3000,300000) > (SCAN_STATE['startedAt'] or 0)
+        new_ws_bar=STREAM is not None and close_at(now_ms-7000,300000) > (SCAN_STATE['startedAt'] or 0)
         need_start = (not running and (SCAN_STATE['completedAt'] is None or new_filters or new_ws_bar
                                       or elapsed >= SCAN_REFRESH_MS or (force and started_age >= 60000)))
         if need_start:

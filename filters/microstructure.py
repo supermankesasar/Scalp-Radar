@@ -42,3 +42,18 @@ def evaluate(m,bars,ema):
         score=(25 if aggressive else 0)+(20 if book else 0)+(15 if rv>=1.5 else 0)+(15 if direction else 0)+(15 if printok or cascade else 0)+(10 if acceleration or vacuum else 0)
         if flow is not None and imb is not None and score>=65 and direction and (aggressive or absorption) and abs(ret)<=2:tag('MULTI_MICRO',s,score)
     return tags
+
+def hybrid(m, core, sign, direction_ok):
+    """5m R08 plus last-minute microstructure: independent comparable tag."""
+    flow=m.get('flow');imb=m.get('imbalance')
+    if flow is None or imb is None:return {'score':None,'potential':False}
+    aggressive=sign*flow>=.15
+    book=sign*imb>=.15
+    big=m.get('bigBuy' if sign==1 else 'bigSell')
+    threshold=m.get('bigThreshold')
+    liq=m.get('liqBuy' if sign==1 else 'liqSell')
+    other=m.get('liqSell' if sign==1 else 'liqBuy')
+    printok=big is not None and threshold is not None and big>=threshold
+    cascade=liq is not None and other is not None and liq>=10000 and liq>=3*max(other,1)
+    score=round(.65*core+(15 if aggressive else 0)+(10 if book else 0)+(10 if printok or cascade else 0),2)
+    return {'score':score,'potential':bool(direction_ok and aggressive and book and score>=65)}

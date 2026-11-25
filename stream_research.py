@@ -40,7 +40,10 @@ class StreamResearch:
             contiguous=len(tail)>=61 and all(int(b[6])-int(a[6])==60000 for a,b in zip(tail,tail[1:]))
             m=engine.minute(s,cutoff,now)
             a=atr(parse(tail,cutoff+1)) if contiguous else None
-            tags=microstructure.evaluate(m,tail,ema) if a and 0<=now-cutoff<=15000 else []
+            receipt=engine.receipt(s,'1m',cutoff)
+            m['candleSource']='websocket' if receipt is not None else 'rest_recovery'
+            m['candleReceiptMs']=receipt
+            tags=microstructure.evaluate(m,tail,ema) if a and receipt is not None and receipt<=now and 0<=now-cutoff<=15000 else []
             base=float(rows[-1][4]);atrpct=100*a/base if a else None
             records.append((s,rows,m,tags,base,atrpct))
         with self.db() as db:
@@ -90,7 +93,13 @@ class StreamResearch:
               AVG(CASE o.state WHEN 'TARGET' THEN c.target-.20 WHEN 'STOP' THEN -c.stop-.20 WHEN 'TIMEOUT' THEN o.endpoint_pct-.20 END) net_proxy_pct,
               AVG((c.observed_at-c.candle_time)/1000.) latency_seconds
               FROM ws_candidates c JOIN ws_outcomes o ON c.id=o.candidate_id GROUP BY 1,2,3,4""").fetchall()
-            return {'snapshots':db.execute('SELECT COUNT(*) FROM ws_minute_snapshots').fetchone()[0],
+            coverage=db.execute("""SELECT COUNT(*) n,
+              SUM(json_extract(payload,'$.micro.candleSource')='websocket') ws_candles,
+              SUM(json_extract(payload,'$.micro.coverage.trades')=1) trades,
+              SUM(json_extract(payload,'$.micro.coverage.depth')=1) depth,
+              SUM(json_extract(payload,'$.micro.coverage.liquidations')=1) liquidations
+              FROM ws_minute_snapshots""").fetchone()
+            return {'coverage':dict(coverage),'snapshots':db.execute('SELECT COUNT(*) FROM ws_minute_snapshots').fetchone()[0],
               'candidates':db.execute('SELECT COUNT(*) FROM ws_candidates').fetchone()[0],
               'comparison':[dict(r) for r in rows],
               'note':'1m candle-close simulation, not executable return. Missing outcomes are unobserved.'}
