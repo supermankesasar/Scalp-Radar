@@ -2,6 +2,9 @@ import unittest
 from filters import scalp_v2
 from filters.registry import evaluate
 from test_modular_filters import ModularFilterTests
+from unittest.mock import patch
+from test_app import fake_market
+import app
 
 def ema(values,p):
     a=sum(values[:p])/p
@@ -38,4 +41,23 @@ class V2Tests(unittest.TestCase):
         self.assertEqual(scalp_v2.minute_features(rows,cutoff,ema),scalp_v2.minute_features(rows[:60],cutoff,ema))
         self.assertIsNone(scalp_v2.minute_features(rows[:30]+rows[31:],cutoff,ema))
         self.assertIsNone(scalp_v2.minute_features(rows,cutoff+1,ema))
+    def test_scan_symbol_v2_integration(self):
+        with patch.object(app,'LIVE_FILTER','SCALP_V2'), patch.object(app,'request_market',side_effect=fake_market):
+            row=app.scan_symbol({'symbol':'AAAUSDT','turnover24h':100000000,'change24h':.1})
+        self.assertEqual(row['liveFilter'],'SCALP_V2')
+        self.assertIsNone(row['minuteError'])
+        self.assertEqual(row['researchFeatures']['minute']['cutoff'],row['lastClosed5m'])
+        self.assertEqual(row['longScore'],row['v2Breakdown']['UP']['score'])
+    def test_live_filter_saved_on_event(self):
+        import tempfile
+        from pathlib import Path
+        from signals import SignalStore
+        with tempfile.TemporaryDirectory() as d:
+            store=SignalStore(Path(d)/'test.sqlite3')
+            t=1795503599999
+            row={'symbol':'TESTUSDT','lastClosed5m':t,'price':100.,'atr5mPct':.2,
+                 'potentialUp':True,'potentialDown':False,'longScore':85,'shortScore':5,
+                 'liveFilter':'SCALP_V2'}
+            store.refresh(row,[{'closeTime':t,'close':100.,'high':100.1,'low':99.9}],now_ms=t+1)
+            self.assertEqual(store.audit_events()[0]['filterId'],'SCALP_V2')
 if __name__=='__main__': unittest.main()

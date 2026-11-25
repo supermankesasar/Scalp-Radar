@@ -23,4 +23,13 @@ class HistoryTests(unittest.TestCase):
                 'researchCandidates':[{'id':'F','version':'v1','direction':'DOWN','score':None}]},[],t+1)
             h.pending_symbols(t+25*3600000)
             self.assertEqual({r['state'] for r in h.summary()['outcomes']},{'UNOBSERVED'})
+    def test_no_signal_snapshot(self):
+        with tempfile.TemporaryDirectory() as folder:
+            h=ResearchHistory(Path(folder)/'history.sqlite3',threading.RLock())
+            t=1795503599999
+            row={'symbol':'TESTUSDT','lastClosed5m':t,'price':100.,'atr5mPct':.2,'researchCandidates':[]}
+            h.record_and_evaluate(row,[],t+1)
+            with h.connection() as db:
+                self.assertEqual(db.execute('SELECT COUNT(*) FROM research_snapshots').fetchone()[0],1)
+                self.assertEqual(db.execute('SELECT COUNT(*) FROM research_candidates').fetchone()[0],0)
 if __name__=='__main__':unittest.main()

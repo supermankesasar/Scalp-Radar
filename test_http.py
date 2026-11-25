@@ -10,13 +10,16 @@ from unittest.mock import patch
 from http.server import ThreadingHTTPServer
 import app
 from signals import SignalStore
+from research_history import ResearchHistory
 from test_app import fake_market
 
 class HttpApiTests(unittest.TestCase):
     def test_health_and_scanner_end_to_end(self):
         with tempfile.TemporaryDirectory() as td:
             old_store=app.STORE
+            old_history=app.HISTORY
             app.STORE=SignalStore(Path(td)/'db.sqlite3')
+            app.HISTORY=ResearchHistory(app.STORE.path,app.STORE.lock)
             with app.SCAN_LOCK:
                 app.SCAN_STATE.update({'running':False,'rows':[],'processed':0,'total':0,
                     'eligible':0,'errors':[],'startedAt':None,'completedAt':None,'generation':0,
@@ -47,6 +50,6 @@ class HttpApiTests(unittest.TestCase):
                     events=json.load(urllib.request.urlopen(base+'/api/events',timeout=3))
                     self.assertIn('events',events)
             finally:
-                srv.shutdown();srv.server_close();app.STORE=old_store
+                srv.shutdown();srv.server_close();app.STORE=old_store;app.HISTORY=old_history
 
 if __name__=='__main__':unittest.main()
