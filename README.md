@@ -35,7 +35,7 @@ Endpoint futures klines Binance menggunakan bobot request menurut `limit`, dan e
 
 ## Menjalankan aplikasi
 
-**Windows lokal:** Python 3.10+; ekstrak ZIP dan double-click `START-WINDOWS.bat`. Buka `http://127.0.0.1:8765`. Terminal perlu tetap hidup di mode lokal.
+**Windows lokal (branch research/modular-r06):** Python 3.10+; ekstrak ZIP dan double-click `START-WINDOWS.bat`. Satu launcher untuk siang/malam: R08 MULTI CORE, scanner ALL crypto, seluruh formula penelitian paralel, fast watch dan collector. Browser terbuka otomatis setelah server bind; tutup browser tanpa menghentikan scanner. Terminal, PC dan koneksi harus tetap aktif. `run_overnight.bat` hanya alias kompatibilitas; `export_overnight.bat` hanya untuk ekspor database.
 
 **Akses HP 24/7:** deploy branch `main` dari repo private [Scalp-Radar](https://github.com/supermankesasar/Scalp-Radar) ke hosting Python selalu aktif + persistent disk (konfigurasi Render di `render.yaml`). Setelah deployment berhasil, buka URL HTTPS dari HP, dan bila perlu install PWA ke home screen. **Repo GitHub private tidak otomatis membuat URL aplikasi private.** Panduan: `DEPLOY_ONLINE.md`. Deployment saat ini belum dilakukan oleh ChatGPT, jadi belum ada URL live.
 

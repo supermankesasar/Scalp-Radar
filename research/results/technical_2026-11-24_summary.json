@@ -1,0 +1,5561 @@
+{
+  "scope": {
+    "pairs": [
+      {
+        "symbol": "BTCUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 62
+      },
+      {
+        "symbol": "ETHUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 56
+      },
+      {
+        "symbol": "SOLUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 19
+      },
+      {
+        "symbol": "BNBUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 67
+      },
+      {
+        "symbol": "XRPUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 28
+      },
+      {
+        "symbol": "DOGEUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 51
+      },
+      {
+        "symbol": "ADAUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 35
+      },
+      {
+        "symbol": "LINKUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 36
+      },
+      {
+        "symbol": "AVAXUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 55
+      },
+      {
+        "symbol": "LTCUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 47
+      },
+      {
+        "symbol": "BCHUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 36
+      },
+      {
+        "symbol": "TRXUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 44
+      },
+      {
+        "symbol": "DOTUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 36
+      },
+      {
+        "symbol": "SUIUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 33
+      },
+      {
+        "symbol": "APTUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 46
+      },
+      {
+        "symbol": "NEARUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 39
+      },
+      {
+        "symbol": "ATOMUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 18
+      },
+      {
+        "symbol": "INJUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 32
+      },
+      {
+        "symbol": "UNIUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 40
+      },
+      {
+        "symbol": "AAVEUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 39
+      },
+      {
+        "symbol": "ARBUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 45
+      },
+      {
+        "symbol": "OPUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 33
+      },
+      {
+        "symbol": "FILUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 42
+      },
+      {
+        "symbol": "ETCUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 26
+      },
+      {
+        "symbol": "WLDUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 39
+      },
+      {
+        "symbol": "ENAUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 29
+      },
+      {
+        "symbol": "SEIUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 0
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 0
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 0
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 9
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 12
+      },
+      {
+        "symbol": "TIAUSDT",
+        "coverage": [
+          {
+            "phase": "explore",
+            "window": "2026-11-23T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-23T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T12:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T16:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "explore",
+            "window": "2026-11-23T20:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T00:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "timecheck",
+            "window": "2026-11-24T04:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          },
+          {
+            "phase": "anchor",
+            "window": "2026-11-24T08:00:00Z",
+            "valid": 12,
+            "liquid": 12
+          }
+        ],
+        "records": 33
+      }
+    ],
+    "candidateRows": 1078
+  },
+  "overall": {
+    "all": {
+      "B21": [
+        623,
+        129,
+        116,
+        379,
+        -0.0412,
+        0.1236,
+        0
+      ],
+      "E9_21": [
+        618,
+        129,
+        116,
+        374,
+        -0.0427,
+        0.1218,
+        0
+      ],
+      "E9_9": [
+        965,
+        218,
+        203,
+        594,
+        -0.0259,
+        0.1266,
+        0
+      ],
+      "E21_9": [
+        971,
+        218,
+        203,
+        599,
+        -0.0254,
+        0.1274,
+        0
+      ],
+      "E15_SCORE9_ONLY": [
+        622,
+        129,
+        115,
+        379,
+        -0.0404,
+        0.1246,
+        0
+      ],
+      "E15_GATE9_ONLY": [
+        869,
+        213,
+        192,
+        530,
+        -0.0196,
+        0.1261,
+        0
+      ],
+      "T1_SCORE_ONLY": [
+        641,
+        137,
+        117,
+        391,
+        -0.0354,
+        0.1323,
+        0
+      ],
+      "T1_RELAX_MIXED": [
+        628,
+        133,
+        116,
+        383,
+        -0.0372,
+        0.1303,
+        0
+      ],
+      "T1_REMOVE": [
+        694,
+        142,
+        120,
+        424,
+        -0.0351,
+        0.1381,
+        0
+      ],
+      "MOM_REMOVE_BOTH": [
+        617,
+        128,
+        115,
+        375,
+        -0.0412,
+        0.1233,
+        0
+      ],
+      "MOM_BOTH": [
+        512,
+        113,
+        107,
+        297,
+        -0.0639,
+        0.0945,
+        0
+      ],
+      "MOM_EITHER": [
+        623,
+        129,
+        116,
+        379,
+        -0.0412,
+        0.1236,
+        0
+      ],
+      "MOM_BOTH_ACCEL": [
+        181,
+        40,
+        42,
+        102,
+        -0.0805,
+        0.0819,
+        0
+      ],
+      "VOL_LT085": [
+        368,
+        59,
+        57,
+        227,
+        -0.0474,
+        0.1262,
+        0
+      ],
+      "VW_MED": [
+        292,
+        74,
+        60,
+        189,
+        0.0049,
+        0.1025,
+        0
+      ],
+      "VW_ALIGNED": [
+        468,
+        117,
+        90,
+        307,
+        0.0073,
+        0.1546,
+        0
+      ],
+      "LS_COVERED": [
+        623,
+        129,
+        116,
+        379,
+        -0.0412,
+        0.1236,
+        0
+      ],
+      "LS_OPPOSED": [
+        588,
+        117,
+        109,
+        354,
+        -0.0494,
+        0.1132,
+        0
+      ],
+      "LS_CROWDED_OPPOSE": [
+        254,
+        47,
+        38,
+        157,
+        -0.07,
+        0.0919,
+        0
+      ],
+      "LS_CHANGE_ALIGNED": [
+        357,
+        77,
+        60,
+        219,
+        -0.0274,
+        0.1512,
+        0
+      ],
+      "VOL_110_150": [
+        96,
+        25,
+        27,
+        52,
+        -0.1019,
+        0.0127,
+        0
+      ],
+      "VOL_GE110": [
+        149,
+        42,
+        44,
+        83,
+        -0.081,
+        0.0263,
+        0
+      ],
+      "VOL_VW": [
+        119,
+        38,
+        38,
+        70,
+        -0.0676,
+        0.0175,
+        0
+      ],
+      "FAST_E9_TOUCH": [
+        206,
+        52,
+        38,
+        138,
+        0.0324,
+        0.1953,
+        0
+      ],
+      "FAST_E9_CROSS_OR_TOUCH": [
+        295,
+        67,
+        46,
+        200,
+        0.0372,
+        0.2121,
+        0
+      ],
+      "LS_CHANGE_OPPOSED": [
+        241,
+        46,
+        50,
+        145,
+        -0.0603,
+        0.0903,
+        0
+      ],
+      "VOL_GE150": [
+        53,
+        17,
+        17,
+        31,
+        -0.0431,
+        0.0508,
+        0
+      ],
+      "FAST_E21_CROSS": [
+        46,
+        5,
+        6,
+        29,
+        -0.074,
+        0.1489,
+        0
+      ],
+      "FAST_E21_CROSS_OR_TOUCH": [
+        141,
+        32,
+        17,
+        95,
+        0.033,
+        0.2564,
+        0
+      ],
+      "VW_OPPOSED": [
+        155,
+        12,
+        26,
+        72,
+        -0.1878,
+        0.0299,
+        0
+      ],
+      "FAST_E21_TOUCH": [
+        95,
+        27,
+        11,
+        66,
+        0.0848,
+        0.3084,
+        0
+      ],
+      "VOL_085_110": [
+        106,
+        28,
+        15,
+        69,
+        0.0361,
+        0.2512,
+        0
+      ],
+      "FAST_E9_CROSS": [
+        89,
+        15,
+        8,
+        62,
+        0.0482,
+        0.2509,
+        0
+      ],
+      "T1_EMA21": [
+        176,
+        62,
+        26,
+        128,
+        0.1065,
+        0.327,
+        0
+      ],
+      "VW_FAR": [
+        44,
+        5,
+        14,
+        24,
+        -0.1816,
+        -0.004,
+        0
+      ],
+      "T1_EMA50": [
+        157,
+        46,
+        27,
+        110,
+        0.0591,
+        0.2454,
+        0
+      ],
+      "T1_EMA50_GATE_ONLY": [
+        157,
+        46,
+        27,
+        110,
+        0.0591,
+        0.2454,
+        0
+      ],
+      "VW_NEAR": [
+        132,
+        38,
+        16,
+        94,
+        0.0756,
+        0.3227,
+        0
+      ],
+      "VW_RECLAIM": [
+        20,
+        4,
+        3,
+        10,
+        -0.0365,
+        0.1848,
+        0
+      ],
+      "LS_BALANCED": [
+        162,
+        45,
+        27,
+        106,
+        0.0365,
+        0.207,
+        0
+      ],
+      "LS_ALIGNED": [
+        35,
+        12,
+        7,
+        25,
+        0.0961,
+        0.2983,
+        0
+      ]
+    },
+    "first": {
+      "B21": [
+        142,
+        28,
+        31,
+        93,
+        -0.026,
+        0.0654,
+        0
+      ],
+      "E9_21": [
+        143,
+        28,
+        31,
+        94,
+        -0.0257,
+        0.0665,
+        0
+      ],
+      "E9_9": [
+        233,
+        45,
+        62,
+        143,
+        -0.0825,
+        0.0195,
+        0
+      ],
+      "E21_9": [
+        233,
+        45,
+        62,
+        144,
+        -0.0821,
+        0.0199,
+        0
+      ],
+      "E15_SCORE9_ONLY": [
+        141,
+        28,
+        30,
+        93,
+        -0.0222,
+        0.0696,
+        0
+      ],
+      "E15_GATE9_ONLY": [
+        211,
+        45,
+        60,
+        131,
+        -0.068,
+        0.0244,
+        0
+      ],
+      "T1_SCORE_ONLY": [
+        156,
+        33,
+        32,
+        101,
+        -0.0217,
+        0.0858,
+        0
+      ],
+      "T1_RELAX_MIXED": [
+        145,
+        30,
+        31,
+        95,
+        -0.0204,
+        0.082,
+        0
+      ],
+      "T1_REMOVE": [
+        176,
+        33,
+        35,
+        113,
+        -0.0398,
+        0.0733,
+        0
+      ],
+      "MOM_REMOVE_BOTH": [
+        145,
+        27,
+        31,
+        95,
+        -0.0323,
+        0.0613,
+        0
+      ],
+      "MOM_BOTH": [
+        130,
+        25,
+        34,
+        78,
+        -0.0946,
+        -0.0198,
+        0
+      ],
+      "MOM_EITHER": [
+        142,
+        28,
+        31,
+        93,
+        -0.026,
+        0.0654,
+        0
+      ],
+      "MOM_BOTH_ACCEL": [
+        112,
+        26,
+        27,
+        62,
+        -0.0816,
+        0.0904,
+        0
+      ],
+      "VOL_LT085": [
+        171,
+        32,
+        36,
+        103,
+        -0.043,
+        0.0671,
+        0
+      ],
+      "VW_MED": [
+        87,
+        25,
+        21,
+        60,
+        0.0249,
+        0.0093,
+        0
+      ],
+      "VW_ALIGNED": [
+        113,
+        25,
+        25,
+        74,
+        -0.0135,
+        0.0501,
+        0
+      ],
+      "LS_COVERED": [
+        142,
+        28,
+        31,
+        93,
+        -0.026,
+        0.0654,
+        0
+      ],
+      "LS_OPPOSED": [
+        131,
+        25,
+        29,
+        84,
+        -0.0533,
+        0.0528,
+        0
+      ],
+      "LS_CROWDED_OPPOSE": [
+        48,
+        12,
+        8,
+        33,
+        -0.0369,
+        0.064,
+        0
+      ],
+      "LS_CHANGE_ALIGNED": [
+        138,
+        25,
+        25,
+        88,
+        -0.0252,
+        0.1173,
+        0
+      ],
+      "VOL_110_150": [
+        82,
+        21,
+        23,
+        45,
+        -0.0961,
+        -0.0016,
+        0
+      ],
+      "VOL_GE110": [
+        112,
+        32,
+        28,
+        67,
+        -0.0409,
+        0.104,
+        0
+      ],
+      "VOL_VW": [
+        88,
+        29,
+        24,
+        56,
+        -0.0212,
+        0.105,
+        0
+      ],
+      "FAST_E9_TOUCH": [
+        145,
+        35,
+        29,
+        93,
+        0.0016,
+        0.1185,
+        0
+      ],
+      "FAST_E9_CROSS_OR_TOUCH": [
+        210,
+        45,
+        36,
+        134,
+        0.0085,
+        0.1531,
+        0
+      ],
+      "LS_CHANGE_OPPOSED": [
+        135,
+        27,
+        29,
+        86,
+        -0.0406,
+        0.0913,
+        0
+      ],
+      "VOL_GE150": [
+        48,
+        15,
+        15,
+        28,
+        -0.039,
+        0.0903,
+        0
+      ],
+      "FAST_E21_CROSS": [
+        46,
+        5,
+        6,
+        29,
+        -0.074,
+        0.1489,
+        0
+      ],
+      "FAST_E21_CROSS_OR_TOUCH": [
+        114,
+        25,
+        15,
+        71,
+        0.0014,
+        0.222,
+        0
+      ],
+      "VW_OPPOSED": [
+        57,
+        8,
+        8,
+        35,
+        -0.0395,
+        0.1769,
+        0
+      ],
+      "FAST_E21_TOUCH": [
+        77,
+        20,
+        10,
+        49,
+        0.036,
+        0.2569,
+        0
+      ],
+      "VOL_085_110": [
+        88,
+        25,
+        14,
+        57,
+        0.0529,
+        0.2476,
+        0
+      ],
+      "FAST_E9_CROSS": [
+        89,
+        15,
+        8,
+        62,
+        0.0482,
+        0.2509,
+        0
+      ],
+      "T1_EMA21": [
+        44,
+        16,
+        7,
+        35,
+        0.1593,
+        0.2296,
+        0
+      ],
+      "VW_FAR": [
+        13,
+        3,
+        3,
+        10,
+        -0.0095,
+        0.1834,
+        0
+      ],
+      "T1_EMA50": [
+        34,
+        9,
+        10,
+        23,
+        -0.0108,
+        -0.0213,
+        0
+      ],
+      "T1_EMA50_GATE_ONLY": [
+        34,
+        9,
+        10,
+        23,
+        -0.0108,
+        -0.0213,
+        0
+      ],
+      "VW_NEAR": [
+        66,
+        15,
+        12,
+        42,
+        0.0243,
+        0.2053,
+        0
+      ],
+      "VW_RECLAIM": [
+        20,
+        4,
+        3,
+        10,
+        -0.0365,
+        0.1848,
+        0
+      ],
+      "LS_BALANCED": [
+        43,
+        11,
+        9,
+        30,
+        0.0575,
+        0.0468,
+        0
+      ],
+      "LS_ALIGNED": [
+        11,
+        3,
+        2,
+        9,
+        0.2991,
+        0.2148,
+        0
+      ]
+    }
+  },
+  "cohorts": {
+    "old": {
+      "B21": [
+        243,
+        28,
+        46,
+        134,
+        -0.1663,
+        -0.0237,
+        0
+      ],
+      "E9_21": [
+        242,
+        28,
+        46,
+        133,
+        -0.1663,
+        -0.0239,
+        0
+      ],
+      "E9_9": [
+        302,
+        35,
+        67,
+        160,
+        -0.1826,
+        -0.0364,
+        0
+      ],
+      "E21_9": [
+        303,
+        35,
+        67,
+        161,
+        -0.1826,
+        -0.0362,
+        0
+      ],
+      "E15_SCORE9_ONLY": [
+        243,
+        28,
+        46,
+        134,
+        -0.1663,
+        -0.0237,
+        0
+      ],
+      "E15_GATE9_ONLY": [
+        284,
+        34,
+        67,
+        151,
+        -0.1881,
+        -0.0451,
+        0
+      ],
+      "T1_SCORE_ONLY": [
+        253,
+        35,
+        46,
+        141,
+        -0.1446,
+        0.0065,
+        0
+      ],
+      "T1_RELAX_MIXED": [
+        248,
+        32,
+        46,
+        138,
+        -0.1535,
+        -0.0037,
+        0
+      ],
+      "T1_REMOVE": [
+        284,
+        43,
+        47,
+        163,
+        -0.1051,
+        0.0522,
+        0
+      ],
+      "MOM_REMOVE_BOTH": [
+        239,
+        28,
+        46,
+        131,
+        -0.1681,
+        -0.0264,
+        0
+      ],
+      "MOM_BOTH": [
+        210,
+        25,
+        44,
+        106,
+        -0.1995,
+        -0.0682,
+        0
+      ],
+      "MOM_EITHER": [
+        243,
+        28,
+        46,
+        134,
+        -0.1663,
+        -0.0237,
+        0
+      ],
+      "MOM_BOTH_ACCEL": [
+        84,
+        9,
+        23,
+        35,
+        -0.2805,
+        -0.1073,
+        0
+      ],
+      "VOL_LT085": [
+        145,
+        10,
+        18,
+        84,
+        -0.1338,
+        0.0114,
+        0
+      ],
+      "VW_MED": [
+        108,
+        17,
+        29,
+        67,
+        -0.1445,
+        -0.0648,
+        0
+      ],
+      "VW_ALIGNED": [
+        195,
+        28,
+        44,
+        114,
+        -0.1463,
+        -0.0176,
+        0
+      ],
+      "LS_COVERED": [
+        243,
+        28,
+        46,
+        134,
+        -0.1663,
+        -0.0237,
+        0
+      ],
+      "LS_OPPOSED": [
+        243,
+        28,
+        46,
+        134,
+        -0.1663,
+        -0.0237,
+        0
+      ],
+      "LS_CROWDED_OPPOSE": [
+        213,
+        28,
+        34,
+        123,
+        -0.1337,
+        0.0288,
+        0
+      ],
+      "LS_CHANGE_ALIGNED": [
+        154,
+        19,
+        26,
+        90,
+        -0.1372,
+        0.0069,
+        0
+      ],
+      "VOL_110_150": [
+        42,
+        4,
+        16,
+        17,
+        -0.3254,
+        -0.2174,
+        0
+      ],
+      "VOL_GE110": [
+        62,
+        12,
+        23,
+        29,
+        -0.256,
+        -0.1657,
+        0
+      ],
+      "VOL_VW": [
+        56,
+        12,
+        22,
+        28,
+        -0.2475,
+        -0.1676,
+        0
+      ],
+      "FAST_E9_TOUCH": [
+        57,
+        6,
+        8,
+        40,
+        -0.0917,
+        0.0234,
+        0
+      ],
+      "FAST_E9_CROSS_OR_TOUCH": [
+        81,
+        9,
+        8,
+        54,
+        -0.0788,
+        0.0612,
+        0
+      ],
+      "LS_CHANGE_OPPOSED": [
+        80,
+        8,
+        18,
+        38,
+        -0.2263,
+        -0.0806,
+        0
+      ],
+      "VOL_GE150": [
+        20,
+        8,
+        7,
+        12,
+        -0.1103,
+        -0.0569,
+        0
+      ],
+      "FAST_E21_CROSS": [
+        11,
+        0,
+        0,
+        5,
+        -0.1694,
+        0.0306,
+        0
+      ],
+      "FAST_E21_CROSS_OR_TOUCH": [
+        44,
+        6,
+        1,
+        29,
+        -0.0382,
+        0.1656,
+        0
+      ],
+      "VW_OPPOSED": [
+        48,
+        0,
+        2,
+        20,
+        -0.2479,
+        -0.0485,
+        0
+      ],
+      "FAST_E21_TOUCH": [
+        33,
+        6,
+        1,
+        24,
+        0.0055,
+        0.2106,
+        0
+      ],
+      "VOL_085_110": [
+        36,
+        6,
+        5,
+        21,
+        -0.143,
+        0.0795,
+        0
+      ],
+      "FAST_E9_CROSS": [
+        24,
+        3,
+        0,
+        14,
+        -0.0481,
+        0.1508,
+        0
+      ],
+      "T1_EMA21": [
+        99,
+        16,
+        19,
+        60,
+        -0.1224,
+        0.0303,
+        0
+      ],
+      "VW_FAR": [
+        37,
+        2,
+        14,
+        17,
+        -0.2877,
+        -0.1136,
+        0
+      ],
+      "T1_EMA50": [
+        66,
+        6,
+        12,
+        45,
+        -0.1301,
+        -0.0136,
+        0
+      ],
+      "T1_EMA50_GATE_ONLY": [
+        66,
+        6,
+        12,
+        45,
+        -0.1301,
+        -0.0136,
+        0
+      ],
+      "VW_NEAR": [
+        50,
+        9,
+        1,
+        30,
+        -0.0453,
+        0.1555,
+        0
+      ],
+      "VW_RECLAIM": [
+        7,
+        0,
+        0,
+        0,
+        -0.2924,
+        -0.0924,
+        0
+      ]
+    },
+    "new": {
+      "B21": [
+        380,
+        101,
+        70,
+        245,
+        0.0388,
+        0.2178,
+        0
+      ],
+      "E9_21": [
+        376,
+        101,
+        70,
+        241,
+        0.0368,
+        0.2156,
+        0
+      ],
+      "E9_9": [
+        663,
+        183,
+        136,
+        434,
+        0.0455,
+        0.2009,
+        0
+      ],
+      "E21_9": [
+        668,
+        183,
+        136,
+        438,
+        0.0459,
+        0.2016,
+        0
+      ],
+      "E15_SCORE9_ONLY": [
+        379,
+        101,
+        69,
+        245,
+        0.0404,
+        0.2198,
+        0
+      ],
+      "E15_GATE9_ONLY": [
+        585,
+        179,
+        125,
+        379,
+        0.0622,
+        0.2092,
+        0
+      ],
+      "T1_SCORE_ONLY": [
+        388,
+        102,
+        71,
+        250,
+        0.0359,
+        0.2143,
+        0
+      ],
+      "T1_RELAX_MIXED": [
+        380,
+        101,
+        70,
+        245,
+        0.0388,
+        0.2178,
+        0
+      ],
+      "T1_REMOVE": [
+        410,
+        99,
+        73,
+        261,
+        0.0133,
+        0.1976,
+        0
+      ],
+      "MOM_REMOVE_BOTH": [
+        378,
+        100,
+        69,
+        244,
+        0.0391,
+        0.218,
+        0
+      ],
+      "MOM_BOTH": [
+        302,
+        88,
+        63,
+        191,
+        0.0304,
+        0.2077,
+        0
+      ],
+      "MOM_EITHER": [
+        380,
+        101,
+        70,
+        245,
+        0.0388,
+        0.2178,
+        0
+      ],
+      "VOL_LT085": [
+        223,
+        49,
+        39,
+        143,
+        0.0088,
+        0.2009,
+        0
+      ],
+      "VW_MED": [
+        184,
+        57,
+        31,
+        122,
+        0.0926,
+        0.2008,
+        0
+      ],
+      "VW_ALIGNED": [
+        273,
+        89,
+        46,
+        193,
+        0.117,
+        0.2776,
+        0
+      ],
+      "LS_COVERED": [
+        380,
+        101,
+        70,
+        245,
+        0.0388,
+        0.2178,
+        0
+      ],
+      "LS_OPPOSED": [
+        345,
+        89,
+        63,
+        220,
+        0.0329,
+        0.2096,
+        0
+      ],
+      "LS_CHANGE_OPPOSED": [
+        161,
+        38,
+        32,
+        107,
+        0.0222,
+        0.1752,
+        0
+      ],
+      "MOM_BOTH_ACCEL": [
+        97,
+        31,
+        19,
+        67,
+        0.0927,
+        0.2457,
+        0
+      ],
+      "VOL_110_150": [
+        54,
+        21,
+        11,
+        35,
+        0.0718,
+        0.1917,
+        0
+      ],
+      "VOL_GE110": [
+        87,
+        30,
+        21,
+        54,
+        0.0437,
+        0.163,
+        0
+      ],
+      "VOL_VW": [
+        63,
+        26,
+        16,
+        42,
+        0.0924,
+        0.1822,
+        0
+      ],
+      "VOL_085_110": [
+        70,
+        22,
+        10,
+        48,
+        0.1281,
+        0.3395,
+        0
+      ],
+      "FAST_E9_TOUCH": [
+        149,
+        46,
+        30,
+        98,
+        0.0799,
+        0.2611,
+        0
+      ],
+      "FAST_E9_CROSS_OR_TOUCH": [
+        214,
+        58,
+        38,
+        146,
+        0.0811,
+        0.2692,
+        0
+      ],
+      "LS_CHANGE_ALIGNED": [
+        203,
+        58,
+        34,
+        129,
+        0.0558,
+        0.2607,
+        0
+      ],
+      "VW_OPPOSED": [
+        107,
+        12,
+        24,
+        52,
+        -0.1609,
+        0.0651,
+        0
+      ],
+      "FAST_E21_TOUCH": [
+        62,
+        21,
+        10,
+        42,
+        0.127,
+        0.3605,
+        0
+      ],
+      "FAST_E21_CROSS_OR_TOUCH": [
+        97,
+        26,
+        16,
+        66,
+        0.0653,
+        0.2976,
+        0
+      ],
+      "VOL_GE150": [
+        33,
+        9,
+        10,
+        19,
+        -0.0024,
+        0.1161,
+        0
+      ],
+      "FAST_E9_CROSS": [
+        65,
+        12,
+        8,
+        48,
+        0.0838,
+        0.2879,
+        0
+      ],
+      "FAST_E21_CROSS": [
+        35,
+        5,
+        6,
+        24,
+        -0.044,
+        0.1861,
+        0
+      ],
+      "VW_NEAR": [
+        82,
+        29,
+        15,
+        64,
+        0.1493,
+        0.4246,
+        0
+      ],
+      "VW_RECLAIM": [
+        13,
+        4,
+        3,
+        10,
+        0.1012,
+        0.3341,
+        0
+      ],
+      "VW_FAR": [
+        7,
+        3,
+        0,
+        7,
+        0.3795,
+        0.5753,
+        0
+      ],
+      "T1_EMA21": [
+        77,
+        46,
+        7,
+        68,
+        0.4008,
+        0.7083,
+        0
+      ],
+      "T1_EMA50": [
+        91,
+        40,
+        15,
+        65,
+        0.1964,
+        0.4332,
+        0
+      ],
+      "T1_EMA50_GATE_ONLY": [
+        91,
+        40,
+        15,
+        65,
+        0.1964,
+        0.4332,
+        0
+      ],
+      "LS_CROWDED_OPPOSE": [
+        41,
+        19,
+        4,
+        34,
+        0.2609,
+        0.4196,
+        0
+      ],
+      "LS_BALANCED": [
+        162,
+        45,
+        27,
+        106,
+        0.0365,
+        0.207,
+        0
+      ],
+      "LS_ALIGNED": [
+        35,
+        12,
+        7,
+        25,
+        0.0961,
+        0.2983,
+        0
+      ]
+    },
+    "oldFirst": {
+      "B21": [
+        39,
+        6,
+        6,
+        24,
+        -0.1263,
+        -0.0227,
+        0
+      ],
+      "E9_21": [
+        39,
+        6,
+        6,
+        24,
+        -0.1263,
+        -0.0227,
+        0
+      ],
+      "E9_9": [
+        53,
+        8,
+        11,
+        30,
+        -0.1785,
+        -0.0797,
+        0
+      ],
+      "E21_9": [
+        53,
+        8,
+        11,
+        30,
+        -0.1785,
+        -0.0797,
+        0
+      ],
+      "E15_SCORE9_ONLY": [
+        39,
+        6,
+        6,
+        24,
+        -0.1263,
+        -0.0227,
+        0
+      ],
+      "E15_GATE9_ONLY": [
+        49,
+        7,
+        12,
+        28,
+        -0.2019,
+        -0.1077,
+        0
+      ],
+      "T1_SCORE_ONLY": [
+        46,
+        10,
+        6,
+        28,
+        -0.0762,
+        0.0721,
+        0
+      ],
+      "T1_RELAX_MIXED": [
+        42,
+        8,
+        6,
+        26,
+        -0.0999,
+        0.041,
+        0
+      ],
+      "T1_REMOVE": [
+        56,
+        10,
+        7,
+        33,
+        -0.0954,
+        0.0445,
+        0
+      ],
+      "MOM_REMOVE_BOTH": [
+        41,
+        6,
+        6,
+        26,
+        -0.1304,
+        -0.0221,
+        0
+      ],
+      "MOM_BOTH": [
+        38,
+        5,
+        8,
+        20,
+        -0.1981,
+        -0.1138,
+        0
+      ],
+      "MOM_EITHER": [
+        39,
+        6,
+        6,
+        24,
+        -0.1263,
+        -0.0227,
+        0
+      ],
+      "MOM_BOTH_ACCEL": [
+        47,
+        5,
+        10,
+        20,
+        -0.2581,
+        -0.0398,
+        0
+      ],
+      "VOL_LT085": [
+        64,
+        8,
+        14,
+        35,
+        -0.1484,
+        -0.0359,
+        0
+      ],
+      "VW_MED": [
+        27,
+        7,
+        7,
+        19,
+        -0.0853,
+        -0.174,
+        0
+      ],
+      "VW_ALIGNED": [
+        38,
+        6,
+        6,
+        22,
+        -0.1317,
+        -0.0306,
+        0
+      ],
+      "LS_COVERED": [
+        39,
+        6,
+        6,
+        24,
+        -0.1263,
+        -0.0227,
+        0
+      ],
+      "LS_OPPOSED": [
+        39,
+        6,
+        6,
+        24,
+        -0.1263,
+        -0.0227,
+        0
+      ],
+      "LS_CROWDED_OPPOSE": [
+        35,
+        6,
+        6,
+        22,
+        -0.1249,
+        -0.0323,
+        0
+      ],
+      "LS_CHANGE_ALIGNED": [
+        45,
+        5,
+        8,
+        26,
+        -0.1581,
+        0.0032,
+        0
+      ],
+      "VOL_110_150": [
+        35,
+        3,
+        13,
+        14,
+        -0.3354,
+        -0.2644,
+        0
+      ],
+      "VOL_GE110": [
+        43,
+        8,
+        13,
+        21,
+        -0.2269,
+        -0.1172,
+        0
+      ],
+      "VOL_VW": [
+        37,
+        8,
+        12,
+        20,
+        -0.2093,
+        -0.1123,
+        0
+      ],
+      "FAST_E9_TOUCH": [
+        44,
+        4,
+        8,
+        27,
+        -0.175,
+        -0.0835,
+        0
+      ],
+      "FAST_E9_CROSS_OR_TOUCH": [
+        58,
+        7,
+        8,
+        31,
+        -0.147,
+        -0.0298,
+        0
+      ],
+      "LS_CHANGE_OPPOSED": [
+        38,
+        4,
+        7,
+        22,
+        -0.1663,
+        -0.014,
+        0
+      ],
+      "VOL_GE150": [
+        16,
+        6,
+        5,
+        10,
+        -0.0911,
+        0.0649,
+        0
+      ],
+      "FAST_E21_CROSS": [
+        11,
+        0,
+        0,
+        5,
+        -0.1694,
+        0.0306,
+        0
+      ],
+      "FAST_E21_CROSS_OR_TOUCH": [
+        31,
+        5,
+        1,
+        16,
+        -0.0888,
+        0.1187,
+        0
+      ],
+      "VW_OPPOSED": [
+        13,
+        0,
+        0,
+        5,
+        -0.2219,
+        -0.0219,
+        0
+      ],
+      "FAST_E21_TOUCH": [
+        25,
+        5,
+        1,
+        16,
+        -0.0414,
+        0.1678,
+        0
+      ],
+      "VOL_085_110": [
+        29,
+        6,
+        5,
+        16,
+        -0.1369,
+        0.091,
+        0
+      ],
+      "FAST_E9_CROSS": [
+        24,
+        3,
+        0,
+        14,
+        -0.0481,
+        0.1508,
+        0
+      ],
+      "T1_EMA21": [
+        16,
+        6,
+        2,
+        11,
+        0.0465,
+        0.1222,
+        0
+      ],
+      "VW_FAR": [
+        9,
+        1,
+        3,
+        6,
+        -0.2009,
+        -0.0106,
+        0
+      ],
+      "T1_EMA50": [
+        9,
+        1,
+        2,
+        6,
+        -0.1591,
+        -0.1389,
+        0
+      ],
+      "T1_EMA50_GATE_ONLY": [
+        9,
+        1,
+        2,
+        6,
+        -0.1591,
+        -0.1389,
+        0
+      ],
+      "VW_NEAR": [
+        19,
+        3,
+        1,
+        8,
+        -0.1095,
+        0.0666,
+        0
+      ],
+      "VW_RECLAIM": [
+        7,
+        0,
+        0,
+        0,
+        -0.2924,
+        -0.0924,
+        0
+      ]
+    },
+    "newFirst": {
+      "B21": [
+        103,
+        22,
+        25,
+        69,
+        0.012,
+        0.0987,
+        0
+      ],
+      "E9_21": [
+        104,
+        22,
+        25,
+        70,
+        0.0121,
+        0.0999,
+        0
+      ],
+      "E9_9": [
+        180,
+        37,
+        51,
+        113,
+        -0.0542,
+        0.0488,
+        0
+      ],
+      "E21_9": [
+        180,
+        37,
+        51,
+        114,
+        -0.0538,
+        0.0492,
+        0
+      ],
+      "E15_SCORE9_ONLY": [
+        102,
+        22,
+        24,
+        69,
+        0.0176,
+        0.1049,
+        0
+      ],
+      "E15_GATE9_ONLY": [
+        162,
+        38,
+        48,
+        103,
+        -0.0275,
+        0.0643,
+        0
+      ],
+      "T1_SCORE_ONLY": [
+        110,
+        23,
+        26,
+        73,
+        0.001,
+        0.0916,
+        0
+      ],
+      "T1_RELAX_MIXED": [
+        103,
+        22,
+        25,
+        69,
+        0.012,
+        0.0987,
+        0
+      ],
+      "T1_REMOVE": [
+        120,
+        23,
+        28,
+        80,
+        -0.0139,
+        0.0867,
+        0
+      ],
+      "MOM_REMOVE_BOTH": [
+        104,
+        21,
+        25,
+        69,
+        0.0064,
+        0.0942,
+        0
+      ],
+      "MOM_BOTH": [
+        92,
+        20,
+        26,
+        58,
+        -0.0518,
+        0.019,
+        0
+      ],
+      "MOM_EITHER": [
+        103,
+        22,
+        25,
+        69,
+        0.012,
+        0.0987,
+        0
+      ],
+      "VOL_LT085": [
+        107,
+        24,
+        22,
+        68,
+        0.0201,
+        0.1287,
+        0
+      ],
+      "VW_MED": [
+        60,
+        18,
+        14,
+        41,
+        0.0745,
+        0.0917,
+        0
+      ],
+      "VW_ALIGNED": [
+        75,
+        19,
+        19,
+        52,
+        0.0464,
+        0.0909,
+        0
+      ],
+      "LS_COVERED": [
+        103,
+        22,
+        25,
+        69,
+        0.012,
+        0.0987,
+        0
+      ],
+      "LS_OPPOSED": [
+        92,
+        19,
+        23,
+        60,
+        -0.0224,
+        0.0848,
+        0
+      ],
+      "LS_CHANGE_OPPOSED": [
+        97,
+        23,
+        22,
+        64,
+        0.0086,
+        0.1325,
+        0
+      ],
+      "MOM_BOTH_ACCEL": [
+        65,
+        21,
+        17,
+        42,
+        0.046,
+        0.1845,
+        0
+      ],
+      "VOL_110_150": [
+        47,
+        18,
+        10,
+        31,
+        0.0821,
+        0.1942,
+        0
+      ],
+      "VOL_GE110": [
+        69,
+        24,
+        15,
+        46,
+        0.0749,
+        0.2419,
+        0
+      ],
+      "VOL_VW": [
+        51,
+        21,
+        12,
+        36,
+        0.1153,
+        0.2627,
+        0
+      ],
+      "VOL_085_110": [
+        59,
+        19,
+        9,
+        41,
+        0.1462,
+        0.3246,
+        0
+      ],
+      "FAST_E9_TOUCH": [
+        101,
+        31,
+        21,
+        66,
+        0.0785,
+        0.2065,
+        0
+      ],
+      "FAST_E9_CROSS_OR_TOUCH": [
+        152,
+        38,
+        28,
+        103,
+        0.0679,
+        0.223,
+        0
+      ],
+      "LS_CHANGE_ALIGNED": [
+        93,
+        20,
+        17,
+        62,
+        0.0391,
+        0.1725,
+        0
+      ],
+      "VW_OPPOSED": [
+        44,
+        8,
+        8,
+        30,
+        0.0144,
+        0.2357,
+        0
+      ],
+      "FAST_E21_TOUCH": [
+        52,
+        15,
+        9,
+        33,
+        0.0732,
+        0.2998,
+        0
+      ],
+      "FAST_E21_CROSS_OR_TOUCH": [
+        83,
+        20,
+        14,
+        55,
+        0.0351,
+        0.2606,
+        0
+      ],
+      "VOL_GE150": [
+        32,
+        9,
+        10,
+        18,
+        -0.013,
+        0.103,
+        0
+      ],
+      "FAST_E9_CROSS": [
+        65,
+        12,
+        8,
+        48,
+        0.0838,
+        0.2879,
+        0
+      ],
+      "FAST_E21_CROSS": [
+        35,
+        5,
+        6,
+        24,
+        -0.044,
+        0.1861,
+        0
+      ],
+      "VW_NEAR": [
+        47,
+        12,
+        11,
+        34,
+        0.0784,
+        0.2613,
+        0
+      ],
+      "VW_RECLAIM": [
+        13,
+        4,
+        3,
+        10,
+        0.1012,
+        0.3341,
+        0
+      ],
+      "VW_FAR": [
+        4,
+        2,
+        0,
+        4,
+        0.4211,
+        0.62,
+        0
+      ],
+      "T1_EMA21": [
+        28,
+        10,
+        5,
+        24,
+        0.2238,
+        0.291,
+        0
+      ],
+      "T1_EMA50": [
+        25,
+        8,
+        8,
+        17,
+        0.0426,
+        0.0211,
+        0
+      ],
+      "T1_EMA50_GATE_ONLY": [
+        25,
+        8,
+        8,
+        17,
+        0.0426,
+        0.0211,
+        0
+      ],
+      "LS_CROWDED_OPPOSE": [
+        13,
+        6,
+        2,
+        11,
+        0.1999,
+        0.3233,
+        0
+      ],
+      "LS_BALANCED": [
+        43,
+        11,
+        9,
+        30,
+        0.0575,
+        0.0468,
+        0
+      ],
+      "LS_ALIGNED": [
+        11,
+        3,
+        2,
+        9,
+        0.2991,
+        0.2148,
+        0
+      ]
+    }
+  },
+  "phases": {
+    "explore": {
+      "B21": [
+        389,
+        32,
+        98,
+        195,
+        -0.1976,
+        -0.0961,
+        0
+      ],
+      "E9_21": [
+        384,
+        32,
+        98,
+        190,
+        -0.2021,
+        -0.1018,
+        0
+      ],
+      "E9_9": [
+        513,
+        53,
+        141,
+        258,
+        -0.1942,
+        -0.1133,
+        0
+      ],
+      "E21_9": [
+        520,
+        53,
+        141,
+        264,
+        -0.1908,
+        -0.1083,
+        0
+      ],
+      "E15_SCORE9_ONLY": [
+        388,
+        32,
+        97,
+        195,
+        -0.1967,
+        -0.0949,
+        0
+      ],
+      "E15_GATE9_ONLY": [
+        491,
+        53,
+        139,
+        247,
+        -0.1951,
+        -0.1202,
+        0
+      ],
+      "T1_SCORE_ONLY": [
+        389,
+        32,
+        98,
+        195,
+        -0.1976,
+        -0.0961,
+        0
+      ],
+      "T1_RELAX_MIXED": [
+        389,
+        32,
+        98,
+        195,
+        -0.1976,
+        -0.0961,
+        0
+      ],
+      "T1_REMOVE": [
+        402,
+        29,
+        98,
+        205,
+        -0.1945,
+        -0.0825,
+        0
+      ],
+      "MOM_REMOVE_BOTH": [
+        386,
+        32,
+        97,
+        194,
+        -0.1973,
+        -0.0965,
+        0
+      ],
+      "MOM_BOTH": [
+        300,
+        20,
+        89,
+        134,
+        -0.2671,
+        -0.1929,
+        0
+      ],
+      "MOM_EITHER": [
+        389,
+        32,
+        98,
+        195,
+        -0.1976,
+        -0.0961,
+        0
+      ],
+      "MOM_BOTH_ACCEL": [
+        94,
+        4,
+        32,
+        40,
+        -0.3279,
+        -0.2469,
+        0
+      ],
+      "VOL_LT085": [
+        246,
+        20,
+        48,
+        133,
+        -0.1442,
+        -0.0196,
+        0
+      ],
+      "VW_MED": [
+        225,
+        21,
+        60,
+        125,
+        -0.183,
+        -0.1388,
+        0
+      ],
+      "VW_ALIGNED": [
+        287,
+        27,
+        77,
+        159,
+        -0.1768,
+        -0.118,
+        0
+      ],
+      "LS_COVERED": [
+        389,
+        32,
+        98,
+        195,
+        -0.1976,
+        -0.0961,
+        0
+      ],
+      "LS_OPPOSED": [
+        371,
+        29,
+        95,
+        183,
+        -0.2038,
+        -0.107,
+        0
+      ],
+      "LS_CROWDED_OPPOSE": [
+        129,
+        8,
+        28,
+        65,
+        -0.219,
+        -0.1276,
+        0
+      ],
+      "LS_CHANGE_ALIGNED": [
+        220,
+        18,
+        54,
+        113,
+        -0.1794,
+        -0.0797,
+        0
+      ],
+      "VOL_110_150": [
+        53,
+        5,
+        22,
+        22,
+        -0.3355,
+        -0.3177,
+        0
+      ],
+      "VOL_GE110": [
+        81,
+        7,
+        37,
+        31,
+        -0.372,
+        -0.3956,
+        0
+      ],
+      "VOL_VW": [
+        70,
+        7,
+        34,
+        29,
+        -0.3783,
+        -0.4413,
+        0
+      ],
+      "FAST_E9_TOUCH": [
+        101,
+        13,
+        26,
+        55,
+        -0.1405,
+        -0.0784,
+        0
+      ],
+      "FAST_E9_CROSS_OR_TOUCH": [
+        155,
+        19,
+        32,
+        90,
+        -0.0889,
+        0.021,
+        0
+      ],
+      "LS_CHANGE_OPPOSED": [
+        157,
+        11,
+        41,
+        76,
+        -0.2328,
+        -0.1265,
+        0
+      ],
+      "VOL_GE150": [
+        28,
+        2,
+        15,
+        9,
+        -0.4412,
+        -0.543,
+        0
+      ],
+      "VW_OPPOSED": [
+        102,
+        5,
+        21,
+        36,
+        -0.2563,
+        -0.0343,
+        0
+      ],
+      "FAST_E21_TOUCH": [
+        34,
+        6,
+        7,
+        14,
+        -0.1579,
+        -0.0132,
+        0
+      ],
+      "FAST_E21_CROSS_OR_TOUCH": [
+        53,
+        7,
+        11,
+        22,
+        -0.1721,
+        0.0026,
+        0
+      ],
+      "VOL_085_110": [
+        62,
+        5,
+        13,
+        31,
+        -0.182,
+        -0.0082,
+        0
+      ],
+      "FAST_E9_CROSS": [
+        54,
+        6,
+        6,
+        35,
+        0.0075,
+        0.2068,
+        0
+      ],
+      "VW_NEAR": [
+        52,
+        5,
+        10,
+        31,
+        -0.0845,
+        0.0252,
+        0
+      ],
+      "VW_FAR": [
+        10,
+        1,
+        7,
+        3,
+        -0.5178,
+        -0.3946,
+        0
+      ],
+      "FAST_E21_CROSS": [
+        19,
+        1,
+        4,
+        8,
+        -0.1975,
+        0.0308,
+        0
+      ],
+      "T1_EMA50": [
+        75,
+        9,
+        25,
+        38,
+        -0.1907,
+        -0.145,
+        0
+      ],
+      "T1_EMA21": [
+        39,
+        5,
+        16,
+        20,
+        -0.2463,
+        -0.2734,
+        0
+      ],
+      "T1_EMA50_GATE_ONLY": [
+        75,
+        9,
+        25,
+        38,
+        -0.1907,
+        -0.145,
+        0
+      ],
+      "VW_RECLAIM": [
+        6,
+        1,
+        2,
+        4,
+        -0.0316,
+        0.199,
+        0
+      ],
+      "LS_BALANCED": [
+        114,
+        11,
+        27,
+        60,
+        -0.1625,
+        -0.0797,
+        0
+      ],
+      "LS_ALIGNED": [
+        18,
+        3,
+        3,
+        12,
+        -0.0701,
+        0.1296,
+        0
+      ]
+    },
+    "timecheck": {
+      "B21": [
+        145,
+        91,
+        8,
+        131,
+        0.4401,
+        0.7534,
+        0
+      ],
+      "E9_21": [
+        145,
+        91,
+        8,
+        131,
+        0.4401,
+        0.7534,
+        0
+      ],
+      "E9_9": [
+        285,
+        156,
+        40,
+        230,
+        0.3323,
+        0.5794,
+        0
+      ],
+      "E21_9": [
+        285,
+        156,
+        40,
+        230,
+        0.3323,
+        0.5794,
+        0
+      ],
+      "E15_SCORE9_ONLY": [
+        145,
+        91,
+        8,
+        131,
+        0.4401,
+        0.7534,
+        0
+      ],
+      "E15_GATE9_ONLY": [
+        282,
+        154,
+        40,
+        227,
+        0.3309,
+        0.579,
+        0
+      ],
+      "T1_SCORE_ONLY": [
+        159,
+        99,
+        9,
+        142,
+        0.4283,
+        0.739,
+        0
+      ],
+      "T1_RELAX_MIXED": [
+        149,
+        95,
+        8,
+        135,
+        0.446,
+        0.7662,
+        0
+      ],
+      "T1_REMOVE": [
+        185,
+        106,
+        12,
+        159,
+        0.3742,
+        0.6661,
+        0
+      ],
+      "T1_EMA21": [
+        94,
+        56,
+        8,
+        80,
+        0.3649,
+        0.6977,
+        0
+      ],
+      "MOM_REMOVE_BOTH": [
+        145,
+        91,
+        8,
+        131,
+        0.4401,
+        0.7534,
+        0
+      ],
+      "MOM_EITHER": [
+        145,
+        91,
+        8,
+        131,
+        0.4401,
+        0.7534,
+        0
+      ],
+      "FAST_E9_CROSS": [
+        20,
+        9,
+        0,
+        19,
+        0.3289,
+        0.5329,
+        0
+      ],
+      "FAST_E9_CROSS_OR_TOUCH": [
+        79,
+        43,
+        5,
+        72,
+        0.4058,
+        0.6892,
+        0
+      ],
+      "FAST_E21_CROSS": [
+        9,
+        4,
+        0,
+        8,
+        0.302,
+        0.5002,
+        0
+      ],
+      "FAST_E21_CROSS_OR_TOUCH": [
+        42,
+        23,
+        0,
+        41,
+        0.4606,
+        0.7444,
+        0
+      ],
+      "VOL_LT085": [
+        65,
+        33,
+        4,
+        56,
+        0.346,
+        0.6662,
+        0
+      ],
+      "VW_FAR": [
+        34,
+        4,
+        7,
+        21,
+        -0.0827,
+        0.1108,
+        0
+      ],
+      "VW_ALIGNED": [
+        137,
+        87,
+        8,
+        123,
+        0.4416,
+        0.7597,
+        0
+      ],
+      "LS_COVERED": [
+        145,
+        91,
+        8,
+        131,
+        0.4401,
+        0.7534,
+        0
+      ],
+      "LS_OPPOSED": [
+        132,
+        82,
+        8,
+        118,
+        0.4262,
+        0.741,
+        0
+      ],
+      "LS_CROWDED_OPPOSE": [
+        74,
+        39,
+        7,
+        60,
+        0.2579,
+        0.5106,
+        0
+      ],
+      "LS_CHANGE_OPPOSED": [
+        58,
+        32,
+        4,
+        53,
+        0.4272,
+        0.6763,
+        0
+      ],
+      "FAST_E9_TOUCH": [
+        59,
+        34,
+        5,
+        53,
+        0.4318,
+        0.7422,
+        0
+      ],
+      "FAST_E21_TOUCH": [
+        33,
+        19,
+        0,
+        33,
+        0.5039,
+        0.811,
+        0
+      ],
+      "LS_CHANGE_ALIGNED": [
+        80,
+        56,
+        3,
+        73,
+        0.4772,
+        0.8524,
+        0
+      ],
+      "MOM_BOTH": [
+        123,
+        87,
+        8,
+        110,
+        0.4882,
+        0.8223,
+        0
+      ],
+      "MOM_BOTH_ACCEL": [
+        58,
+        35,
+        6,
+        50,
+        0.4177,
+        0.6888,
+        0
+      ],
+      "VOL_110_150": [
+        28,
+        20,
+        2,
+        25,
+        0.4537,
+        0.7316,
+        0
+      ],
+      "VOL_GE110": [
+        50,
+        35,
+        3,
+        46,
+        0.475,
+        0.7826,
+        0
+      ],
+      "VOL_VW": [
+        43,
+        31,
+        3,
+        39,
+        0.4778,
+        0.7973,
+        0
+      ],
+      "VOL_GE150": [
+        22,
+        15,
+        1,
+        21,
+        0.502,
+        0.8474,
+        0
+      ],
+      "VW_MED": [
+        64,
+        53,
+        0,
+        63,
+        0.6747,
+        0.9555,
+        0
+      ],
+      "VOL_085_110": [
+        30,
+        23,
+        1,
+        29,
+        0.586,
+        0.8936,
+        0
+      ],
+      "T1_EMA50": [
+        42,
+        32,
+        1,
+        42,
+        0.6066,
+        1.0282,
+        0
+      ],
+      "T1_EMA50_GATE_ONLY": [
+        42,
+        32,
+        1,
+        42,
+        0.6066,
+        1.0282,
+        0
+      ],
+      "VW_NEAR": [
+        39,
+        30,
+        1,
+        39,
+        0.5162,
+        1.0041,
+        0
+      ],
+      "VW_OPPOSED": [
+        8,
+        4,
+        0,
+        8,
+        0.4144,
+        0.6449,
+        0
+      ],
+      "VW_RECLAIM": [
+        3,
+        2,
+        0,
+        3,
+        0.468,
+        0.7402,
+        0
+      ],
+      "LS_BALANCED": [
+        35,
+        28,
+        0,
+        35,
+        0.6325,
+        1.0591,
+        0
+      ],
+      "LS_ALIGNED": [
+        13,
+        9,
+        0,
+        13,
+        0.5813,
+        0.8797,
+        0
+      ]
+    },
+    "anchor": {
+      "E9_9": [
+        167,
+        9,
+        22,
+        106,
+        -0.12,
+        0.091,
+        0
+      ],
+      "E21_9": [
+        166,
+        9,
+        22,
+        105,
+        -0.1215,
+        0.0896,
+        0
+      ],
+      "FAST_E9_TOUCH": [
+        46,
+        5,
+        7,
+        30,
+        -0.1002,
+        0.0947,
+        0
+      ],
+      "FAST_E9_CROSS_OR_TOUCH": [
+        61,
+        5,
+        9,
+        38,
+        -0.1197,
+        0.0798,
+        0
+      ],
+      "FAST_E21_CROSS": [
+        18,
+        0,
+        2,
+        13,
+        -0.1316,
+        0.098,
+        0
+      ],
+      "FAST_E21_CROSS_OR_TOUCH": [
+        46,
+        2,
+        6,
+        32,
+        -0.1212,
+        0.1033,
+        0
+      ],
+      "B21": [
+        89,
+        6,
+        10,
+        53,
+        -0.1418,
+        0.0576,
+        0
+      ],
+      "E9_21": [
+        89,
+        6,
+        10,
+        53,
+        -0.1418,
+        0.0576,
+        0
+      ],
+      "E15_SCORE9_ONLY": [
+        89,
+        6,
+        10,
+        53,
+        -0.1418,
+        0.0576,
+        0
+      ],
+      "T1_SCORE_ONLY": [
+        93,
+        6,
+        10,
+        54,
+        -0.1493,
+        0.0502,
+        0
+      ],
+      "T1_RELAX_MIXED": [
+        90,
+        6,
+        10,
+        53,
+        -0.1434,
+        0.056,
+        0
+      ],
+      "T1_REMOVE": [
+        107,
+        7,
+        10,
+        60,
+        -0.1443,
+        0.0538,
+        0
+      ],
+      "T1_EMA50": [
+        40,
+        5,
+        1,
+        30,
+        -0.0473,
+        0.1555,
+        0
+      ],
+      "T1_EMA21": [
+        43,
+        1,
+        2,
+        28,
+        -0.1385,
+        0.0609,
+        0
+      ],
+      "T1_EMA50_GATE_ONLY": [
+        40,
+        5,
+        1,
+        30,
+        -0.0473,
+        0.1555,
+        0
+      ],
+      "MOM_REMOVE_BOTH": [
+        86,
+        5,
+        10,
+        50,
+        -0.1517,
+        0.0477,
+        0
+      ],
+      "MOM_BOTH": [
+        89,
+        6,
+        10,
+        53,
+        -0.1418,
+        0.0576,
+        0
+      ],
+      "MOM_EITHER": [
+        89,
+        6,
+        10,
+        53,
+        -0.1418,
+        0.0576,
+        0
+      ],
+      "MOM_BOTH_ACCEL": [
+        29,
+        1,
+        4,
+        12,
+        -0.2749,
+        -0.0664,
+        0
+      ],
+      "VOL_110_150": [
+        15,
+        0,
+        3,
+        5,
+        -0.3141,
+        -0.1618,
+        0
+      ],
+      "VOL_GE110": [
+        18,
+        0,
+        4,
+        6,
+        -0.316,
+        -0.1765,
+        0
+      ],
+      "VW_NEAR": [
+        41,
+        3,
+        5,
+        24,
+        -0.1405,
+        0.0519,
+        0
+      ],
+      "VW_ALIGNED": [
+        44,
+        3,
+        5,
+        25,
+        -0.1439,
+        0.049,
+        0
+      ],
+      "VW_RECLAIM": [
+        11,
+        1,
+        1,
+        3,
+        -0.1769,
+        0.0256,
+        0
+      ],
+      "VOL_VW": [
+        6,
+        0,
+        1,
+        2,
+        -0.3504,
+        -0.2178,
+        0
+      ],
+      "LS_COVERED": [
+        89,
+        6,
+        10,
+        53,
+        -0.1418,
+        0.0576,
+        0
+      ],
+      "LS_OPPOSED": [
+        85,
+        6,
+        6,
+        53,
+        -0.114,
+        0.0995,
+        0
+      ],
+      "LS_CROWDED_OPPOSE": [
+        51,
+        0,
+        3,
+        32,
+        -0.1691,
+        0.0394,
+        0
+      ],
+      "LS_CHANGE_ALIGNED": [
+        57,
+        3,
+        3,
+        33,
+        -0.149,
+        0.0582,
+        0
+      ],
+      "VOL_LT085": [
+        57,
+        6,
+        5,
+        38,
+        -0.0783,
+        0.1399,
+        0
+      ],
+      "E15_GATE9_ONLY": [
+        96,
+        6,
+        13,
+        56,
+        -0.1514,
+        0.0551,
+        0
+      ],
+      "VW_OPPOSED": [
+        45,
+        3,
+        5,
+        28,
+        -0.1398,
+        0.066,
+        0
+      ],
+      "FAST_E21_TOUCH": [
+        28,
+        2,
+        4,
+        19,
+        -0.1146,
+        0.1067,
+        0
+      ],
+      "VOL_085_110": [
+        14,
+        0,
+        1,
+        9,
+        -0.1766,
+        0.0234,
+        0
+      ],
+      "FAST_E9_CROSS": [
+        15,
+        0,
+        2,
+        8,
+        -0.1795,
+        0.0338,
+        0
+      ],
+      "LS_CHANGE_OPPOSED": [
+        26,
+        3,
+        5,
+        16,
+        -0.1058,
+        0.0926,
+        0
+      ],
+      "VW_MED": [
+        3,
+        0,
+        0,
+        1,
+        -0.1901,
+        0.0099,
+        0
+      ],
+      "VOL_GE150": [
+        3,
+        0,
+        1,
+        1,
+        -0.3257,
+        -0.2495,
+        0
+      ],
+      "LS_BALANCED": [
+        13,
+        6,
+        0,
+        11,
+        0.1774,
+        0.4271,
+        0
+      ],
+      "LS_ALIGNED": [
+        4,
+        0,
+        4,
+        0,
+        -0.7332,
+        -0.8321,
+        0
+      ]
+    },
+    "exploreFirst": {
+      "B21": [
+        83,
+        5,
+        27,
+        42,
+        -0.2018,
+        -0.2017,
+        0
+      ],
+      "E9_21": [
+        84,
+        5,
+        27,
+        43,
+        -0.1991,
+        -0.1967,
+        0
+      ],
+      "E9_9": [
+        112,
+        5,
+        36,
+        59,
+        -0.2205,
+        -0.2277,
+        0
+      ],
+      "E21_9": [
+        111,
+        5,
+        36,
+        59,
+        -0.2204,
+        -0.2294,
+        0
+      ],
+      "E15_SCORE9_ONLY": [
+        82,
+        5,
+        26,
+        42,
+        -0.1974,
+        -0.1977,
+        0
+      ],
+      "E15_GATE9_ONLY": [
+        104,
+        5,
+        35,
+        53,
+        -0.2261,
+        -0.2495,
+        0
+      ],
+      "T1_SCORE_ONLY": [
+        83,
+        5,
+        27,
+        42,
+        -0.2018,
+        -0.2017,
+        0
+      ],
+      "T1_RELAX_MIXED": [
+        83,
+        5,
+        27,
+        42,
+        -0.2018,
+        -0.2017,
+        0
+      ],
+      "T1_REMOVE": [
+        96,
+        6,
+        28,
+        50,
+        -0.1937,
+        -0.1604,
+        0
+      ],
+      "MOM_REMOVE_BOTH": [
+        85,
+        5,
+        27,
+        43,
+        -0.2056,
+        -0.2008,
+        0
+      ],
+      "MOM_BOTH": [
+        76,
+        4,
+        29,
+        34,
+        -0.2964,
+        -0.3266,
+        0
+      ],
+      "MOM_EITHER": [
+        83,
+        5,
+        27,
+        42,
+        -0.2018,
+        -0.2017,
+        0
+      ],
+      "MOM_BOTH_ACCEL": [
+        60,
+        3,
+        22,
+        23,
+        -0.3472,
+        -0.2523,
+        0
+      ],
+      "VOL_LT085": [
+        108,
+        9,
+        30,
+        55,
+        -0.1754,
+        -0.1183,
+        0
+      ],
+      "VW_MED": [
+        62,
+        7,
+        21,
+        36,
+        -0.1807,
+        -0.2652,
+        0
+      ],
+      "VW_ALIGNED": [
+        62,
+        4,
+        22,
+        35,
+        -0.2002,
+        -0.2627,
+        0
+      ],
+      "LS_COVERED": [
+        83,
+        5,
+        27,
+        42,
+        -0.2018,
+        -0.2017,
+        0
+      ],
+      "LS_OPPOSED": [
+        78,
+        5,
+        26,
+        38,
+        -0.2296,
+        -0.2292,
+        0
+      ],
+      "LS_CROWDED_OPPOSE": [
+        22,
+        1,
+        7,
+        10,
+        -0.3159,
+        -0.3841,
+        0
+      ],
+      "LS_CHANGE_ALIGNED": [
+        90,
+        5,
+        23,
+        49,
+        -0.173,
+        -0.1031,
+        0
+      ],
+      "VOL_110_150": [
+        47,
+        5,
+        19,
+        21,
+        -0.3161,
+        -0.3231,
+        0
+      ],
+      "VOL_GE110": [
+        62,
+        7,
+        23,
+        28,
+        -0.2929,
+        -0.2702,
+        0
+      ],
+      "VOL_VW": [
+        51,
+        7,
+        20,
+        26,
+        -0.2845,
+        -0.3059,
+        0
+      ],
+      "FAST_E9_TOUCH": [
+        72,
+        9,
+        20,
+        37,
+        -0.1857,
+        -0.1962,
+        0
+      ],
+      "FAST_E9_CROSS_OR_TOUCH": [
+        111,
+        12,
+        25,
+        60,
+        -0.1309,
+        -0.0661,
+        0
+      ],
+      "LS_CHANGE_OPPOSED": [
+        85,
+        8,
+        23,
+        45,
+        -0.1891,
+        -0.1028,
+        0
+      ],
+      "VOL_GE150": [
+        25,
+        2,
+        13,
+        8,
+        -0.4187,
+        -0.4781,
+        0
+      ],
+      "VW_OPPOSED": [
+        28,
+        1,
+        6,
+        12,
+        -0.1516,
+        0.0494,
+        0
+      ],
+      "FAST_E21_TOUCH": [
+        30,
+        5,
+        6,
+        11,
+        -0.1722,
+        -0.0247,
+        0
+      ],
+      "FAST_E21_CROSS_OR_TOUCH": [
+        46,
+        6,
+        9,
+        18,
+        -0.1743,
+        -0.0037,
+        0
+      ],
+      "VOL_085_110": [
+        52,
+        5,
+        12,
+        26,
+        -0.1744,
+        -0.0055,
+        0
+      ],
+      "FAST_E9_CROSS": [
+        54,
+        6,
+        6,
+        35,
+        0.0075,
+        0.2068,
+        0
+      ],
+      "VW_NEAR": [
+        30,
+        2,
+        9,
+        18,
+        -0.0945,
+        -0.0629,
+        0
+      ],
+      "VW_FAR": [
+        6,
+        1,
+        3,
+        3,
+        -0.3153,
+        -0.1231,
+        0
+      ],
+      "FAST_E21_CROSS": [
+        19,
+        1,
+        4,
+        8,
+        -0.1975,
+        0.0308,
+        0
+      ],
+      "T1_EMA50": [
+        16,
+        2,
+        8,
+        7,
+        -0.2948,
+        -0.4771,
+        0
+      ],
+      "T1_EMA21": [
+        10,
+        1,
+        6,
+        4,
+        -0.3602,
+        -0.6297,
+        0
+      ],
+      "T1_EMA50_GATE_ONLY": [
+        16,
+        2,
+        8,
+        7,
+        -0.2948,
+        -0.4771,
+        0
+      ],
+      "VW_RECLAIM": [
+        6,
+        1,
+        2,
+        4,
+        -0.0316,
+        0.199,
+        0
+      ],
+      "LS_BALANCED": [
+        27,
+        1,
+        9,
+        14,
+        -0.1861,
+        -0.2827,
+        0
+      ],
+      "LS_ALIGNED": [
+        5,
+        0,
+        1,
+        4,
+        0.2317,
+        0.2265,
+        0
+      ]
+    },
+    "timecheckFirst": {
+      "B21": [
+        38,
+        21,
+        1,
+        38,
+        0.4142,
+        0.6322,
+        0
+      ],
+      "E9_21": [
+        38,
+        21,
+        1,
+        38,
+        0.4142,
+        0.6322,
+        0
+      ],
+      "E9_9": [
+        80,
+        39,
+        19,
+        62,
+        0.1802,
+        0.3689,
+        0
+      ],
+      "E21_9": [
+        80,
+        39,
+        19,
+        62,
+        0.1802,
+        0.3689,
+        0
+      ],
+      "E15_SCORE9_ONLY": [
+        38,
+        21,
+        1,
+        38,
+        0.4142,
+        0.6322,
+        0
+      ],
+      "E15_GATE9_ONLY": [
+        79,
+        38,
+        19,
+        61,
+        0.1737,
+        0.3655,
+        0
+      ],
+      "T1_SCORE_ONLY": [
+        48,
+        26,
+        2,
+        45,
+        0.3605,
+        0.5957,
+        0
+      ],
+      "T1_RELAX_MIXED": [
+        40,
+        23,
+        1,
+        40,
+        0.4188,
+        0.6679,
+        0
+      ],
+      "T1_REMOVE": [
+        53,
+        26,
+        4,
+        48,
+        0.2978,
+        0.502,
+        0
+      ],
+      "T1_EMA21": [
+        25,
+        14,
+        1,
+        24,
+        0.4097,
+        0.5692,
+        0
+      ],
+      "MOM_REMOVE_BOTH": [
+        38,
+        21,
+        1,
+        38,
+        0.4142,
+        0.6322,
+        0
+      ],
+      "MOM_EITHER": [
+        38,
+        21,
+        1,
+        38,
+        0.4142,
+        0.6322,
+        0
+      ],
+      "FAST_E9_CROSS": [
+        20,
+        9,
+        0,
+        19,
+        0.3289,
+        0.5329,
+        0
+      ],
+      "FAST_E9_CROSS_OR_TOUCH": [
+        61,
+        32,
+        5,
+        54,
+        0.3848,
+        0.6386,
+        0
+      ],
+      "FAST_E21_CROSS": [
+        9,
+        4,
+        0,
+        8,
+        0.302,
+        0.5002,
+        0
+      ],
+      "FAST_E21_CROSS_OR_TOUCH": [
+        32,
+        18,
+        0,
+        31,
+        0.4642,
+        0.7512,
+        0
+      ],
+      "VOL_LT085": [
+        37,
+        21,
+        2,
+        32,
+        0.4254,
+        0.6129,
+        0
+      ],
+      "VW_FAR": [
+        7,
+        2,
+        0,
+        7,
+        0.2526,
+        0.4462,
+        0
+      ],
+      "VW_ALIGNED": [
+        34,
+        20,
+        1,
+        34,
+        0.4268,
+        0.6502,
+        0
+      ],
+      "LS_COVERED": [
+        38,
+        21,
+        1,
+        38,
+        0.4142,
+        0.6322,
+        0
+      ],
+      "LS_OPPOSED": [
+        33,
+        18,
+        1,
+        33,
+        0.3886,
+        0.6677,
+        0
+      ],
+      "LS_CROWDED_OPPOSE": [
+        17,
+        11,
+        0,
+        17,
+        0.386,
+        0.6263,
+        0
+      ],
+      "LS_CHANGE_OPPOSED": [
+        31,
+        17,
+        2,
+        29,
+        0.403,
+        0.621,
+        0
+      ],
+      "FAST_E9_TOUCH": [
+        46,
+        24,
+        5,
+        40,
+        0.3855,
+        0.655,
+        0
+      ],
+      "FAST_E21_TOUCH": [
+        25,
+        14,
+        0,
+        25,
+        0.4911,
+        0.803,
+        0
+      ],
+      "LS_CHANGE_ALIGNED": [
+        33,
+        19,
+        1,
+        31,
+        0.4221,
+        0.7315,
+        0
+      ],
+      "MOM_BOTH": [
+        33,
+        19,
+        2,
+        31,
+        0.3914,
+        0.6135,
+        0
+      ],
+      "MOM_BOTH_ACCEL": [
+        33,
+        22,
+        2,
+        31,
+        0.5009,
+        0.7874,
+        0
+      ],
+      "VOL_110_150": [
+        24,
+        16,
+        2,
+        21,
+        0.4283,
+        0.6932,
+        0
+      ],
+      "VOL_GE110": [
+        39,
+        25,
+        3,
+        35,
+        0.4286,
+        0.7646,
+        0
+      ],
+      "VOL_VW": [
+        33,
+        22,
+        3,
+        29,
+        0.4302,
+        0.7877,
+        0
+      ],
+      "VOL_GE150": [
+        20,
+        13,
+        1,
+        19,
+        0.4786,
+        0.8517,
+        0
+      ],
+      "VW_MED": [
+        23,
+        18,
+        0,
+        23,
+        0.5908,
+        0.7421,
+        0
+      ],
+      "VOL_085_110": [
+        27,
+        20,
+        1,
+        26,
+        0.5765,
+        0.819,
+        0
+      ],
+      "T1_EMA50": [
+        12,
+        6,
+        1,
+        12,
+        0.4089,
+        0.5531,
+        0
+      ],
+      "T1_EMA50_GATE_ONLY": [
+        12,
+        6,
+        1,
+        12,
+        0.4089,
+        0.5531,
+        0
+      ],
+      "VW_NEAR": [
+        19,
+        12,
+        1,
+        19,
+        0.4246,
+        0.8211,
+        0
+      ],
+      "VW_OPPOSED": [
+        8,
+        4,
+        0,
+        8,
+        0.4144,
+        0.6449,
+        0
+      ],
+      "VW_RECLAIM": [
+        3,
+        2,
+        0,
+        3,
+        0.468,
+        0.7402,
+        0
+      ],
+      "LS_BALANCED": [
+        12,
+        8,
+        0,
+        12,
+        0.5725,
+        0.6715,
+        0
+      ],
+      "LS_ALIGNED": [
+        5,
+        3,
+        0,
+        5,
+        0.5828,
+        0.398,
+        0
+      ]
+    }
+  }
+}

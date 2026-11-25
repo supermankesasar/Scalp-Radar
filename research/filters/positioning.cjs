@@ -1,0 +1,2 @@
+// Account shares, not position notional. Funding is last realized rate.
+module.exports=function positioning(c){let a=[];if(Number.isFinite(c.longShare)){if(c.longShare>=.65||c.longShare<=.35){let d=c.longShare>.5?1:-1;a.push({id:'ACCOUNT_CROWD_CONT',dir:d},{id:'ACCOUNT_CROWD_FADE',dir:-d})}}if(Number.isFinite(c.longDelta)&&Math.abs(c.longDelta)>=.005)a.push({id:'ACCOUNT_SHIFT',dir:Math.sign(c.longDelta)});if(Number.isFinite(c.funding)&&Math.abs(c.funding)>=.0001){let d=Math.sign(c.funding);a.push({id:'FUNDING_CONT',dir:d},{id:'FUNDING_FADE',dir:-d})}return a};

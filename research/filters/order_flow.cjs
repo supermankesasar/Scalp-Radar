@@ -1,0 +1,2 @@
+// Aggressive flow from closed kline taker-buy quote volume.
+module.exports=function flow(c){if(!Number.isFinite(c.taker15))return [];let d=c.taker15>=.55?1:c.taker15<=.45?-1:0;return d?[{id:'TAKER_DOM',dir:d},...(c.rvol>=1.5?[{id:'TAKER_SPIKE',dir:d}]:[])]:[]};

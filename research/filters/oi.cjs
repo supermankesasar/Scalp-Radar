@@ -1,0 +1,2 @@
+// OI changes in base quantity, not USD notional; aggregate OI cannot identify net direction.
+module.exports=function oi(ctx){const {price15,oi15}=ctx;if(!Number.isFinite(oi15)||!Number.isFinite(price15))return [];if(Math.abs(oi15)<0.1||Math.abs(price15)<0.1)return [];return [{id:oi15>0?'OI_BUILD':'OI_UNWIND',dir:Math.sign(price15)},{id:oi15>0?'OI_BUILD_CONT':'OI_UNWIND_CONT',dir:Math.sign(price15)},{id:oi15>0?'OI_BUILD_FADE':'OI_UNWIND_FADE',dir:-Math.sign(price15)}]};

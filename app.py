@@ -14,12 +14,23 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import re
 from signals import SignalStore
+from filters.registry import evaluate as evaluate_filters
+from filters import scalp_v2, multifactor
+from research_history import ResearchHistory
+from market_archive import MarketArchive, crypto_universe
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parent
 STORE = SignalStore(os.getenv('SCANNER_DB', str(ROOT / 'data' / 'signals.sqlite3')))
+HISTORY = ResearchHistory(STORE.path, STORE.lock)
+OVERNIGHT = os.getenv('SCANNER_OVERNIGHT', '0') == '1'
+LIVE_FILTER = os.getenv('SCANNER_LIVE_FILTER', 'BASELINE').upper()
+if LIVE_FILTER not in ('BASELINE','SCALP_V2','R08_MULTI_CORE','R08_MULTI_FULL'):
+    raise ValueError('Unknown SCANNER_LIVE_FILTER')
+ARCHIVE = MarketArchive(STORE.path, STORE.lock) if OVERNIGHT else None
+# Research cohort is a historical experiment only; live shadow rules apply to all scanned crypto pairs.
 BASE = "https://fapi.binance.com"
 SCAN_MODES = ('all', 'liquid', 'top80')
 DEFAULT_MODE = 'all'
@@ -127,7 +138,7 @@ def parse_klines(rows, now_ms):
             "time": int(c[0]), "closeTime": int(c[6]),
             "open": float(c[1]), "high": float(c[2]), "low": float(c[3]),
             "close": float(c[4]), "volume": float(c[5]),
-            "quoteVolume": float(c[7]), "takerBuyQuote": float(c[10]),
+            "quoteVolume": float(c[7]), "takerBuyQuote": float(c[10]), "tradeCount": int(c[8]),
         })
     return out
 
@@ -291,12 +302,7 @@ SCAN_STATE = {
 def active_symbols():
     """USDT-margined perpetual in TRADING status; no predefined watchlist."""
     exchange = request_market('/fapi/v1/exchangeInfo', {}, ttl=3600)
-    return {
-        s['symbol'] for s in exchange.get('symbols', [])
-        if s.get('status') == 'TRADING'
-        and s.get('contractType') == 'PERPETUAL'
-        and s.get('quoteAsset') == 'USDT'
-    }
+    return crypto_universe(exchange)
 
 
 def validate_scan_options(mode, min_turnover):
@@ -340,6 +346,8 @@ def active_tickers(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, tracked=Non
         'symbol': sym, 'turnover24h': 0.0, 'change24h': None,
         'tickerAvailable': False,
     }) for sym in available]
+    for row in all_tickers:
+        row['_universe_size']=len(available)
     all_tickers.sort(key=lambda r:(-r['turnover24h'], r['symbol']))
     if mode == 'all':
         selected = list(all_tickers)
@@ -370,6 +378,9 @@ def scan_symbol(ticker, is_tracked=False):
     # Small bounded queries, sequential by symbol; executor provides controlled parallelism.
     for tf, limit in (('5m', 310), ('15m', 230), ('1h', 230), ('4h', 230)):
         candles = request_market('/fapi/v1/klines', {'symbol': symbol, 'interval': tf, 'limit': limit}, ttl=140)
+        received = int(time.time()*1000)
+        if ARCHIVE is not None:
+            ARCHIVE.warmup(symbol, tf, candles, received)
         rows = parse_klines(candles, now)
         if len(rows) < 220:
             raise ValueError('Candle %s tidak cukup: %s' % (tf, len(rows)))
@@ -390,27 +401,56 @@ def scan_symbol(ticker, is_tracked=False):
     # Separate experimental overbought-rejection watch. This is NOT a short signal.
     previous_rsi15 = rsi([x['close'] for x in sets['15m'][:-1]])
     reversal_rsi70 = rsi_reversal_watch(previous_rsi15, rsi15, c5[-1], i5['macdHistogram'])
-    # Scores are descriptive heuristics; NOT calibrated probabilities of success.
-    def score_for(up):
-        sign = 1 if up else -1
-        trend = 'BULLISH' if up else 'BEARISH'
-        s = 0
-        s += 24 if t1 == trend else 0
-        s += 12 if t4 == trend else 5 if t4 == 'MIXED' else 0
-        s += 14 if sign*(i15['close']-i15['ema21']) > 0 else 0
-        s += 11 if sign*(px-i5['ema21']) > 0 else 0
-        s += 10 if sign*i5['macdHistogram'] > 0 else 0
-        s += 10 if (47 <= rsi15 <= 70 if up else 30 <= rsi15 <= 53) else 0
-        s += 11 if vratio >= 1.1 else 6 if vratio >= .85 else 0
-        s += 8 if vwap is not None and sign*(px-vwap) > 0 else 0
-        return s
-    long_score, short_score = score_for(True), score_for(False)
-    # Independent potential flags; reaching a move NEVER directly creates a 'Sudah' tab.
-    # 'Sudah' is solely assigned by a prior stored potential signal + later closed candles.
-    potential_up = (t1 == 'BULLISH' and t4 != 'BEARISH' and long_score >= 68
-            and 0 <= dist_ema <= max(.75, 1.4*atr_pct) and -0.4 <= ret15 <= threshold15)
-    potential_down = (t1 == 'BEARISH' and t4 != 'BULLISH' and short_score >= 68
-            and -max(.75, 1.4*atr_pct) <= dist_ema <= 0 and -threshold15 <= ret15 <= .4)
+    # Pure independent filter modules consume one point-in-time snapshot.
+    e9_5 = ema([x['close'] for x in c5], 9)
+    e21_5 = ema([x['close'] for x in c5], 21)
+    e21_1h = ema([x['close'] for x in sets['1h']], 21)
+    features = {
+        'trend1h':t1, 'trend4h':t4, 'close5':px, 'close15':i15['close'],
+        'ema21_5':i5['ema21'], 'ema21_15':i15['ema21'],
+        'ema9_5':e9_5[-1], 'prev_ema9_5':e9_5[-2],
+        'prev_ema21_5':e21_5[-2], 'prev_close5':c5[-2]['close'],
+        'low5':c5[-1]['low'], 'high5':c5[-1]['high'],
+        'close1h':ins['1h']['close'], 'ema21_1h':e21_1h[-1],
+        'ema21_1h_prev6':e21_1h[-7],
+        'rsi15':rsi15, 'macd5':i5['macdHistogram'], 'rvol5':vratio,
+        'vwap':vwap, 'atr_pct':atr_pct, 'ret15':ret15, 'dist_ema15':dist_ema,
+    }
+    for p in (10,14):
+        es=ema([r['close'] for r in c5],p)
+        features['ema%d_5'%p],features['prev_ema%d_5'%p]=es[-1],es[-2]
+    features.update(prev_ema9_5=e9_5[-2],rsi5=i5['rsi14'],ret5=ret5,minute=None)
+    minute_error=None
+    if OVERNIGHT or LIVE_FILTER!='BASELINE':
+        try:
+            raw=request_market('/fapi/v1/klines',{'symbol':symbol,'interval':'1m','limit':100},ttl=30)
+            if ARCHIVE is not None:
+                ARCHIVE.warmup(symbol,'1m',raw,int(time.time()*1000))
+            features['minute']=scalp_v2.minute_features(parse_klines(raw,now),i5['time'],ema)
+            if features['minute'] is None:
+                minute_error='1m missing or not aligned to 5m close'
+        except Exception as exc:
+            if any(t in str(exc).lower() for t in ('rate limit','http 429','http 418')):
+                raise
+            minute_error=str(exc)[:140]
+    features['multi']=multifactor.extract(c5,rsi,atr)
+    features['derivatives'],features['breadth']={},{}
+    context_error=None
+    if ARCHIVE is not None:
+        try:
+            features['derivatives'],features['breadth']=ARCHIVE.research_context(symbol,i5['time'],int(time.time()*1000),ticker.get('_universe_size',0))
+        except Exception as exc:
+            context_error=str(exc)[:140]
+    evaluation = evaluate_filters(features, shadow=True)
+    selected=evaluation['v2' if LIVE_FILTER=='SCALP_V2' else 'baseline']
+    if LIVE_FILTER.startswith('R08_'):
+        full=LIVE_FILTER=='R08_MULTI_FULL'
+        selected={k:{'score':int(v['full'] or 0) if full else v['core'],
+                     'potential':v['fullPotential'] if full else v['potential']} for k,v in evaluation['r08'].items()}
+    long_score = selected['UP']['score']
+    short_score = selected['DOWN']['score']
+    potential_up = selected['UP']['potential']
+    potential_down = selected['DOWN']['potential']
     # OI intentionally not used to assign direction. It simply provides confirmation context.
     oi = {'available': False, 'reason': 'Hanya diambil untuk hasil terklasifikasi'}
     if potential_up or potential_down or is_tracked:
@@ -433,6 +473,12 @@ def scan_symbol(ticker, is_tracked=False):
         'rsiPrevious15m': previous_rsi15, 'rsiReversalWatch': bool(reversal_rsi70),
         'oiNote': oi.get('reason') if not oi.get('available') else None,
         'lastClosed5m': i5['time'],
+        'researchCandidates':evaluation['candidates'],
+        'researchFeatures':features, 'filterBreakdown':evaluation['baseline'],
+        'v2Breakdown':evaluation['v2'], 'liveFilter':LIVE_FILTER,
+        'minuteError':minute_error, 'contextError':context_error,
+        'r08Breakdown':evaluation['r08'],
+        'volumePhase':evaluation['volumePhase'], 'vwapDistanceATR':evaluation['vwapDistanceATR'],
         '_recent5m': [{'closeTime':r['closeTime'],'close':r['close'],'high':r['high'],'low':r['low']} for r in c5],
     }
 
@@ -505,7 +551,8 @@ def _same_generation(generation):
 def scan_job(generation, mode, min_turnover):
     try:
         tracked = STORE.active_symbols()
-        tickers, info = active_tickers(mode, min_turnover, tracked)
+        research_pending = HISTORY.pending_symbols(int(time.time()*1000))
+        tickers, info = active_tickers(mode, min_turnover, tracked | research_pending)
         with SCAN_LOCK:
             if generation != SCAN_STATE['generation']:
                 return
@@ -535,6 +582,19 @@ def scan_job(generation, mode, min_turnover):
                         # Advance existing journeys, but don't flood active tab with
                         # first-come events: rank across completed batch candidates.
                         recent_candles[res['symbol']] = res['_recent5m']
+                        if res.get('minuteError'):
+                            with SCAN_LOCK:
+                                SCAN_STATE['errors'].append(res['symbol']+': '+res['minuteError'])
+                        if res.get('contextError'):
+                            with SCAN_LOCK:
+                                SCAN_STATE['errors'].append(res['symbol']+': context '+res['contextError'])
+                        # Ledger records all rules before Top5 ranking or journey rotation.
+                        # Failure is visible but must not corrupt production tracking.
+                        try:
+                            HISTORY.record_and_evaluate(res, res['_recent5m'], int(time.time()*1000))
+                        except Exception as history_error:
+                            with SCAN_LOCK:
+                                SCAN_STATE['errors'].append('Research ledger: '+str(history_error)[:150])
                         res = STORE.refresh(res, res['_recent5m'], allow_new=False)
                         if res.get('potentialUp') or res.get('potentialDown'):
                             eligible_rows.append(res)
@@ -609,6 +669,8 @@ def _saved_visible(rows, mode, min_turnover):
 
 
 def read_scanner(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
+    if OVERNIGHT:
+        mode = 'all'  # browser filters must not reduce the overnight scan universe
     validate_scan_options(mode, min_turnover)
     now_ms = int(time.time()*1000)
     with SCAN_LOCK:
@@ -695,6 +757,17 @@ class Handler(BaseHTTPRequestHandler):
             self._reply(200, (ROOT/'icon.png').read_bytes(), 'image/png')
         elif route.path == '/api/health':
             self._reply(200, json.dumps({'ok':True,'version':'0.5','storage':'SQLite','activeTracked':len(STORE.active_symbols())}).encode(), 'application/json')
+        elif route.path == '/api/overnight':
+            try:
+                result = ARCHIVE.status() if ARCHIVE is not None else {'enabled':False}
+                self._reply(200, json.dumps(dict(result, enabled=OVERNIGHT), allow_nan=False).encode(), 'application/json; charset=utf-8')
+            except Exception as exc:
+                self._reply(502, json.dumps({'error':str(exc)}).encode(), 'application/json; charset=utf-8')
+        elif route.path == '/api/research':
+            try:
+                self._reply(200, json.dumps(HISTORY.summary(), allow_nan=False).encode(), 'application/json; charset=utf-8')
+            except Exception as exc:
+                self._reply(502, json.dumps({'error':str(exc)}).encode(), 'application/json; charset=utf-8')
         elif route.path == '/api/events':
             self._reply(200, json.dumps({'events':STORE.audit_events(200)}).encode(), 'application/json')
         elif route.path == '/api/scan':
@@ -766,17 +839,32 @@ def scheduler_loop():
 def serve():
     host = os.getenv('HOST', '0.0.0.0')
     port = int(os.getenv('PORT', '8765'))
+    server = ThreadingHTTPServer((host, port), Handler)
+    # Bind successfully before starting workers or launching a browser.
     if os.getenv('SCANNER_BACKGROUND', '1') == '1':
         threading.Thread(target=scheduler_loop, daemon=True, name='scan-scheduler').start()
         threading.Thread(target=fast_watch_loop, daemon=True, name='fast-watch').start()
-    server = ThreadingHTTPServer((host, port), Handler)
+    if ARCHIVE is not None:
+        threading.Thread(target=ARCHIVE.collect_forever, daemon=True, name='all-pair-archive').start()
+        print('OVERNIGHT ALL crypto pairs enabled; status /api/overnight',flush=True)
     print('Scalp Radar v0.5: host %s port %d' % (host,port),flush=True)
     print('DB:',STORE.path,'| background scanner:',os.getenv('SCANNER_BACKGROUND','1'),flush=True)
     try:
+        if os.getenv('SCANNER_OPEN_BROWSER','0') == '1':
+            import webbrowser
+            url='http://127.0.0.1:%d' % server.server_address[1]
+            def open_dashboard():
+                try:
+                    webbrowser.open(url)
+                except Exception as exc:
+                    print('Open browser manually:',url,str(exc),flush=True)
+            threading.Thread(target=open_dashboard,daemon=True,name='open-dashboard').start()
         server.serve_forever()
     except KeyboardInterrupt:
         print('Server stopped')
     finally:
+        if ARCHIVE is not None:
+            ARCHIVE.stop.set()
         server.server_close()
 
 if __name__ == '__main__':

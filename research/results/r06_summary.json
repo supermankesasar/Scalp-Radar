@@ -1,0 +1,3575 @@
+{
+  "totals": {
+    "pairs": 30,
+    "scans": 2880,
+    "oi": 2880,
+    "ls": 2880,
+    "funding": 2880,
+    "records": 4992
+  },
+  "results": {
+    "EMA9_CROSS": {
+      "all": {
+        "n": 509,
+        "target": 72,
+        "stop": 148,
+        "timeout": 289,
+        "net": -0.1466,
+        "gross": 0.1328,
+        "mfe": 1.4321,
+        "mae": -1.2257,
+        "directionPositive": 251
+      },
+      "first": {
+        "n": 509,
+        "target": 72,
+        "stop": 148,
+        "timeout": 289,
+        "net": -0.1466,
+        "gross": 0.1328,
+        "mfe": 1.4321,
+        "mae": -1.2257,
+        "directionPositive": 251
+      },
+      "first15": {
+        "n": 509,
+        "target": 32,
+        "stop": 84,
+        "timeout": 393,
+        "net": -0.1353,
+        "gross": 0.0514,
+        "mfe": 1.0246,
+        "mae": -0.8794,
+        "directionPositive": 242
+      },
+      "first60": {
+        "n": 509,
+        "target": 147,
+        "stop": 218,
+        "timeout": 144,
+        "net": -0.0528,
+        "gross": 0.0147,
+        "mfe": 2.0189,
+        "mae": -1.9104,
+        "directionPositive": 259
+      },
+      "nov23": {
+        "n": 341,
+        "target": 44,
+        "stop": 101,
+        "timeout": 196,
+        "net": -0.2449,
+        "gross": 0.0799,
+        "mfe": 1.406,
+        "mae": -1.3246,
+        "directionPositive": 163
+      },
+      "nov24": {
+        "n": 168,
+        "target": 28,
+        "stop": 47,
+        "timeout": 93,
+        "net": 0.0531,
+        "gross": 0.2401,
+        "mfe": 1.485,
+        "mae": -1.025,
+        "directionPositive": 88
+      },
+      "long": {
+        "n": 251,
+        "target": 39,
+        "stop": 81,
+        "timeout": 131,
+        "net": -0.0751,
+        "gross": 0.227,
+        "mfe": 1.5503,
+        "mae": -1.2907,
+        "directionPositive": 115
+      },
+      "short": {
+        "n": 258,
+        "target": 33,
+        "stop": 67,
+        "timeout": 158,
+        "net": -0.2161,
+        "gross": 0.0411,
+        "mfe": 1.3171,
+        "mae": -1.1624,
+        "directionPositive": 136
+      },
+      "pairs": 30
+    },
+    "EMA21_PULLBACK": {
+      "all": {
+        "n": 349,
+        "target": 62,
+        "stop": 99,
+        "timeout": 188,
+        "net": -0.0029,
+        "gross": 0.23,
+        "mfe": 1.5368,
+        "mae": -1.3869,
+        "directionPositive": 181
+      },
+      "first": {
+        "n": 241,
+        "target": 46,
+        "stop": 68,
+        "timeout": 127,
+        "net": 0.0007,
+        "gross": 0.21,
+        "mfe": 1.5265,
+        "mae": -1.4016,
+        "directionPositive": 120
+      },
+      "first15": {
+        "n": 241,
+        "target": 21,
+        "stop": 29,
+        "timeout": 191,
+        "net": -0.084,
+        "gross": 0.1065,
+        "mfe": 1.0053,
+        "mae": -0.9729,
+        "directionPositive": 116
+      },
+      "first60": {
+        "n": 241,
+        "target": 76,
+        "stop": 99,
+        "timeout": 66,
+        "net": -0.0028,
+        "gross": 0.2212,
+        "mfe": 2.2014,
+        "mae": -1.9509,
+        "directionPositive": 122
+      },
+      "nov23": {
+        "n": 147,
+        "target": 27,
+        "stop": 42,
+        "timeout": 78,
+        "net": 0.0488,
+        "gross": 0.3027,
+        "mfe": 1.7331,
+        "mae": -1.4693,
+        "directionPositive": 73
+      },
+      "nov24": {
+        "n": 94,
+        "target": 19,
+        "stop": 26,
+        "timeout": 49,
+        "net": -0.0746,
+        "gross": 0.0651,
+        "mfe": 1.2034,
+        "mae": -1.2956,
+        "directionPositive": 47
+      },
+      "long": {
+        "n": 123,
+        "target": 19,
+        "stop": 36,
+        "timeout": 68,
+        "net": -0.1393,
+        "gross": 0.1466,
+        "mfe": 1.5071,
+        "mae": -1.5561,
+        "directionPositive": 58
+      },
+      "short": {
+        "n": 118,
+        "target": 27,
+        "stop": 32,
+        "timeout": 59,
+        "net": 0.1466,
+        "gross": 0.2762,
+        "mfe": 1.5467,
+        "mae": -1.2405,
+        "directionPositive": 62
+      },
+      "pairs": 30
+    },
+    "OI_UNWIND_CONT": {
+      "all": {
+        "n": 796,
+        "target": 146,
+        "stop": 230,
+        "timeout": 420,
+        "net": -0.1046,
+        "gross": 0.0319,
+        "mfe": 2.0185,
+        "mae": -1.7334,
+        "directionPositive": 381
+      },
+      "first": {
+        "n": 414,
+        "target": 84,
+        "stop": 115,
+        "timeout": 215,
+        "net": -0.0599,
+        "gross": 0.0548,
+        "mfe": 1.9553,
+        "mae": -1.6492,
+        "directionPositive": 205
+      },
+      "first15": {
+        "n": 414,
+        "target": 45,
+        "stop": 68,
+        "timeout": 301,
+        "net": -0.0097,
+        "gross": 0.171,
+        "mfe": 1.4587,
+        "mae": -1.0722,
+        "directionPositive": 223
+      },
+      "first60": {
+        "n": 414,
+        "target": 133,
+        "stop": 169,
+        "timeout": 112,
+        "net": -0.0063,
+        "gross": 0.0006,
+        "mfe": 2.5394,
+        "mae": -2.3245,
+        "directionPositive": 220
+      },
+      "nov23": {
+        "n": 276,
+        "target": 57,
+        "stop": 79,
+        "timeout": 140,
+        "net": -0.001,
+        "gross": 0.1381,
+        "mfe": 2.077,
+        "mae": -1.7255,
+        "directionPositive": 143
+      },
+      "nov24": {
+        "n": 138,
+        "target": 27,
+        "stop": 36,
+        "timeout": 75,
+        "net": -0.1777,
+        "gross": -0.1117,
+        "mfe": 1.712,
+        "mae": -1.4966,
+        "directionPositive": 62
+      },
+      "long": {
+        "n": 186,
+        "target": 44,
+        "stop": 58,
+        "timeout": 84,
+        "net": 0.0518,
+        "gross": 0.3409,
+        "mfe": 2.3461,
+        "mae": -1.6732,
+        "directionPositive": 93
+      },
+      "short": {
+        "n": 228,
+        "target": 40,
+        "stop": 57,
+        "timeout": 131,
+        "net": -0.151,
+        "gross": -0.1786,
+        "mfe": 1.6366,
+        "mae": -1.6296,
+        "directionPositive": 112
+      },
+      "pairs": 30
+    },
+    "OI_UNWIND_FADE": {
+      "all": {
+        "n": 796,
+        "target": 114,
+        "stop": 268,
+        "timeout": 414,
+        "net": -0.3067,
+        "gross": -0.0319,
+        "mfe": 1.7334,
+        "mae": -2.0185,
+        "directionPositive": 406
+      },
+      "first": {
+        "n": 414,
+        "target": 54,
+        "stop": 149,
+        "timeout": 211,
+        "net": -0.3442,
+        "gross": -0.0548,
+        "mfe": 1.6492,
+        "mae": -1.9553,
+        "directionPositive": 203
+      },
+      "first15": {
+        "n": 414,
+        "target": 22,
+        "stop": 98,
+        "timeout": 294,
+        "net": -0.3816,
+        "gross": -0.171,
+        "mfe": 1.0722,
+        "mae": -1.4587,
+        "directionPositive": 184
+      },
+      "first60": {
+        "n": 414,
+        "target": 102,
+        "stop": 205,
+        "timeout": 107,
+        "net": -0.3877,
+        "gross": -0.0006,
+        "mfe": 2.3245,
+        "mae": -2.5394,
+        "directionPositive": 194
+      },
+      "nov23": {
+        "n": 276,
+        "target": 42,
+        "stop": 98,
+        "timeout": 136,
+        "net": -0.3255,
+        "gross": -0.1381,
+        "mfe": 1.7255,
+        "mae": -2.077,
+        "directionPositive": 130
+      },
+      "nov24": {
+        "n": 138,
+        "target": 12,
+        "stop": 51,
+        "timeout": 75,
+        "net": -0.3817,
+        "gross": 0.1117,
+        "mfe": 1.4966,
+        "mae": -1.712,
+        "directionPositive": 73
+      },
+      "long": {
+        "n": 228,
+        "target": 20,
+        "stop": 81,
+        "timeout": 127,
+        "net": -0.3648,
+        "gross": 0.1786,
+        "mfe": 1.6296,
+        "mae": -1.6366,
+        "directionPositive": 110
+      },
+      "short": {
+        "n": 186,
+        "target": 34,
+        "stop": 68,
+        "timeout": 84,
+        "net": -0.3189,
+        "gross": -0.3409,
+        "mfe": 1.6732,
+        "mae": -2.3461,
+        "directionPositive": 93
+      },
+      "pairs": 30
+    },
+    "TAKER_DOM": {
+      "all": {
+        "n": 1253,
+        "target": 226,
+        "stop": 383,
+        "timeout": 644,
+        "net": -0.163,
+        "gross": -0.0525,
+        "mfe": 1.0373,
+        "mae": -1.0721,
+        "directionPositive": 610
+      },
+      "first": {
+        "n": 532,
+        "target": 94,
+        "stop": 166,
+        "timeout": 272,
+        "net": -0.0932,
+        "gross": 0.1118,
+        "mfe": 1.1951,
+        "mae": -1.109,
+        "directionPositive": 282
+      },
+      "first15": {
+        "n": 532,
+        "target": 39,
+        "stop": 100,
+        "timeout": 393,
+        "net": -0.17,
+        "gross": 0.0006,
+        "mfe": 0.8684,
+        "mae": -0.822,
+        "directionPositive": 250
+      },
+      "first60": {
+        "n": 532,
+        "target": 160,
+        "stop": 239,
+        "timeout": 133,
+        "net": -0.089,
+        "gross": -0.1177,
+        "mfe": 1.5853,
+        "mae": -1.6077,
+        "directionPositive": 268
+      },
+      "nov23": {
+        "n": 325,
+        "target": 52,
+        "stop": 99,
+        "timeout": 174,
+        "net": -0.1554,
+        "gross": 0.104,
+        "mfe": 1.1073,
+        "mae": -1.0668,
+        "directionPositive": 175
+      },
+      "nov24": {
+        "n": 207,
+        "target": 42,
+        "stop": 67,
+        "timeout": 98,
+        "net": 0.0045,
+        "gross": 0.1241,
+        "mfe": 1.333,
+        "mae": -1.1753,
+        "directionPositive": 107
+      },
+      "long": {
+        "n": 247,
+        "target": 45,
+        "stop": 81,
+        "timeout": 121,
+        "net": 0.1302,
+        "gross": 0.3217,
+        "mfe": 1.4383,
+        "mae": -0.9762,
+        "directionPositive": 120
+      },
+      "short": {
+        "n": 285,
+        "target": 49,
+        "stop": 85,
+        "timeout": 151,
+        "net": -0.2868,
+        "gross": -0.0701,
+        "mfe": 0.9844,
+        "mae": -1.2241,
+        "directionPositive": 162
+      },
+      "pairs": 30
+    },
+    "TAKER_SPIKE": {
+      "all": {
+        "n": 243,
+        "target": 56,
+        "stop": 96,
+        "timeout": 91,
+        "net": -0.1399,
+        "gross": -0.0919,
+        "mfe": 1.391,
+        "mae": -1.3937,
+        "directionPositive": 112
+      },
+      "first": {
+        "n": 193,
+        "target": 46,
+        "stop": 74,
+        "timeout": 73,
+        "net": -0.021,
+        "gross": 0.1301,
+        "mfe": 1.3396,
+        "mae": -1.0903,
+        "directionPositive": 91
+      },
+      "first15": {
+        "n": 193,
+        "target": 23,
+        "stop": 41,
+        "timeout": 129,
+        "net": -0.017,
+        "gross": 0.1904,
+        "mfe": 1.0483,
+        "mae": -0.7312,
+        "directionPositive": 92
+      },
+      "first60": {
+        "n": 193,
+        "target": 63,
+        "stop": 95,
+        "timeout": 35,
+        "net": -0.0312,
+        "gross": -0.332,
+        "mfe": 1.6328,
+        "mae": -1.7393,
+        "directionPositive": 92
+      },
+      "nov23": {
+        "n": 111,
+        "target": 28,
+        "stop": 49,
+        "timeout": 34,
+        "net": -0.0845,
+        "gross": -0.0288,
+        "mfe": 1.2179,
+        "mae": -1.1654,
+        "directionPositive": 50
+      },
+      "nov24": {
+        "n": 82,
+        "target": 18,
+        "stop": 25,
+        "timeout": 39,
+        "net": 0.065,
+        "gross": 0.3453,
+        "mfe": 1.5045,
+        "mae": -0.9887,
+        "directionPositive": 41
+      },
+      "long": {
+        "n": 69,
+        "target": 20,
+        "stop": 25,
+        "timeout": 24,
+        "net": 0.4936,
+        "gross": 0.6114,
+        "mfe": 2.1508,
+        "mae": -1.1721,
+        "directionPositive": 37
+      },
+      "short": {
+        "n": 124,
+        "target": 26,
+        "stop": 49,
+        "timeout": 49,
+        "net": -0.3073,
+        "gross": -0.1377,
+        "mfe": 0.8883,
+        "mae": -1.0448,
+        "directionPositive": 54
+      },
+      "pairs": 29
+    },
+    "OI_BUILD_FADE": {
+      "all": {
+        "n": 847,
+        "target": 131,
+        "stop": 291,
+        "timeout": 425,
+        "net": -0.3906,
+        "gross": -0.1466,
+        "mfe": 1.7533,
+        "mae": -1.9898,
+        "directionPositive": 409
+      },
+      "first": {
+        "n": 468,
+        "target": 74,
+        "stop": 157,
+        "timeout": 237,
+        "net": -0.2904,
+        "gross": -0.052,
+        "mfe": 1.6547,
+        "mae": -1.7898,
+        "directionPositive": 231
+      },
+      "first15": {
+        "n": 468,
+        "target": 29,
+        "stop": 91,
+        "timeout": 348,
+        "net": -0.237,
+        "gross": -0.0014,
+        "mfe": 1.2016,
+        "mae": -1.2908,
+        "directionPositive": 251
+      },
+      "first60": {
+        "n": 468,
+        "target": 138,
+        "stop": 205,
+        "timeout": 125,
+        "net": -0.2065,
+        "gross": 0.1722,
+        "mfe": 2.3972,
+        "mae": -2.4449,
+        "directionPositive": 237
+      },
+      "nov23": {
+        "n": 284,
+        "target": 48,
+        "stop": 94,
+        "timeout": 142,
+        "net": -0.2799,
+        "gross": -0.0433,
+        "mfe": 1.6636,
+        "mae": -1.8201,
+        "directionPositive": 145
+      },
+      "nov24": {
+        "n": 184,
+        "target": 26,
+        "stop": 63,
+        "timeout": 95,
+        "net": -0.3065,
+        "gross": -0.0655,
+        "mfe": 1.641,
+        "mae": -1.743,
+        "directionPositive": 86
+      },
+      "long": {
+        "n": 255,
+        "target": 41,
+        "stop": 78,
+        "timeout": 136,
+        "net": -0.1817,
+        "gross": -0.0144,
+        "mfe": 1.5517,
+        "mae": -1.574,
+        "directionPositive": 123
+      },
+      "short": {
+        "n": 213,
+        "target": 33,
+        "stop": 79,
+        "timeout": 101,
+        "net": -0.4205,
+        "gross": -0.0971,
+        "mfe": 1.7781,
+        "mae": -2.0481,
+        "directionPositive": 108
+      },
+      "pairs": 30
+    },
+    "BUILD_FLOW_DIVERGENCE": {
+      "all": {
+        "n": 52,
+        "target": 7,
+        "stop": 20,
+        "timeout": 25,
+        "net": -0.3111,
+        "gross": -0.0665,
+        "mfe": 0.7182,
+        "mae": -1.0561,
+        "directionPositive": 25
+      },
+      "first": {
+        "n": 44,
+        "target": 5,
+        "stop": 18,
+        "timeout": 21,
+        "net": -0.371,
+        "gross": -0.1052,
+        "mfe": 0.6787,
+        "mae": -1.0916,
+        "directionPositive": 21
+      },
+      "first15": {
+        "n": 44,
+        "target": 2,
+        "stop": 11,
+        "timeout": 31,
+        "net": -0.376,
+        "gross": -0.1403,
+        "mfe": 0.4592,
+        "mae": -0.7909,
+        "directionPositive": 17
+      },
+      "first60": {
+        "n": 44,
+        "target": 12,
+        "stop": 23,
+        "timeout": 9,
+        "net": -0.2529,
+        "gross": 0.1133,
+        "mfe": 1.1833,
+        "mae": -1.2838,
+        "directionPositive": 23
+      },
+      "nov23": {
+        "n": 34,
+        "target": 4,
+        "stop": 14,
+        "timeout": 16,
+        "net": -0.3899,
+        "gross": -0.1028,
+        "mfe": 0.7243,
+        "mae": -1.1758,
+        "directionPositive": 17
+      },
+      "nov24": {
+        "n": 10,
+        "target": 1,
+        "stop": 4,
+        "timeout": 5,
+        "net": -0.3067,
+        "gross": -0.1133,
+        "mfe": 0.5238,
+        "mae": -0.8056,
+        "directionPositive": 4
+      },
+      "long": {
+        "n": 23,
+        "target": 2,
+        "stop": 10,
+        "timeout": 11,
+        "net": -0.3587,
+        "gross": -0.3274,
+        "mfe": 0.5174,
+        "mae": -1.0123,
+        "directionPositive": 8
+      },
+      "short": {
+        "n": 21,
+        "target": 3,
+        "stop": 8,
+        "timeout": 10,
+        "net": -0.3844,
+        "gross": 0.1382,
+        "mfe": 0.8554,
+        "mae": -1.1786,
+        "directionPositive": 13
+      },
+      "pairs": 18
+    },
+    "OI_BUILD_CONT": {
+      "all": {
+        "n": 847,
+        "target": 171,
+        "stop": 252,
+        "timeout": 424,
+        "net": -0.0865,
+        "gross": 0.1466,
+        "mfe": 1.9898,
+        "mae": -1.7533,
+        "directionPositive": 427
+      },
+      "first": {
+        "n": 468,
+        "target": 90,
+        "stop": 141,
+        "timeout": 237,
+        "net": -0.1461,
+        "gross": 0.052,
+        "mfe": 1.7898,
+        "mae": -1.6547,
+        "directionPositive": 231
+      },
+      "first15": {
+        "n": 468,
+        "target": 48,
+        "stop": 84,
+        "timeout": 336,
+        "net": -0.1982,
+        "gross": 0.0014,
+        "mfe": 1.2908,
+        "mae": -1.2016,
+        "directionPositive": 203
+      },
+      "first60": {
+        "n": 468,
+        "target": 151,
+        "stop": 206,
+        "timeout": 111,
+        "net": -0.1195,
+        "gross": -0.1722,
+        "mfe": 2.4449,
+        "mae": -2.3972,
+        "directionPositive": 227
+      },
+      "nov23": {
+        "n": 284,
+        "target": 57,
+        "stop": 91,
+        "timeout": 136,
+        "net": -0.163,
+        "gross": 0.0433,
+        "mfe": 1.8201,
+        "mae": -1.6636,
+        "directionPositive": 135
+      },
+      "nov24": {
+        "n": 184,
+        "target": 33,
+        "stop": 50,
+        "timeout": 101,
+        "net": -0.1199,
+        "gross": 0.0655,
+        "mfe": 1.743,
+        "mae": -1.641,
+        "directionPositive": 96
+      },
+      "long": {
+        "n": 213,
+        "target": 45,
+        "stop": 63,
+        "timeout": 105,
+        "net": -0.0538,
+        "gross": 0.0971,
+        "mfe": 2.0481,
+        "mae": -1.7781,
+        "directionPositive": 101
+      },
+      "short": {
+        "n": 255,
+        "target": 45,
+        "stop": 78,
+        "timeout": 132,
+        "net": -0.2231,
+        "gross": 0.0144,
+        "mfe": 1.574,
+        "mae": -1.5517,
+        "directionPositive": 130
+      },
+      "pairs": 30
+    },
+    "BUILD_FLOW": {
+      "all": {
+        "n": 254,
+        "target": 51,
+        "stop": 87,
+        "timeout": 116,
+        "net": -0.2224,
+        "gross": 0.0028,
+        "mfe": 1.4092,
+        "mae": -1.3746,
+        "directionPositive": 124
+      },
+      "first": {
+        "n": 179,
+        "target": 34,
+        "stop": 68,
+        "timeout": 77,
+        "net": -0.2432,
+        "gross": 0.0231,
+        "mfe": 1.3744,
+        "mae": -1.3937,
+        "directionPositive": 84
+      },
+      "first15": {
+        "n": 179,
+        "target": 15,
+        "stop": 44,
+        "timeout": 120,
+        "net": -0.2819,
+        "gross": -0.0272,
+        "mfe": 0.9797,
+        "mae": -1.0353,
+        "directionPositive": 75
+      },
+      "first60": {
+        "n": 179,
+        "target": 51,
+        "stop": 91,
+        "timeout": 37,
+        "net": -0.3353,
+        "gross": -0.504,
+        "mfe": 1.7502,
+        "mae": -2.1989,
+        "directionPositive": 75
+      },
+      "nov23": {
+        "n": 104,
+        "target": 19,
+        "stop": 43,
+        "timeout": 42,
+        "net": -0.3279,
+        "gross": -0.0214,
+        "mfe": 1.3642,
+        "mae": -1.5196,
+        "directionPositive": 47
+      },
+      "nov24": {
+        "n": 75,
+        "target": 15,
+        "stop": 25,
+        "timeout": 35,
+        "net": -0.1258,
+        "gross": 0.0847,
+        "mfe": 1.3885,
+        "mae": -1.219,
+        "directionPositive": 37
+      },
+      "long": {
+        "n": 72,
+        "target": 17,
+        "stop": 24,
+        "timeout": 31,
+        "net": 0.2243,
+        "gross": 0.4609,
+        "mfe": 1.8551,
+        "mae": -1.1509,
+        "directionPositive": 39
+      },
+      "short": {
+        "n": 107,
+        "target": 17,
+        "stop": 44,
+        "timeout": 46,
+        "net": -0.5578,
+        "gross": -0.2715,
+        "mfe": 1.0509,
+        "mae": -1.557,
+        "directionPositive": 45
+      },
+      "pairs": 29
+    },
+    "BUILD_FLOW_VOLUME": {
+      "all": {
+        "n": 62,
+        "target": 13,
+        "stop": 28,
+        "timeout": 21,
+        "net": -0.5469,
+        "gross": -0.3523,
+        "mfe": 1.7625,
+        "mae": -2.319,
+        "directionPositive": 30
+      },
+      "first": {
+        "n": 51,
+        "target": 12,
+        "stop": 23,
+        "timeout": 16,
+        "net": -0.3562,
+        "gross": -0.2507,
+        "mfe": 1.7301,
+        "mae": -2.0718,
+        "directionPositive": 25
+      },
+      "first15": {
+        "n": 51,
+        "target": 7,
+        "stop": 16,
+        "timeout": 28,
+        "net": -0.2729,
+        "gross": -0.0778,
+        "mfe": 1.4087,
+        "mae": -1.3905,
+        "directionPositive": 18
+      },
+      "first60": {
+        "n": 51,
+        "target": 18,
+        "stop": 27,
+        "timeout": 6,
+        "net": -0.3364,
+        "gross": -1.2947,
+        "mfe": 2.1525,
+        "mae": -3.4954,
+        "directionPositive": 22
+      },
+      "nov23": {
+        "n": 27,
+        "target": 8,
+        "stop": 13,
+        "timeout": 6,
+        "net": -0.164,
+        "gross": -0.3545,
+        "mfe": 1.8088,
+        "mae": -2.1608,
+        "directionPositive": 13
+      },
+      "nov24": {
+        "n": 24,
+        "target": 4,
+        "stop": 10,
+        "timeout": 10,
+        "net": -0.5724,
+        "gross": -0.1338,
+        "mfe": 1.6415,
+        "mae": -1.9716,
+        "directionPositive": 12
+      },
+      "long": {
+        "n": 20,
+        "target": 7,
+        "stop": 8,
+        "timeout": 5,
+        "net": 0.6096,
+        "gross": 0.5679,
+        "mfe": 2.8947,
+        "mae": -1.8614,
+        "directionPositive": 12
+      },
+      "short": {
+        "n": 31,
+        "target": 5,
+        "stop": 15,
+        "timeout": 11,
+        "net": -0.9793,
+        "gross": -0.7788,
+        "mfe": 0.9787,
+        "mae": -2.2075,
+        "directionPositive": 13
+      },
+      "pairs": 23
+    },
+    "ACCOUNT_SHIFT": {
+      "all": {
+        "n": 359,
+        "target": 76,
+        "stop": 115,
+        "timeout": 168,
+        "net": -0.0085,
+        "gross": 0.2046,
+        "mfe": 2.761,
+        "mae": -2.6728,
+        "directionPositive": 196
+      },
+      "first": {
+        "n": 165,
+        "target": 36,
+        "stop": 54,
+        "timeout": 75,
+        "net": -0.0154,
+        "gross": 0.1487,
+        "mfe": 2.6508,
+        "mae": -2.5868,
+        "directionPositive": 84
+      },
+      "first15": {
+        "n": 165,
+        "target": 21,
+        "stop": 33,
+        "timeout": 111,
+        "net": -0.18,
+        "gross": -0.0814,
+        "mfe": 1.7573,
+        "mae": -1.9166,
+        "directionPositive": 78
+      },
+      "first60": {
+        "n": 165,
+        "target": 53,
+        "stop": 66,
+        "timeout": 46,
+        "net": 0.0965,
+        "gross": 0.5234,
+        "mfe": 3.6025,
+        "mae": -3.165,
+        "directionPositive": 84
+      },
+      "nov23": {
+        "n": 114,
+        "target": 21,
+        "stop": 46,
+        "timeout": 47,
+        "net": -0.3379,
+        "gross": -0.3424,
+        "mfe": 2.3756,
+        "mae": -2.995,
+        "directionPositive": 52
+      },
+      "nov24": {
+        "n": 51,
+        "target": 15,
+        "stop": 8,
+        "timeout": 28,
+        "net": 0.7055,
+        "gross": 1.2464,
+        "mfe": 3.2659,
+        "mae": -1.6742,
+        "directionPositive": 32
+      },
+      "long": {
+        "n": 92,
+        "target": 19,
+        "stop": 28,
+        "timeout": 45,
+        "net": 0.0537,
+        "gross": 0.1258,
+        "mfe": 2.6051,
+        "mae": -2.2664,
+        "directionPositive": 45
+      },
+      "short": {
+        "n": 73,
+        "target": 17,
+        "stop": 26,
+        "timeout": 30,
+        "net": -0.1025,
+        "gross": 0.1776,
+        "mfe": 2.7083,
+        "mae": -2.9905,
+        "directionPositive": 39
+      },
+      "pairs": 27
+    },
+    "BUILD_FLOW_ACCOUNT_SHIFT": {
+      "all": {
+        "n": 14,
+        "target": 2,
+        "stop": 9,
+        "timeout": 3,
+        "net": -0.7986,
+        "gross": 0.185,
+        "mfe": 2.2381,
+        "mae": -3.0849,
+        "directionPositive": 5
+      },
+      "first": {
+        "n": 12,
+        "target": 2,
+        "stop": 7,
+        "timeout": 3,
+        "net": -0.6295,
+        "gross": 0.0162,
+        "mfe": 2.0528,
+        "mae": -2.6578,
+        "directionPositive": 4
+      },
+      "first15": {
+        "n": 12,
+        "target": 2,
+        "stop": 5,
+        "timeout": 5,
+        "net": -0.364,
+        "gross": -0.1342,
+        "mfe": 1.5767,
+        "mae": -2.0145,
+        "directionPositive": 4
+      },
+      "first60": {
+        "n": 12,
+        "target": 3,
+        "stop": 7,
+        "timeout": 2,
+        "net": -0.496,
+        "gross": -0.7855,
+        "mfe": 2.8049,
+        "mae": -3.7602,
+        "directionPositive": 2
+      },
+      "nov23": {
+        "n": 9,
+        "target": 0,
+        "stop": 6,
+        "timeout": 3,
+        "net": -1.312,
+        "gross": -1.288,
+        "mfe": 0.8428,
+        "mae": -2.811,
+        "directionPositive": 2
+      },
+      "nov24": {
+        "n": 3,
+        "target": 2,
+        "stop": 1,
+        "timeout": 0,
+        "net": 1.4178,
+        "gross": 3.9288,
+        "mfe": 5.683,
+        "mae": -2.1982,
+        "directionPositive": 2
+      },
+      "long": {
+        "n": 3,
+        "target": 0,
+        "stop": 2,
+        "timeout": 1,
+        "net": -0.9724,
+        "gross": -1.8977,
+        "mfe": 0.9514,
+        "mae": -3.6544,
+        "directionPositive": 1
+      },
+      "short": {
+        "n": 9,
+        "target": 2,
+        "stop": 5,
+        "timeout": 2,
+        "net": -0.5152,
+        "gross": 0.6542,
+        "mfe": 2.42,
+        "mae": -2.3256,
+        "directionPositive": 3
+      },
+      "pairs": 8
+    },
+    "UNWIND_FLOW": {
+      "all": {
+        "n": 266,
+        "target": 43,
+        "stop": 71,
+        "timeout": 152,
+        "net": -0.1182,
+        "gross": -0.1597,
+        "mfe": 1.3981,
+        "mae": -1.3967,
+        "directionPositive": 129
+      },
+      "first": {
+        "n": 178,
+        "target": 34,
+        "stop": 44,
+        "timeout": 100,
+        "net": -0.0007,
+        "gross": -0.0335,
+        "mfe": 1.4806,
+        "mae": -1.374,
+        "directionPositive": 95
+      },
+      "first15": {
+        "n": 178,
+        "target": 18,
+        "stop": 26,
+        "timeout": 134,
+        "net": 0.0755,
+        "gross": 0.2429,
+        "mfe": 1.1919,
+        "mae": -0.7745,
+        "directionPositive": 99
+      },
+      "first60": {
+        "n": 178,
+        "target": 59,
+        "stop": 66,
+        "timeout": 53,
+        "net": 0.047,
+        "gross": -0.2382,
+        "mfe": 1.8535,
+        "mae": -1.8337,
+        "directionPositive": 93
+      },
+      "nov23": {
+        "n": 107,
+        "target": 15,
+        "stop": 27,
+        "timeout": 65,
+        "net": -0.0943,
+        "gross": 0.0219,
+        "mfe": 1.4402,
+        "mae": -1.3551,
+        "directionPositive": 56
+      },
+      "nov24": {
+        "n": 71,
+        "target": 19,
+        "stop": 17,
+        "timeout": 35,
+        "net": 0.1403,
+        "gross": -0.117,
+        "mfe": 1.5416,
+        "mae": -1.4026,
+        "directionPositive": 39
+      },
+      "long": {
+        "n": 68,
+        "target": 14,
+        "stop": 20,
+        "timeout": 34,
+        "net": 0.3397,
+        "gross": 0.6118,
+        "mfe": 1.968,
+        "mae": -1.112,
+        "directionPositive": 34
+      },
+      "short": {
+        "n": 110,
+        "target": 20,
+        "stop": 24,
+        "timeout": 66,
+        "net": -0.2111,
+        "gross": -0.4324,
+        "mfe": 1.1794,
+        "mae": -1.536,
+        "directionPositive": 61
+      },
+      "pairs": 30
+    },
+    "FUNDING_CONT": {
+      "all": {
+        "n": 1008,
+        "target": 159,
+        "stop": 267,
+        "timeout": 582,
+        "net": -0.1172,
+        "gross": 0.0165,
+        "mfe": 1.9001,
+        "mae": -1.9517,
+        "directionPositive": 545
+      },
+      "first": {
+        "n": 84,
+        "target": 10,
+        "stop": 28,
+        "timeout": 46,
+        "net": -0.1706,
+        "gross": -0.071,
+        "mfe": 1.9373,
+        "mae": -2.1177,
+        "directionPositive": 43
+      },
+      "first15": {
+        "n": 84,
+        "target": 4,
+        "stop": 19,
+        "timeout": 61,
+        "net": -0.2865,
+        "gross": 0.0321,
+        "mfe": 1.3678,
+        "mae": -1.6077,
+        "directionPositive": 45
+      },
+      "first60": {
+        "n": 84,
+        "target": 24,
+        "stop": 33,
+        "timeout": 27,
+        "net": 0.1795,
+        "gross": -0.0727,
+        "mfe": 2.4705,
+        "mae": -3.0508,
+        "directionPositive": 52
+      },
+      "nov23": {
+        "n": 56,
+        "target": 8,
+        "stop": 19,
+        "timeout": 29,
+        "net": -0.2697,
+        "gross": -0.1797,
+        "mfe": 2.1682,
+        "mae": -2.5514,
+        "directionPositive": 29
+      },
+      "nov24": {
+        "n": 28,
+        "target": 2,
+        "stop": 9,
+        "timeout": 17,
+        "net": 0.0277,
+        "gross": 0.1463,
+        "mfe": 1.4757,
+        "mae": -1.2502,
+        "directionPositive": 14
+      },
+      "long": {
+        "n": 46,
+        "target": 5,
+        "stop": 17,
+        "timeout": 24,
+        "net": -0.1302,
+        "gross": -0.0455,
+        "mfe": 2.2669,
+        "mae": -2.3461,
+        "directionPositive": 21
+      },
+      "short": {
+        "n": 38,
+        "target": 5,
+        "stop": 11,
+        "timeout": 22,
+        "net": -0.2194,
+        "gross": -0.102,
+        "mfe": 1.5384,
+        "mae": -1.8412,
+        "directionPositive": 22
+      },
+      "pairs": 18
+    },
+    "FUNDING_FADE": {
+      "all": {
+        "n": 1008,
+        "target": 155,
+        "stop": 330,
+        "timeout": 523,
+        "net": -0.2885,
+        "gross": -0.0165,
+        "mfe": 1.9517,
+        "mae": -1.9001,
+        "directionPositive": 455
+      },
+      "first": {
+        "n": 84,
+        "target": 13,
+        "stop": 26,
+        "timeout": 45,
+        "net": -0.1567,
+        "gross": 0.071,
+        "mfe": 2.1177,
+        "mae": -1.9373,
+        "directionPositive": 39
+      },
+      "first15": {
+        "n": 84,
+        "target": 8,
+        "stop": 14,
+        "timeout": 62,
+        "net": -0.1186,
+        "gross": -0.0321,
+        "mfe": 1.6077,
+        "mae": -1.3678,
+        "directionPositive": 37
+      },
+      "first60": {
+        "n": 84,
+        "target": 23,
+        "stop": 39,
+        "timeout": 22,
+        "net": -0.36,
+        "gross": 0.0727,
+        "mfe": 3.0508,
+        "mae": -2.4705,
+        "directionPositive": 32
+      },
+      "nov23": {
+        "n": 56,
+        "target": 10,
+        "stop": 17,
+        "timeout": 29,
+        "net": -0.0074,
+        "gross": 0.1797,
+        "mfe": 2.5514,
+        "mae": -2.1682,
+        "directionPositive": 27
+      },
+      "nov24": {
+        "n": 28,
+        "target": 3,
+        "stop": 9,
+        "timeout": 16,
+        "net": -0.4553,
+        "gross": -0.1463,
+        "mfe": 1.2502,
+        "mae": -1.4757,
+        "directionPositive": 12
+      },
+      "long": {
+        "n": 38,
+        "target": 5,
+        "stop": 16,
+        "timeout": 17,
+        "net": -0.2891,
+        "gross": 0.102,
+        "mfe": 1.8412,
+        "mae": -1.5384,
+        "directionPositive": 14
+      },
+      "short": {
+        "n": 46,
+        "target": 8,
+        "stop": 10,
+        "timeout": 28,
+        "net": -0.0473,
+        "gross": 0.0455,
+        "mfe": 2.3461,
+        "mae": -2.2669,
+        "directionPositive": 25
+      },
+      "pairs": 18
+    },
+    "ACCOUNT_CROWD_FADE": {
+      "all": {
+        "n": 608,
+        "target": 92,
+        "stop": 204,
+        "timeout": 312,
+        "net": -0.3133,
+        "gross": -0.1231,
+        "mfe": 1.2543,
+        "mae": -1.584,
+        "directionPositive": 268
+      },
+      "first": {
+        "n": 60,
+        "target": 16,
+        "stop": 21,
+        "timeout": 23,
+        "net": -0.0885,
+        "gross": 0.0976,
+        "mfe": 1.7183,
+        "mae": -1.7325,
+        "directionPositive": 25
+      },
+      "first15": {
+        "n": 60,
+        "target": 7,
+        "stop": 14,
+        "timeout": 39,
+        "net": -0.0035,
+        "gross": 0.2155,
+        "mfe": 1.3119,
+        "mae": -1.1276,
+        "directionPositive": 26
+      },
+      "first60": {
+        "n": 60,
+        "target": 17,
+        "stop": 26,
+        "timeout": 17,
+        "net": -0.0677,
+        "gross": 0.02,
+        "mfe": 2.1183,
+        "mae": -2.1607,
+        "directionPositive": 24
+      },
+      "nov23": {
+        "n": 42,
+        "target": 12,
+        "stop": 14,
+        "timeout": 16,
+        "net": 0.0956,
+        "gross": 0.4098,
+        "mfe": 1.8876,
+        "mae": -1.5685,
+        "directionPositive": 19
+      },
+      "nov24": {
+        "n": 18,
+        "target": 4,
+        "stop": 7,
+        "timeout": 7,
+        "net": -0.5181,
+        "gross": -0.6307,
+        "mfe": 1.3231,
+        "mae": -2.1152,
+        "directionPositive": 6
+      },
+      "long": {
+        "n": 24,
+        "target": 11,
+        "stop": 4,
+        "timeout": 9,
+        "net": 0.9709,
+        "gross": 1.1306,
+        "mfe": 2.3896,
+        "mae": -1.1938,
+        "directionPositive": 13
+      },
+      "short": {
+        "n": 36,
+        "target": 5,
+        "stop": 17,
+        "timeout": 14,
+        "net": -0.7948,
+        "gross": -0.591,
+        "mfe": 1.2707,
+        "mae": -2.0916,
+        "directionPositive": 12
+      },
+      "pairs": 9
+    },
+    "ACCOUNT_CROWD_CONT": {
+      "all": {
+        "n": 608,
+        "target": 124,
+        "stop": 161,
+        "timeout": 323,
+        "net": -0.0642,
+        "gross": 0.1231,
+        "mfe": 1.584,
+        "mae": -1.2543,
+        "directionPositive": 327
+      },
+      "first": {
+        "n": 60,
+        "target": 14,
+        "stop": 18,
+        "timeout": 28,
+        "net": 0.0227,
+        "gross": -0.0976,
+        "mfe": 1.7325,
+        "mae": -1.7183,
+        "directionPositive": 35
+      },
+      "first15": {
+        "n": 60,
+        "target": 9,
+        "stop": 12,
+        "timeout": 39,
+        "net": -0.1987,
+        "gross": -0.2155,
+        "mfe": 1.1276,
+        "mae": -1.3119,
+        "directionPositive": 33
+      },
+      "first60": {
+        "n": 60,
+        "target": 19,
+        "stop": 20,
+        "timeout": 21,
+        "net": 0.0378,
+        "gross": -0.02,
+        "mfe": 2.1607,
+        "mae": -2.1183,
+        "directionPositive": 34
+      },
+      "nov23": {
+        "n": 42,
+        "target": 10,
+        "stop": 14,
+        "timeout": 18,
+        "net": -0.1946,
+        "gross": -0.4098,
+        "mfe": 1.5685,
+        "mae": -1.8876,
+        "directionPositive": 23
+      },
+      "nov24": {
+        "n": 18,
+        "target": 4,
+        "stop": 4,
+        "timeout": 10,
+        "net": 0.5297,
+        "gross": 0.6307,
+        "mfe": 2.1152,
+        "mae": -1.3231,
+        "directionPositive": 12
+      },
+      "long": {
+        "n": 36,
+        "target": 11,
+        "stop": 7,
+        "timeout": 18,
+        "net": 0.6019,
+        "gross": 0.591,
+        "mfe": 2.0916,
+        "mae": -1.2707,
+        "directionPositive": 24
+      },
+      "short": {
+        "n": 24,
+        "target": 3,
+        "stop": 11,
+        "timeout": 10,
+        "net": -0.8461,
+        "gross": -1.1306,
+        "mfe": 1.1938,
+        "mae": -2.3896,
+        "directionPositive": 11
+      },
+      "pairs": 9
+    },
+    "UNWIND_FLOW_CROWD": {
+      "all": {
+        "n": 26,
+        "target": 3,
+        "stop": 9,
+        "timeout": 14,
+        "net": -0.6439,
+        "gross": -1.0222,
+        "mfe": 1.4149,
+        "mae": -2.3544,
+        "directionPositive": 7
+      },
+      "first": {
+        "n": 15,
+        "target": 3,
+        "stop": 3,
+        "timeout": 9,
+        "net": 0.0005,
+        "gross": -0.5709,
+        "mfe": 1.9682,
+        "mae": -2.2507,
+        "directionPositive": 7
+      },
+      "first15": {
+        "n": 15,
+        "target": 1,
+        "stop": 1,
+        "timeout": 13,
+        "net": 0.3618,
+        "gross": 0.4041,
+        "mfe": 1.7472,
+        "mae": -0.9789,
+        "directionPositive": 7
+      },
+      "first60": {
+        "n": 15,
+        "target": 6,
+        "stop": 4,
+        "timeout": 5,
+        "net": -0.0046,
+        "gross": -0.8692,
+        "mfe": 2.4274,
+        "mae": -2.9237,
+        "directionPositive": 8
+      },
+      "nov23": {
+        "n": 12,
+        "target": 3,
+        "stop": 2,
+        "timeout": 7,
+        "net": 0.2059,
+        "gross": -0.5583,
+        "mfe": 1.9533,
+        "mae": -2.2594,
+        "directionPositive": 6
+      },
+      "nov24": {
+        "n": 3,
+        "target": 0,
+        "stop": 1,
+        "timeout": 2,
+        "net": -0.8214,
+        "gross": -0.6214,
+        "mfe": 2.0278,
+        "mae": -2.2158,
+        "directionPositive": 1
+      },
+      "long": {
+        "n": 4,
+        "target": 2,
+        "stop": 0,
+        "timeout": 2,
+        "net": 2.9748,
+        "gross": 1.937,
+        "mfe": 3.8382,
+        "mae": -0.4455,
+        "directionPositive": 3
+      },
+      "short": {
+        "n": 11,
+        "target": 1,
+        "stop": 3,
+        "timeout": 7,
+        "net": -1.0811,
+        "gross": -1.4829,
+        "mfe": 1.2882,
+        "mae": -2.9071,
+        "directionPositive": 4
+      },
+      "pairs": 7
+    }
+  },
+  "coverage": [
+    {
+      "symbol": "ZECUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "HYPEUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "BLESSUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "1000PEPEUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "EVAAUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "PROMUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "MMTUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "PIEVERSEUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "ARIAUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "LISTAUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "ELSAUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "BULLAUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "ACEUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "PUMPUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "CYSUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "TAOUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "AKEUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "TRUMPUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "ONUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "LITUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "QNTUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "VVVUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "SKYUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "MUBARAKUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "INXUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "ONDOUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "XLMUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "XMRUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "WLFIUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    },
+    {
+      "symbol": "FETUSDT",
+      "coverage": [
+        {
+          "window": "2026-11-23T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T12:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T16:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-23T20:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T00:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T04:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        },
+        {
+          "window": "2026-11-24T08:00:00Z",
+          "scans": 12,
+          "oi": 12,
+          "ls": 12,
+          "funding": 12
+        }
+      ]
+    }
+  ],
+  "source": "R06 disjoint 30 cohort, generated bundle e43a89d, eight historical windows Nov23-24",
+  "limits": "Exploratory; cohort selected using later turnover, not time holdout; repeated overlapping observations; 0.20% fee proxy. OI build/unwind aliases omitted."
+}

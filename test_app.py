@@ -8,6 +8,7 @@ import unittest
 import tempfile
 from pathlib import Path
 from signals import SignalStore
+from research_history import ResearchHistory
 from unittest.mock import patch
 import app
 
@@ -15,7 +16,7 @@ BASE_SYMBOLS = ['AAAUSDT','BBBUSDT','CCCUSDT','DDDUSDT','EEEUSDT','ZZZUSDT']
 
 
 def fake_candles(tf, symbol='AAAUSDT', direction=0, count=315):
-    durations={'5m':300000,'15m':900000,'1h':3600000,'4h':14400000}
+    durations={'1m':60000,'5m':300000,'15m':900000,'1h':3600000,'4h':14400000}
     ms=durations[tf]
     now=int(time.time()*1000)
     start=(now//ms-count-1)*ms
@@ -39,7 +40,7 @@ def fake_candles(tf, symbol='AAAUSDT', direction=0, count=315):
 
 def fake_market(endpoint, params, ttl=0):
     if endpoint.endswith('exchangeInfo'):
-        symbols=[{'symbol':s,'status':'TRADING','contractType':'PERPETUAL','quoteAsset':'USDT'} for s in BASE_SYMBOLS]
+        symbols=[{'symbol':s,'status':'TRADING','contractType':'PERPETUAL','quoteAsset':'USDT','marginAsset':'USDT','underlyingType':'COIN','underlyingSubType':['Crypto']} for s in BASE_SYMBOLS]
         symbols += [{'symbol':'BADUSDT','status':'BREAK','contractType':'PERPETUAL','quoteAsset':'USDT'},
                     {'symbol':'BTCUSDC','status':'TRADING','contractType':'PERPETUAL','quoteAsset':'USDC'},
                     {'symbol':'DELIVERUSDT','status':'TRADING','contractType':'CURRENT_QUARTER','quoteAsset':'USDT'}]
@@ -65,7 +66,9 @@ class ScannerTests(unittest.TestCase):
     def setUp(self):
         self._tmp=tempfile.TemporaryDirectory()
         self._original_store=app.STORE
+        self._original_history=app.HISTORY
         app.STORE=SignalStore(Path(self._tmp.name)/'scanner.sqlite')
+        app.HISTORY=ResearchHistory(app.STORE.path,app.STORE.lock)
         with app.SCAN_LOCK:
             app.SCAN_STATE.update({'running':False,'rows':[],'processed':0,'total':0,'eligible':0,
                                    'errors':[],'startedAt':None,'completedAt':None,'generation':0,'mode':'all',
@@ -75,6 +78,7 @@ class ScannerTests(unittest.TestCase):
 
     def tearDown(self):
         app.STORE=self._original_store
+        app.HISTORY=self._original_history
         self._tmp.cleanup()
 
     def test_ema_rsi(self):
@@ -198,7 +202,7 @@ class ScannerTests(unittest.TestCase):
         def many(endpoint,params,ttl=0):
             if endpoint.endswith('exchangeInfo'):
                 return {'symbols':[{'symbol':f'C{i:03d}USDT','status':'TRADING',
-                    'contractType':'PERPETUAL','quoteAsset':'USDT'} for i in range(120)]}
+                    'contractType':'PERPETUAL','quoteAsset':'USDT','marginAsset':'USDT','underlyingType':'COIN','underlyingSubType':['Crypto']} for i in range(120)]}
             if endpoint.endswith('ticker/24hr'):
                 return [{'symbol':f'C{i:03d}USDT','quoteVolume':str(120-i),
                     'priceChangePercent':'0','lastPrice':'1.0'} for i in range(120)]

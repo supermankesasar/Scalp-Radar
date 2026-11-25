@@ -1,0 +1,338 @@
+{
+  "selection": "Top 30 rolling 24h turnover among TRADING crypto USDT perpetuals, excluding prior 28 and gold proxies; selected after replay time, exploratory not independent time holdout",
+  "metadataTime": 1795482061565,
+  "old": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT",
+    "BNBUSDT",
+    "XRPUSDT",
+    "DOGEUSDT",
+    "ADAUSDT",
+    "LINKUSDT",
+    "AVAXUSDT",
+    "LTCUSDT",
+    "BCHUSDT",
+    "TRXUSDT",
+    "DOTUSDT",
+    "SUIUSDT",
+    "APTUSDT",
+    "NEARUSDT",
+    "ATOMUSDT",
+    "INJUSDT",
+    "UNIUSDT",
+    "AAVEUSDT",
+    "ARBUSDT",
+    "OPUSDT",
+    "FILUSDT",
+    "ETCUSDT",
+    "WLDUSDT",
+    "ENAUSDT",
+    "SEIUSDT",
+    "TIAUSDT"
+  ],
+  "chosen": [
+    {
+      "symbol": "ZECUSDT",
+      "turnover": 1900034222.25,
+      "asOf": 1795510400139,
+      "onboard": 1580889600000,
+      "types": [
+        "PoW",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "HYPEUSDT",
+      "turnover": 715993873.71448,
+      "asOf": 1795510400972,
+      "onboard": 1748601000000,
+      "types": [
+        "DeFi",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "BLESSUSDT",
+      "turnover": 317860611.160257,
+      "asOf": 1795510400389,
+      "onboard": 1758619800000,
+      "types": [
+        "Alpha",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "1000PEPEUSDT",
+      "turnover": 314103254.3187158,
+      "asOf": 1795510399256,
+      "onboard": 1683244800000,
+      "types": [
+        "Meme",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "EVAAUSDT",
+      "turnover": 283503152.66122,
+      "asOf": 1795510399087,
+      "onboard": 1759487400000,
+      "types": [
+        "DeFi",
+        "Crypto",
+        "Alpha"
+      ]
+    },
+    {
+      "symbol": "PROMUSDT",
+      "turnover": 221247552.7611,
+      "asOf": 1795510398953,
+      "onboard": 1736944200000,
+      "types": [
+        "NFT",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "MMTUSDT",
+      "turnover": 196556951.8126,
+      "asOf": 1795510400316,
+      "onboard": 1762257600000,
+      "types": [
+        "DeFi",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "PIEVERSEUSDT",
+      "turnover": 191164972.1156,
+      "asOf": 1795510401049,
+      "onboard": 1763119800000,
+      "types": [
+        "Alpha",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "ARIAUSDT",
+      "turnover": 176497773.00066,
+      "asOf": 1795510399675,
+      "onboard": 1756897200000,
+      "types": [
+        "Alpha",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "LISTAUSDT",
+      "turnover": 158224158.82282,
+      "asOf": 1795510400425,
+      "onboard": 1718886600000,
+      "types": [
+        "DeFi",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "ELSAUSDT",
+      "turnover": 147431471.0727,
+      "asOf": 1795510400662,
+      "onboard": 1769066700000,
+      "types": [
+        "Alpha",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "BULLAUSDT",
+      "turnover": 135796350.58551,
+      "asOf": 1795510399351,
+      "onboard": 1751619600000,
+      "types": [
+        "Alpha",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "ACEUSDT",
+      "turnover": 115643152.828457,
+      "asOf": 1795510398989,
+      "onboard": 1702893600000,
+      "types": [
+        "Gaming",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "PUMPUSDT",
+      "turnover": 110998590.003954,
+      "asOf": 1795510397152,
+      "onboard": 1752132600000,
+      "types": [
+        "Meme",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "CYSUSDT",
+      "turnover": 103615532.1582,
+      "asOf": 1795510400885,
+      "onboard": 1765537200000,
+      "types": [
+        "Alpha",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "TAOUSDT",
+      "turnover": 95025486.43,
+      "asOf": 1795510400421,
+      "onboard": 1712845800000,
+      "types": [
+        "AI",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "AKEUSDT",
+      "turnover": 82736360.5266675,
+      "asOf": 1795510400514,
+      "onboard": 1758889800000,
+      "types": [
+        "Alpha",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "TRUMPUSDT",
+      "turnover": 80092996.68911,
+      "asOf": 1795510398680,
+      "onboard": 1737205200000,
+      "types": [
+        "Meme",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "ONUSDT",
+      "turnover": 79091215.9094,
+      "asOf": 1795510397846,
+      "onboard": 1761294600000,
+      "types": [
+        "Alpha",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "LITUSDT",
+      "turnover": 73623152.34352,
+      "asOf": 1795510399982,
+      "onboard": 1766511000000,
+      "types": [
+        "DeFi",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "QNTUSDT",
+      "turnover": 73140780.323,
+      "asOf": 1795510400560,
+      "onboard": 1666076400000,
+      "types": [
+        "Infrastructure",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "VVVUSDT",
+      "turnover": 71719593.73241,
+      "asOf": 1795510400599,
+      "onboard": 1738138500000,
+      "types": [
+        "AI",
+        "Crypto",
+        "Alpha"
+      ]
+    },
+    {
+      "symbol": "SKYUSDT",
+      "turnover": 63452032.04466,
+      "asOf": 1795510399634,
+      "onboard": 1757401200000,
+      "types": [
+        "DeFi",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "MUBARAKUSDT",
+      "turnover": 58735304.32656,
+      "asOf": 1795510397590,
+      "onboard": 1742219100000,
+      "types": [
+        "Meme",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "INXUSDT",
+      "turnover": 56531332.934369,
+      "asOf": 1795510400365,
+      "onboard": 1769799600000,
+      "types": [
+        "Alpha",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "ONDOUSDT",
+      "turnover": 53870767.62592,
+      "asOf": 1795510399157,
+      "onboard": 1705755600000,
+      "types": [
+        "DeFi",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "XLMUSDT",
+      "turnover": 51843082.36462,
+      "asOf": 1795510397302,
+      "onboard": 1579507200000,
+      "types": [
+        "Layer-2",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "XMRUSDT",
+      "turnover": 49743221.47,
+      "asOf": 1795510400588,
+      "onboard": 1580716800000,
+      "types": [
+        "PoW",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "WLFIUSDT",
+      "turnover": 45081154.73725,
+      "asOf": 1795510399157,
+      "onboard": 1755937800000,
+      "types": [
+        "DeFi",
+        "Crypto"
+      ]
+    },
+    {
+      "symbol": "FETUSDT",
+      "turnover": 43558931.7621,
+      "asOf": 1795510399339,
+      "onboard": 1673766000000,
+      "types": [
+        "AI",
+        "Crypto"
+      ]
+    }
+  ]
+}
