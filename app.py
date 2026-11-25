@@ -15,6 +15,7 @@ from pathlib import Path
 import re
 from signals import SignalStore
 from filters.registry import evaluate as evaluate_filters
+from filters import scalp_v2
 from research_history import ResearchHistory
 from market_archive import MarketArchive, crypto_universe
 from urllib.error import HTTPError, URLError
@@ -25,6 +26,9 @@ ROOT = Path(__file__).resolve().parent
 STORE = SignalStore(os.getenv('SCANNER_DB', str(ROOT / 'data' / 'signals.sqlite3')))
 HISTORY = ResearchHistory(STORE.path, STORE.lock)
 OVERNIGHT = os.getenv('SCANNER_OVERNIGHT', '0') == '1'
+LIVE_FILTER = os.getenv('SCANNER_LIVE_FILTER', 'BASELINE').upper()
+if LIVE_FILTER not in ('BASELINE','SCALP_V2'):
+    raise ValueError('SCANNER_LIVE_FILTER must be BASELINE or SCALP_V2')
 ARCHIVE = MarketArchive(STORE.path, STORE.lock) if OVERNIGHT else None
 # Research cohort is a historical experiment only; live shadow rules apply to all scanned crypto pairs.
 BASE = "https://fapi.binance.com"
@@ -410,11 +414,29 @@ def scan_symbol(ticker, is_tracked=False):
         'rsi15':rsi15, 'macd5':i5['macdHistogram'], 'rvol5':vratio,
         'vwap':vwap, 'atr_pct':atr_pct, 'ret15':ret15, 'dist_ema15':dist_ema,
     }
+    for p in (10,14):
+        es=ema([r['close'] for r in c5],p)
+        features['ema%d_5'%p],features['prev_ema%d_5'%p]=es[-1],es[-2]
+    features.update(prev_ema9_5=e9_5[-2],rsi5=i5['rsi14'],ret5=ret5,minute=None)
+    minute_error=None
+    if OVERNIGHT or LIVE_FILTER=='SCALP_V2':
+        try:
+            raw=request_market('/fapi/v1/klines',{'symbol':symbol,'interval':'1m','limit':100},ttl=30)
+            if ARCHIVE is not None:
+                ARCHIVE.warmup(symbol,'1m',raw,int(time.time()*1000))
+            features['minute']=scalp_v2.minute_features(parse_klines(raw,now),i5['time'],ema)
+            if features['minute'] is None:
+                minute_error='1m missing or not aligned to 5m close'
+        except Exception as exc:
+            if any(t in str(exc).lower() for t in ('rate limit','http 429','http 418')):
+                raise
+            minute_error=str(exc)[:140]
     evaluation = evaluate_filters(features, shadow=True)
-    long_score = evaluation['baseline']['UP']['score']
-    short_score = evaluation['baseline']['DOWN']['score']
-    potential_up = evaluation['baseline']['UP']['potential']
-    potential_down = evaluation['baseline']['DOWN']['potential']
+    selected=evaluation['v2' if LIVE_FILTER=='SCALP_V2' else 'baseline']
+    long_score = selected['UP']['score']
+    short_score = selected['DOWN']['score']
+    potential_up = selected['UP']['potential']
+    potential_down = selected['DOWN']['potential']
     # OI intentionally not used to assign direction. It simply provides confirmation context.
     oi = {'available': False, 'reason': 'Hanya diambil untuk hasil terklasifikasi'}
     if potential_up or potential_down or is_tracked:
@@ -439,6 +461,8 @@ def scan_symbol(ticker, is_tracked=False):
         'lastClosed5m': i5['time'],
         'researchCandidates':evaluation['candidates'],
         'researchFeatures':features, 'filterBreakdown':evaluation['baseline'],
+        'v2Breakdown':evaluation['v2'], 'liveFilter':LIVE_FILTER,
+        'minuteError':minute_error,
         'volumePhase':evaluation['volumePhase'], 'vwapDistanceATR':evaluation['vwapDistanceATR'],
         '_recent5m': [{'closeTime':r['closeTime'],'close':r['close'],'high':r['high'],'low':r['low']} for r in c5],
     }
@@ -543,6 +567,9 @@ def scan_job(generation, mode, min_turnover):
                         # Advance existing journeys, but don't flood active tab with
                         # first-come events: rank across completed batch candidates.
                         recent_candles[res['symbol']] = res['_recent5m']
+                        if res.get('minuteError'):
+                            with SCAN_LOCK:
+                                SCAN_STATE['errors'].append(res['symbol']+': '+res['minuteError'])
                         # Ledger records all rules before Top5 ranking or journey rotation.
                         # Failure is visible but must not corrupt production tracking.
                         try:

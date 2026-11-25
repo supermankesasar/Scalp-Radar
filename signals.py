@@ -61,6 +61,7 @@ class SignalStore:
                 ('stop_pct', 'REAL NOT NULL DEFAULT 0.40'),
                 ('ended_at', 'INTEGER'),
                 ('end_reason', 'TEXT'),
+                ('filter_id', "TEXT NOT NULL DEFAULT 'BASELINE'"),
             ):
                 if name not in fields:
                     db.execute('ALTER TABLE events ADD COLUMN %s %s' % (name, definition))
@@ -111,7 +112,7 @@ class SignalStore:
             'stopPct': round(e['stop_pct'], 4),
             'initialScore': e['initial_score'], 'lastScore': e['last_score'],
             'setupActive': bool(e['setup_active']),
-            'symbol': e['symbol'],
+            'symbol': e['symbol'], 'filterId':e['filter_id'],
         }
 
     @staticmethod
@@ -193,8 +194,12 @@ class SignalStore:
                         break
                 if status == 'PENDING' and now >= e['started_at'] + PENDING_MS:
                     status, ended_at, end_reason = 'EXPIRED', now, 'TIMEOUT'
-            active = e['setup_active'] if not current else (current['potentialUp'] if e['direction']=='UP' else current['potentialDown'])
-            score = e['last_score'] if not current else (current['longScore'] if e['direction']=='UP' else current['shortScore'])
+            if current and current.get('liveFilter','BASELINE') != e['filter_id']:
+                technical = None
+            else:
+                technical = current
+            active = e['setup_active'] if not technical else (technical['potentialUp'] if e['direction']=='UP' else technical['potentialDown'])
+            score = e['last_score'] if not technical else (technical['longScore'] if e['direction']=='UP' else technical['shortScore'])
             db.execute('''UPDATE events SET status=?,confirmed_at=?,ended_at=?,end_reason=?,
                 last_price=?,last_seen=?,peak_close_pct=?,peak_wick_pct=?,last_score=?,setup_active=? WHERE id=?''',
                 (status,confirmed_at,ended_at,end_reason,price,now,peak_close,peak_wick,int(score),int(bool(active)),e['id']))
@@ -244,10 +249,10 @@ class SignalStore:
             trigger = max(0.65, 1.5*atrpct)
             stop = max(0.40, atrpct)
             db.execute('''INSERT INTO events(symbol,direction,status,started_at,baseline_time,baseline_price,
-                   trigger_pct,stop_pct,initial_score,last_price,last_seen,last_score,setup_active)
-                   VALUES(?,?,'PENDING',?,?,?,?,?,?,?,?,?,1)''',
+                   trigger_pct,stop_pct,initial_score,last_price,last_seen,last_score,setup_active,filter_id)
+                   VALUES(?,?,'PENDING',?,?,?,?,?,?,?,?,?,1,?)''',
                    (row['symbol'],direction,now,row['lastClosed5m'],row['price'],trigger,stop,
-                    int(score),row['price'],now,int(score)))
+                    int(score),row['price'],now,int(score),row.get('liveFilter','BASELINE')))
             pending += 1
 
     def activate_top_candidate(self, row, candles, direction, now_ms=None):

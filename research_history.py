@@ -65,11 +65,11 @@ class ResearchHistory:
         sym, t = row['symbol'], int(row['lastClosed5m'])
         tags = row.get('researchCandidates', [])
         with self.connection() as db:
+            frozen = {k:v for k,v in row.items() if not k.startswith('_')}
+            frozen['schemaVersion'] = 2
+            db.execute('INSERT OR IGNORE INTO research_snapshots VALUES(?,?,?,?)',
+                       (sym,t,now,json.dumps(frozen,allow_nan=False,separators=(',',':'))))
             if tags:
-                frozen = {k:v for k,v in row.items() if not k.startswith('_')}
-                frozen['schemaVersion'] = 1
-                db.execute('INSERT OR IGNORE INTO research_snapshots VALUES(?,?,?,?)',
-                           (sym,t,now,json.dumps(frozen,allow_nan=False,separators=(',',':'))))
                 atr = row['atr5mPct']
                 for tag in tags:
                     db.execute("""INSERT OR IGNORE INTO research_candidates

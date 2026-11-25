@@ -7,3 +7,6 @@ The existing central SQLite database data/signals.sqlite3 receives live candidat
 Morning: double-click export_overnight.bat, upload the ZIP from exports/ to the chat. The SQLite backup API creates a consistent copy even with WAL writes ongoing. Do not copy only the live database file while running. No API key or account data collected. Verify free disk space and permission to use office PC/network overnight. No auto orders.
 
 Staging branch, main unchanged. Host startup/network tests have not been verified here.
+
+## R07 experimental filter (2026-11-25)
+See [R07_SCALP_V2.md](R07_SCALP_V2.md). Overnight launcher now defaults to SCALP_V2 live ranking; previous rules are retained as independent research controls. Set SCANNER_LIVE_FILTER=BASELINE before launching to roll back ranking without deleting data.
