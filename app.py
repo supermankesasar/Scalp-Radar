@@ -18,6 +18,8 @@ from filters.registry import evaluate as evaluate_filters
 from filters import scalp_v2, multifactor
 from research_history import ResearchHistory
 from market_archive import MarketArchive, crypto_universe
+from stream_engine import StreamEngine, LIMIT as WS_LIMIT, close_at
+from stream_research import StreamResearch
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request, urlopen
@@ -30,6 +32,8 @@ LIVE_FILTER = os.getenv('SCANNER_LIVE_FILTER', 'BASELINE').upper()
 if LIVE_FILTER not in ('BASELINE','SCALP_V2','R08_MULTI_CORE','R08_MULTI_FULL'):
     raise ValueError('Unknown SCANNER_LIVE_FILTER')
 ARCHIVE = MarketArchive(STORE.path, STORE.lock) if OVERNIGHT else None
+STREAM = StreamEngine() if os.getenv('SCANNER_WEBSOCKET','0')=='1' else None
+WS_HISTORY = StreamResearch(STORE.path, STORE.lock) if STREAM is not None else None
 # Research cohort is a historical experiment only; live shadow rules apply to all scanned crypto pairs.
 BASE = "https://fapi.binance.com"
 SCAN_MODES = ('all', 'liquid', 'top80')
@@ -52,6 +56,13 @@ CACHE_LOCK = threading.Lock()
 
 
 def request_market(endpoint: str, params: dict, ttl: int = 20):
+    ws_kline=STREAM is not None and endpoint=='/fapi/v1/klines' and params.get('interval') in WS_LIMIT and 'startTime' not in params and 'endTime' not in params
+    if ws_kline:
+        sym,tf=params['symbol'],params['interval']
+        rows=STREAM.candles(sym,tf,max(1,int(params['limit'])-1),int(time.time()*1000))
+        if rows is not None:
+            with STREAM.lock:STREAM.cache_hits+=1
+            return rows
     key = endpoint + "?" + urlencode(params)
     with CACHE_LOCK:
         hit = CACHE.get(key)
@@ -75,6 +86,9 @@ def request_market(endpoint: str, params: dict, ttl: int = 20):
         raise RuntimeError("Binance API error: %s" % str(data.get("msg", data["code"])))
     with CACHE_LOCK:
         CACHE[key] = (time.monotonic() + ttl, data)
+    if ws_kline and isinstance(data,list):
+        STREAM.seed(sym,tf,data,int(time.time()*1000))
+        with STREAM.lock:STREAM.rest_hits+=1
     return data
 
 
@@ -320,6 +334,7 @@ def active_tickers(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, tracked=Non
     """
     validate_scan_options(mode, min_turnover)
     available = active_symbols()
+    if STREAM is not None:STREAM.set_symbols(available)
     tickers = request_market('/fapi/v1/ticker/24hr', {}, ttl=120)
     by_symbol = {}
     if not isinstance(tickers, list):
@@ -453,7 +468,10 @@ def scan_symbol(ticker, is_tracked=False):
     potential_down = selected['DOWN']['potential']
     # OI intentionally not used to assign direction. It simply provides confirmation context.
     oi = {'available': False, 'reason': 'Hanya diambil untuk hasil terklasifikasi'}
-    if potential_up or potential_down or is_tracked:
+    if STREAM is not None:
+        d=features['derivatives']
+        if d.get('oiDelta15') is not None:oi={'available':True,'delta15mPct':d['oiDelta15']}
+    elif potential_up or potential_down or is_tracked:
         try:
             oi = interest_metrics(request_market('/futures/data/openInterestHist',
                 {'symbol': symbol, 'period': '5m', 'limit': 15}, ttl=90))
@@ -527,6 +545,10 @@ def promotion_candidates(rows, now_ms=None, quote_prices=None):
 
 def latest_quotes(symbols=None):
     """Binance bulk lightweight current price endpoint; quote only, not fill."""
+    if STREAM is not None:
+        result=STREAM.prices(symbols,int(time.time()*1000))
+        # Never use stale WS prices. REST fallback only when a requested quote is absent.
+        if symbols is not None and set(symbols)<=set(result):return result
     response = request_market('/fapi/v1/ticker/price', {}, ttl=15)
     if not isinstance(response, list):
         raise RuntimeError('Harga terkini bulk tidak tersedia')
@@ -573,6 +595,7 @@ def scan_job(generation, mode, min_turnover):
                     return
                 started_batch = time.monotonic()
                 batch = tickers[offset:offset+SCAN_BATCH_SIZE]
+                cached_batch=STREAM is not None and all(STREAM.ready(t['symbol'],int(time.time()*1000)) for t in batch)
                 futures = {executor.submit(scan_symbol, t, t['symbol'] in tracked):t['symbol'] for t in batch}
                 for future in as_completed(futures):
                     if not _same_generation(generation):
@@ -636,7 +659,7 @@ def scan_job(generation, mode, min_turnover):
                         SCAN_STATE['errors'].append('Peringatan ranking/kutipan: '+str(exc)[:120])
                 # Track the signal journeys already found while scanning the
                 # next batch; no need for the browser to stay open.
-                if offset + SCAN_BATCH_SIZE < len(tickers):
+                if offset + SCAN_BATCH_SIZE < len(tickers) and not cached_batch:
                     remaining = SCAN_BATCH_INTERVAL - (time.monotonic() - started_batch)
                     if remaining > 0:
                         time.sleep(remaining)
@@ -681,7 +704,8 @@ def read_scanner(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
             SCAN_STATE['mode'], SCAN_STATE['minTurnover'] if SCAN_STATE['mode'] == 'liquid' else None)
         elapsed = now_ms - (SCAN_STATE['completedAt'] or 0)
         started_age = now_ms - (SCAN_STATE['startedAt'] or 0)
-        need_start = (not running and (SCAN_STATE['completedAt'] is None or new_filters
+        new_ws_bar=STREAM is not None and close_at(now_ms-3000,300000) > (SCAN_STATE['startedAt'] or 0)
+        need_start = (not running and (SCAN_STATE['completedAt'] is None or new_filters or new_ws_bar
                                       or elapsed >= SCAN_REFRESH_MS or (force and started_age >= 60000)))
         if need_start:
             SCAN_STATE.update({
@@ -757,6 +781,12 @@ class Handler(BaseHTTPRequestHandler):
             self._reply(200, (ROOT/'icon.png').read_bytes(), 'image/png')
         elif route.path == '/api/health':
             self._reply(200, json.dumps({'ok':True,'version':'0.5','storage':'SQLite','activeTracked':len(STORE.active_symbols())}).encode(), 'application/json')
+        elif route.path == '/api/websocket':
+            result=STREAM.status() if STREAM is not None else {'enabled':False}
+            self._reply(200,json.dumps(result,allow_nan=False).encode(),'application/json')
+        elif route.path == '/api/research/1m':
+            result=WS_HISTORY.summary() if WS_HISTORY is not None else {'enabled':False}
+            self._reply(200,json.dumps(result,allow_nan=False).encode(),'application/json')
         elif route.path == '/api/overnight':
             try:
                 result = ARCHIVE.status() if ARCHIVE is not None else {'enabled':False}
@@ -836,11 +866,29 @@ def scheduler_loop():
         time.sleep(12)
 
 
+def minute_research_loop():
+    last=0
+    while not STREAM.stop.is_set():
+        now=int(time.time()*1000)
+        cutoff=close_at(now-5000,60000)
+        if cutoff>last:
+            try:
+                count=WS_HISTORY.process(STREAM,cutoff,now,ema,atr,parse_klines)
+                last=cutoff
+            except Exception as exc:
+                print('WS research:',str(exc)[:160],flush=True)
+        STREAM.stop.wait(1)
+
+
 def serve():
     host = os.getenv('HOST', '0.0.0.0')
     port = int(os.getenv('PORT', '8765'))
     server = ThreadingHTTPServer((host, port), Handler)
     # Bind successfully before starting workers or launching a browser.
+    if STREAM is not None:
+        threading.Thread(target=STREAM.run_forever,daemon=True,name='ws-streams').start()
+        threading.Thread(target=minute_research_loop,daemon=True,name='ws-research').start()
+        print('R09 WebSocket enabled; status /api/websocket; research /api/research/1m',flush=True)
     if os.getenv('SCANNER_BACKGROUND', '1') == '1':
         threading.Thread(target=scheduler_loop, daemon=True, name='scan-scheduler').start()
         threading.Thread(target=fast_watch_loop, daemon=True, name='fast-watch').start()
@@ -863,6 +911,7 @@ def serve():
     except KeyboardInterrupt:
         print('Server stopped')
     finally:
+        if STREAM is not None:STREAM.stop.set()
         if ARCHIVE is not None:
             ARCHIVE.stop.set()
         server.server_close()

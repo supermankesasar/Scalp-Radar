@@ -63,3 +63,7 @@ Untuk menjalankan tes: `python -m unittest discover -p "test_*.py" -v` dan `pyth
 ## Satu jalur pengembangan
 
 `main` adalah sumber resmi R08 dan satu-satunya branch aktif untuk distribusi. [Unduh ZIP main](https://github.com/supermankesasar/Scalp-Radar/archive/refs/heads/main.zip), pertahankan folder `data/` saat update, lalu jalankan `START-WINDOWS.bat`. Lihat [R08 Multi-Factor](research/R08_MULTI.md) dan [panduan pengumpulan data](research/OVERNIGHT.md). Branch research/modular-r06 dan research/technical-r01-r05 sudah tergabung ke main; feature/v05-data-backtest-oneclick adalah eksperimen Scalping/Swing lama yang terpisah, dipertahankan sebagai arsip kode dan bukan jalur distribusi. Jangan merge branch lama secara langsung ke main karena arsitektur scanner dan database berbeda.
+
+
+## R09 Hybrid WebSocket
+START-WINDOWS.bat installs the pinned public WebSocket client when needed and starts R09 automatically. R08 live ranking remains the default control; all R08 rules and new independent minute microstructure rules run together. See [R09](research/R09_WEBSOCKET.md). Health: /api/websocket and /api/research/1m. No keys or orders.

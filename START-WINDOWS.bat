@@ -4,6 +4,7 @@ cd /d "%~dp0"
 rem One launcher for daytime and overnight: scanner, research and market archive.
 set "SCANNER_OVERNIGHT=1"
 set "SCANNER_BACKGROUND=1"
+set "SCANNER_WEBSOCKET=1"
 if not defined SCANNER_LIVE_FILTER set "SCANNER_LIVE_FILTER=R08_MULTI_CORE"
 set "HOST=127.0.0.1"
 set "PORT=8765"
@@ -17,19 +18,32 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
-echo Scalp Radar - ALL crypto USDT Perpetuals
+echo Scalp Radar R09 - ALL crypto USDT Perpetuals
 echo Database: %SCANNER_DB%
 echo Live filter: %SCANNER_LIVE_FILTER%
 echo Browser: http://127.0.0.1:8765
 echo Collection: http://127.0.0.1:8765/api/overnight
 echo Research: http://127.0.0.1:8765/api/research
+echo WebSocket: http://127.0.0.1:8765/api/websocket
+echo Research 1M: http://127.0.0.1:8765/api/research/1m
 echo Keep this terminal and PC running. Browser may be closed.
 where py >nul 2>&1
 if not errorlevel 1 (
-  py -3 -u app.py
+  set "PY=py -3"
 ) else (
-  python -u app.py
+  set "PY=python"
 )
+%PY% -c "import websockets; assert websockets.__version__ == '15.0.1'" >nul 2>&1
+if errorlevel 1 (
+  echo Installing required WebSocket library...
+  %PY% -m pip install -r requirements.txt
+  if errorlevel 1 (
+    echo WebSocket dependency installation failed. Check internet or Python installation.
+    pause
+    exit /b 1
+  )
+)
+%PY% -u app.py
 set "RESULT=%errorlevel%"
 echo Server stopped. Review the messages above.
 pause

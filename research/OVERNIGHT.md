@@ -13,3 +13,5 @@ See [R07_SCALP_V2.md](R07_SCALP_V2.md). R07 originally defaulted to SCALP_V2 liv
 
 ## R08
 START-WINDOWS.bat now defaults to R08_MULTI_CORE and enables the full collector; see [R08_MULTI.md](R08_MULTI.md) for hypotheses, data coverage and rollback modes.
+
+R09: START-WINDOWS.bat enables public WebSocket cache and minute research. First launch installs requirements.txt if necessary; internet and Python pip required. See R09_WEBSOCKET.md. Existing SQLite export includes all new tables.
