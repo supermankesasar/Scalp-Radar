@@ -1,5 +1,5 @@
 # R08 — parallel research, 25 November 2026
-All previous R06/R07 rules remain active as shadow controls. START-WINDOWS.bat is the single launcher for daytime and overnight; defaults to R08_MULTI_CORE; set SCANNER_LIVE_FILTER=SCALP_V2, BASELINE, or R08_MULTI_FULL before launch to select alternatives. No UI changes, AI runtime, orders, or main merge.
+All previous R06/R07 rules remain active as shadow controls. START-WINDOWS.bat is the single launcher for daytime and overnight; defaults to R08_MULTI_CORE; set SCANNER_LIVE_FILTER=SCALP_V2, BASELINE, or R08_MULTI_FULL before launch to select alternatives. No UI changes, AI runtime or orders. R08 is merged into main, the canonical distribution branch.
 
 Case-driven hypotheses (from project handoff; not new backtest results):
 - PIEVERSE: confirmed RSI divergence + structure break, double top and exhaustion; OI sign not a mandatory gate.

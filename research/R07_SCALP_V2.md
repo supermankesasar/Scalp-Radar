@@ -1,5 +1,5 @@
 # R07 — short EMA experiment
-Not validated or promoted to main. No automated orders, no AI runtime. Same UI.
+Historical R07 experiment retained in main through R08; profitability not validated. No automated orders, no AI runtime. Same UI.
 R07 originally defaulted to SCALP_V2 live ranking; R08 now uses START-WINDOWS.bat with R08_MULTI_CORE by default; normal app.py defaults BASELINE.
 Set SCANNER_LIVE_FILTER=BASELINE to restore previous live ranking; research tags continue in overnight.
 Baseline and the three R06 challengers remain unchanged. New independent EMA10/14 price crosses 5m and EMA9/10/14 1m crossings synchronized to 5m closes, plus SCALP_V2.

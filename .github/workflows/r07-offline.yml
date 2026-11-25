@@ -1,7 +1,9 @@
-name: R07 offline
+name: Scalp Radar offline
 on:
   push:
-    branches: [research/modular-r06]
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 jobs:
   test:
