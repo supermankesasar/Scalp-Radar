@@ -3,7 +3,7 @@ setlocal
 cd /d "%~dp0"
 set "SCANNER_OVERNIGHT=1"
 set "SCANNER_BACKGROUND=1"
-if not defined SCANNER_LIVE_FILTER set "SCANNER_LIVE_FILTER=SCALP_V2"
+if not defined SCANNER_LIVE_FILTER set "SCANNER_LIVE_FILTER=R08_MULTI_CORE"
 set "HOST=127.0.0.1"
 set "PORT=8765"
 if not defined SCANNER_DB set "SCANNER_DB=%~dp0data\signals.sqlite3"

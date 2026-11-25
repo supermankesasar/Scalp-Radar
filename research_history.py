@@ -35,6 +35,8 @@ class ResearchHistory:
               candle_time INTEGER NOT NULL, direction TEXT NOT NULL, payload TEXT NOT NULL,
               PRIMARY KEY(run_id,batch,symbol,candle_time,direction));
             """)
+            if 'observed_at' not in {r['name'] for r in db.execute('PRAGMA table_info(research_candidates)')}:
+                db.execute('ALTER TABLE research_candidates ADD COLUMN observed_at INTEGER')
     @contextmanager
     def connection(self):
         with self.lock:
@@ -66,17 +68,17 @@ class ResearchHistory:
         tags = row.get('researchCandidates', [])
         with self.connection() as db:
             frozen = {k:v for k,v in row.items() if not k.startswith('_')}
-            frozen['schemaVersion'] = 2
+            frozen['schemaVersion'] = 3
             db.execute('INSERT OR IGNORE INTO research_snapshots VALUES(?,?,?,?)',
                        (sym,t,now,json.dumps(frozen,allow_nan=False,separators=(',',':'))))
             if tags:
                 atr = row['atr5mPct']
                 for tag in tags:
                     db.execute("""INSERT OR IGNORE INTO research_candidates
-                      (symbol,candle_time,filter_id,version,direction,baseline,target,stop,score)
-                      VALUES(?,?,?,?,?,?,?,?,?)""",
+                      (symbol,candle_time,filter_id,version,direction,baseline,target,stop,score,observed_at)
+                      VALUES(?,?,?,?,?,?,?,?,?,?)""",
                       (sym,t,tag['id'],tag['version'],tag['direction'],row['price'],
-                       max(.65,1.5*atr),max(.4,atr),tag.get('score')))
+                       max(.65,1.5*atr),max(.4,atr),tag.get('score'),now))
             bars = {int(c['closeTime']):c for c in candles if int(c['closeTime']) < now}
             if not bars:
                 return
@@ -115,6 +117,11 @@ class ResearchHistory:
                       FROM research_candidates c JOIN research_outcomes o ON c.id=o.candidate_id
                       GROUP BY 1,2,3,4,5 ORDER BY 1,2,3,4,5""").fetchall()
             counts = db.execute("SELECT filter_id,version,COUNT(*) n FROM research_candidates GROUP BY 1,2").fetchall()
-            return {'candidates':[dict(r) for r in counts], 'outcomes':[dict(r) for r in rows],
+            comparison=db.execute("""SELECT c.filter_id,c.version,c.direction,o.horizon,o.confirm,COUNT(*) n,
+                 SUM(o.state='TARGET') targets,SUM(o.state='STOP') stops,SUM(o.state='TIMEOUT') timeouts,
+                 AVG(CASE o.state WHEN 'TARGET' THEN c.target-.20 WHEN 'STOP' THEN -c.stop-.20 WHEN 'TIMEOUT' THEN o.endpoint_pct-.20 END) net_proxy_pct,
+                 AVG((c.observed_at-c.candle_time)/1000.0) latency_seconds
+                 FROM research_candidates c JOIN research_outcomes o ON o.candidate_id=c.id GROUP BY 1,2,3,4,5""").fetchall()
+            return {'candidates':[dict(r) for r in counts], 'outcomes':[dict(r) for r in rows], 'comparison':[dict(r) for r in comparison],
                     'archiveRows':db.execute('SELECT COUNT(*) FROM research_archive').fetchone()[0],
                     'note':'All candidates, not top five. Candle-close outcomes, not real execution.'}

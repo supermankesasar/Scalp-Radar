@@ -30,6 +30,8 @@ class MarketArchive:
         self.next_request=0.
         self.pause_until=0.
         self.stop=threading.Event()
+        self.breadth_lock=threading.Lock()
+        self.breadth_cache={}
         with self.db() as db:
             db.execute('PRAGMA journal_mode=WAL')
             db.executescript("""
@@ -88,8 +90,62 @@ class MarketArchive:
         kind='kline_'+tf
         with self.db() as db:
             exists=db.execute('SELECT 1 FROM market_observations WHERE kind=? AND symbol=? LIMIT 1',(kind,symbol)).fetchone()
-        if exists: rows=rows[-12:]
+        if exists and tf!='1m': rows=rows[-12:]
+        # 1m backfill spans slow ALL scans; INSERT OR IGNORE deduplicates.
         return self.put(kind,symbol,[(r[6],r) for r in rows],received)
+    def research_context(self,symbol,cutoff,decision,universe_size):
+        # Strict point-in-time receipt and source bounds; stale context is absent.
+        d={}
+        with self.db() as db:
+            for kind,key,field in [('oi','oiDelta15','sumOpenInterest'),
+              ('global_ls','globalDeltaPP','longAccount'),('top_accounts','topAccountDeltaPP','longAccount'),
+              ('top_positions','topPositionDeltaPP','longAccount')]:
+                rows=db.execute("SELECT source_ts,payload FROM market_observations WHERE kind=? AND symbol=? AND source_ts<=? AND received_at<=? AND source_ts>=? ORDER BY source_ts DESC LIMIT 8",
+                                (kind,symbol,cutoff,decision,cutoff-35*60000)).fetchall()
+                if not rows or cutoff-rows[0]['source_ts']>10*60000:continue
+                t=rows[0]['source_ts'];prior=next((x for x in rows[1:] if 15*60000<=t-x['source_ts']<=20*60000),None)
+                if prior is None:continue
+                try:
+                    x=float(json.loads(rows[0]['payload'])[field]);y=float(json.loads(prior['payload'])[field])
+                    if kind=='oi':
+                        if not y:continue
+                        # Match price return to OI interval, not present price.
+                        end=(t//300000)*300000-1;start=(prior['source_ts']//300000)*300000-1
+                        bars=db.execute("SELECT source_ts,payload FROM market_observations WHERE kind='kline_5m' AND symbol=? AND source_ts IN (?,?) AND received_at<=?",(symbol,start,end,decision)).fetchall()
+                        prices={v['source_ts']:float(json.loads(v['payload'])[4]) for v in bars}
+                        if start not in prices or end not in prices or not prices[start]:continue
+                        d[key]=100*(x/y-1);d['oiPriceRet15']=100*(prices[end]/prices[start]-1);d['oiSourceTs']=t
+                    else:d[key]=100*(x-y)
+                except (KeyError,ValueError,TypeError,IndexError,ZeroDivisionError):continue
+            row=db.execute("SELECT source_ts,payload FROM market_observations WHERE kind='mark_funding' AND symbol=? AND source_ts<=? AND source_ts>=? AND received_at<=? ORDER BY source_ts DESC LIMIT 1",(symbol,cutoff,cutoff-40*60000,decision)).fetchone()
+            if row:
+                try:
+                    v=json.loads(row['payload']);d['fundingSnapshot']=float(v['lastFundingRate'])
+                    mark,index=float(v['markPrice']),float(v['indexPrice'])
+                    if index:d['basisPct']=100*(mark/index-1)
+                    d['fundingSourceTs']=row['source_ts']
+                except (KeyError,ValueError,TypeError,ZeroDivisionError):pass
+        # Breadth is synchronized at one exact close; never combine different symbol timestamps.
+        # Cache is built no later than the caller's decision, for 30 seconds only.
+        bucket=(cutoff,universe_size)
+        with self.breadth_lock:
+            cached=self.breadth_cache.get(bucket)
+            if cached is None or not 0<=decision-cached[0]<=30000:
+                with self.db() as db:
+                    rows=db.execute("SELECT symbol,source_ts,payload FROM market_observations WHERE kind='kline_5m' AND source_ts IN (?,?) AND received_at<=?",(cutoff,cutoff-900000,decision)).fetchall()
+                prices={}
+                for row in rows:
+                    try:prices.setdefault(row['symbol'],{})[row['source_ts']]=float(json.loads(row['payload'])[4])
+                    except (ValueError,TypeError,IndexError):continue
+                returns={s:100*(v[cutoff]/v[cutoff-900000]-1) for s,v in prices.items() if cutoff in v and v.get(cutoff-900000,0)>0}
+                cached=(decision,returns)
+                self.breadth_cache={k:v for k,v in self.breadth_cache.items() if 0<=decision-v[0]<=300000}
+                self.breadth_cache[bucket]=cached
+            returns=cached[1]
+        n=len(returns);b={'sampleCount':n,'universeSize':universe_size,'cutoff':cutoff}
+        if universe_size and n>=max(20,.6*universe_size) and symbol in returns and 'BTCUSDT' in returns:
+            b.update(upShare=sum(v>0 for v in returns.values())/n,relativeBTC=returns[symbol]-returns['BTCUSDT'],btcRet15=returns['BTCUSDT'])
+        return d,b
     def error(self,run,symbol,kind,e):
         with self.db() as db:
             db.execute('INSERT INTO market_collection_errors(run_id,symbol,kind,at,message) VALUES(?,?,?,?,?)',(run,symbol,kind,now_ms(),str(e)[:300]))

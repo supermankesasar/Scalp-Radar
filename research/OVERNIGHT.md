@@ -10,3 +10,6 @@ Staging branch, main unchanged. Host startup/network tests have not been verifie
 
 ## R07 experimental filter (2026-11-25)
 See [R07_SCALP_V2.md](R07_SCALP_V2.md). Overnight launcher now defaults to SCALP_V2 live ranking; previous rules are retained as independent research controls. Set SCANNER_LIVE_FILTER=BASELINE before launching to roll back ranking without deleting data.
+
+## R08
+Overnight now defaults to R08_MULTI_CORE; see [R08_MULTI.md](R08_MULTI.md) for hypotheses, data coverage and rollback modes.

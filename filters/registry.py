@@ -3,7 +3,7 @@ No experimental rule modifies the v0.5 ranking. Versions form a configuration id
 """
 from types import MappingProxyType
 from . import trend, ema5, ema15, rsi, macd, relative_volume, vwap, anti_fomo
-from . import ema9_cross, ema21_pullback, trend1h_ema21, scalp_v2
+from . import ema9_cross, ema21_pullback, trend1h_ema21, scalp_v2, multifactor
 
 BASE_MODULES = (trend, ema15, ema5, macd, rsi, relative_volume, vwap)
 BASE_VERSION = 'baseline-v05:' + '+'.join(m.VERSION for m in BASE_MODULES + (anti_fomo,))
@@ -12,6 +12,7 @@ def evaluate(values, shadow=False):
     details = {}
     tags = []
     v2 = {}
+    r08 = {}
     for sign, key in ((1, 'UP'), (-1, 'DOWN')):
         contributions = {m.__name__.split('.')[-1]: m.points(c, sign) for m in BASE_MODULES}
         score = sum(contributions.values())
@@ -20,8 +21,12 @@ def evaluate(values, shadow=False):
         if potential:
             tags.append({'id':'BASELINE', 'version':BASE_VERSION, 'direction':key, 'score':score})
         v2[key] = scalp_v2.evaluate(c, sign)
+        r08[key] = multifactor.evaluate(c, sign)
         if not shadow:
             continue
+        for name in r08[key]['tags']:
+            tags.append({'id':name,'version':multifactor.VERSION,'direction':key,
+                         'score':r08[key]['full'] if name=='R08_MULTI_FULL' else r08[key]['core'] if name=='R08_MULTI_CORE' else None})
         for name in scalp_v2.challengers(c, sign):
             tags.append({'id':name,'version':'ema-cross-sync5-v1','direction':key,'score':None})
         if v2[key]['potential']:
@@ -35,5 +40,5 @@ def evaluate(values, shadow=False):
         alt_score = score - contributions['trend'] + trend.points(alt, sign)
         if alt_score >= 68 and trend.gate(alt, sign) and anti_fomo.gate(alt, sign):
             tags.append({'id':'TREND1H_EMA21','version':trend1h_ema21.VERSION+'|'+BASE_VERSION,'direction':key,'score':alt_score})
-    return {'baseline':details, 'v2':v2, 'candidates':tags, 'volumePhase':relative_volume.phase(c),
+    return {'baseline':details, 'v2':v2, 'r08':r08, 'candidates':tags, 'volumePhase':relative_volume.phase(c),
             'vwapDistanceATR':{k:vwap.distance_atr(c,s) for s,k in ((1,'UP'),(-1,'DOWN'))}}

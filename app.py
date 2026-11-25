@@ -15,7 +15,7 @@ from pathlib import Path
 import re
 from signals import SignalStore
 from filters.registry import evaluate as evaluate_filters
-from filters import scalp_v2
+from filters import scalp_v2, multifactor
 from research_history import ResearchHistory
 from market_archive import MarketArchive, crypto_universe
 from urllib.error import HTTPError, URLError
@@ -27,8 +27,8 @@ STORE = SignalStore(os.getenv('SCANNER_DB', str(ROOT / 'data' / 'signals.sqlite3
 HISTORY = ResearchHistory(STORE.path, STORE.lock)
 OVERNIGHT = os.getenv('SCANNER_OVERNIGHT', '0') == '1'
 LIVE_FILTER = os.getenv('SCANNER_LIVE_FILTER', 'BASELINE').upper()
-if LIVE_FILTER not in ('BASELINE','SCALP_V2'):
-    raise ValueError('SCANNER_LIVE_FILTER must be BASELINE or SCALP_V2')
+if LIVE_FILTER not in ('BASELINE','SCALP_V2','R08_MULTI_CORE','R08_MULTI_FULL'):
+    raise ValueError('Unknown SCANNER_LIVE_FILTER')
 ARCHIVE = MarketArchive(STORE.path, STORE.lock) if OVERNIGHT else None
 # Research cohort is a historical experiment only; live shadow rules apply to all scanned crypto pairs.
 BASE = "https://fapi.binance.com"
@@ -138,7 +138,7 @@ def parse_klines(rows, now_ms):
             "time": int(c[0]), "closeTime": int(c[6]),
             "open": float(c[1]), "high": float(c[2]), "low": float(c[3]),
             "close": float(c[4]), "volume": float(c[5]),
-            "quoteVolume": float(c[7]), "takerBuyQuote": float(c[10]),
+            "quoteVolume": float(c[7]), "takerBuyQuote": float(c[10]), "tradeCount": int(c[8]),
         })
     return out
 
@@ -346,6 +346,8 @@ def active_tickers(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, tracked=Non
         'symbol': sym, 'turnover24h': 0.0, 'change24h': None,
         'tickerAvailable': False,
     }) for sym in available]
+    for row in all_tickers:
+        row['_universe_size']=len(available)
     all_tickers.sort(key=lambda r:(-r['turnover24h'], r['symbol']))
     if mode == 'all':
         selected = list(all_tickers)
@@ -419,7 +421,7 @@ def scan_symbol(ticker, is_tracked=False):
         features['ema%d_5'%p],features['prev_ema%d_5'%p]=es[-1],es[-2]
     features.update(prev_ema9_5=e9_5[-2],rsi5=i5['rsi14'],ret5=ret5,minute=None)
     minute_error=None
-    if OVERNIGHT or LIVE_FILTER=='SCALP_V2':
+    if OVERNIGHT or LIVE_FILTER!='BASELINE':
         try:
             raw=request_market('/fapi/v1/klines',{'symbol':symbol,'interval':'1m','limit':100},ttl=30)
             if ARCHIVE is not None:
@@ -431,8 +433,20 @@ def scan_symbol(ticker, is_tracked=False):
             if any(t in str(exc).lower() for t in ('rate limit','http 429','http 418')):
                 raise
             minute_error=str(exc)[:140]
+    features['multi']=multifactor.extract(c5,rsi,atr)
+    features['derivatives'],features['breadth']={},{}
+    context_error=None
+    if ARCHIVE is not None:
+        try:
+            features['derivatives'],features['breadth']=ARCHIVE.research_context(symbol,i5['time'],int(time.time()*1000),ticker.get('_universe_size',0))
+        except Exception as exc:
+            context_error=str(exc)[:140]
     evaluation = evaluate_filters(features, shadow=True)
     selected=evaluation['v2' if LIVE_FILTER=='SCALP_V2' else 'baseline']
+    if LIVE_FILTER.startswith('R08_'):
+        full=LIVE_FILTER=='R08_MULTI_FULL'
+        selected={k:{'score':int(v['full'] or 0) if full else v['core'],
+                     'potential':v['fullPotential'] if full else v['potential']} for k,v in evaluation['r08'].items()}
     long_score = selected['UP']['score']
     short_score = selected['DOWN']['score']
     potential_up = selected['UP']['potential']
@@ -462,7 +476,8 @@ def scan_symbol(ticker, is_tracked=False):
         'researchCandidates':evaluation['candidates'],
         'researchFeatures':features, 'filterBreakdown':evaluation['baseline'],
         'v2Breakdown':evaluation['v2'], 'liveFilter':LIVE_FILTER,
-        'minuteError':minute_error,
+        'minuteError':minute_error, 'contextError':context_error,
+        'r08Breakdown':evaluation['r08'],
         'volumePhase':evaluation['volumePhase'], 'vwapDistanceATR':evaluation['vwapDistanceATR'],
         '_recent5m': [{'closeTime':r['closeTime'],'close':r['close'],'high':r['high'],'low':r['low']} for r in c5],
     }
@@ -570,6 +585,9 @@ def scan_job(generation, mode, min_turnover):
                         if res.get('minuteError'):
                             with SCAN_LOCK:
                                 SCAN_STATE['errors'].append(res['symbol']+': '+res['minuteError'])
+                        if res.get('contextError'):
+                            with SCAN_LOCK:
+                                SCAN_STATE['errors'].append(res['symbol']+': context '+res['contextError'])
                         # Ledger records all rules before Top5 ranking or journey rotation.
                         # Failure is visible but must not corrupt production tracking.
                         try:
