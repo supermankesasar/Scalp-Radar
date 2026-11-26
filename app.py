@@ -20,6 +20,8 @@ from research_history import ResearchHistory
 from market_archive import MarketArchive, crypto_universe
 from stream_engine import StreamEngine, LIMIT as WS_LIMIT, close_at
 from stream_research import StreamResearch
+from research_r10 import ResearchR10
+from runtime_r10 import Runtime
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request, urlopen
@@ -34,6 +36,8 @@ if LIVE_FILTER not in ('BASELINE','SCALP_V2','R08_MULTI_CORE','R08_MULTI_FULL','
 ARCHIVE = MarketArchive(STORE.path, STORE.lock) if OVERNIGHT else None
 STREAM = StreamEngine() if os.getenv('SCANNER_WEBSOCKET','0')=='1' else None
 WS_HISTORY = StreamResearch(STORE.path, STORE.lock) if STREAM is not None else None
+R10 = ResearchR10(STORE.path, STORE.lock) if os.getenv('SCANNER_R10','0')=='1' and STREAM is not None else None
+RUNTIME = None
 # Research cohort is a historical experiment only; live shadow rules apply to all scanned crypto pairs.
 BASE = "https://fapi.binance.com"
 SCAN_MODES = ('all', 'liquid', 'top80')
@@ -632,6 +636,9 @@ def scan_job(generation, mode, min_turnover):
                         except Exception as history_error:
                             with SCAN_LOCK:
                                 SCAN_STATE['errors'].append('Research ledger: '+str(history_error)[:150])
+                        if R10 is not None:
+                            try:R10.record5(res,int(time.time()*1000))
+                            except Exception as exc:print('R10 5m ledger:',str(exc)[:160],flush=True)
                         res = STORE.refresh(res, res['_recent5m'], allow_new=False)
                         if res.get('potentialUp') or res.get('potentialDown'):
                             eligible_rows.append(res)
@@ -645,6 +652,7 @@ def scan_job(generation, mode, min_turnover):
                         if generation != SCAN_STATE['generation']:
                             return
                         SCAN_STATE['processed'] += 1
+                        SCAN_STATE['progressAt'] = int(time.time()*1000)
                         if res:
                             SCAN_STATE['rows'].append(res)
                         if error:
@@ -725,7 +733,7 @@ def read_scanner(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
             SCAN_STATE.update({
                 'running': True, 'rows': [], 'processed': 0, 'total': 0, 'eligible': 0,
                 'universe': 0, 'missingTicker': 0, 'trackedExtra': 0,
-                'errors': [], 'startedAt': now_ms, 'completedAt': None,
+                'errors': [], 'startedAt': now_ms, 'progressAt':now_ms, 'completedAt': None,
                 'mode': mode, 'minTurnover': min_turnover,
                 'generation': SCAN_STATE['generation']+1,
                 'message': 'Mengambil daftar USDT perpetual Binance',
@@ -795,6 +803,10 @@ class Handler(BaseHTTPRequestHandler):
             self._reply(200, (ROOT/'icon.png').read_bytes(), 'image/png')
         elif route.path == '/api/health':
             self._reply(200, json.dumps({'ok':True,'version':'0.5','storage':'SQLite','activeTracked':len(STORE.active_symbols())}).encode(), 'application/json')
+        elif route.path == '/api/runtime':
+            self._reply(200,json.dumps(RUNTIME.status() if RUNTIME else {'enabled':False}).encode(),'application/json')
+        elif route.path == '/api/research/r10':
+            self._reply(200,json.dumps(R10.status() if R10 else {'enabled':False}).encode(),'application/json')
         elif route.path == '/api/websocket':
             result=STREAM.status() if STREAM is not None else {'enabled':False}
             self._reply(200,json.dumps(result,allow_nan=False).encode(),'application/json')
@@ -877,6 +889,7 @@ def scheduler_loop():
             read_scanner(mode, turnover)
         except Exception as exc:
             print('Background scheduler:',str(exc),flush=True)
+        if RUNTIME:RUNTIME.beat('scan-scheduler')
         time.sleep(12)
 
 
@@ -887,27 +900,54 @@ def minute_research_loop():
         cutoff=close_at(now-5000,60000)
         if cutoff>last:
             try:
-                count=WS_HISTORY.process(STREAM,cutoff,now,ema,atr,parse_klines)
+                count=WS_HISTORY.process(STREAM,cutoff,now,ema,atr,parse_klines,r10=R10)
+                if RUNTIME:RUNTIME.beat('ws-research',count=count,cutoff=cutoff)
                 last=cutoff
             except Exception as exc:
                 print('WS research:',str(exc)[:160],flush=True)
         STREAM.stop.wait(1)
 
 
+def minute_seed_loop():
+    # Paced 1m recovery independent of slow 5m scan; never fake WS provenance.
+    while not STREAM.stop.is_set():
+        with STREAM.lock:symbols=sorted(STREAM.symbols)
+        for symbol in symbols:
+            if STREAM.stop.is_set():return
+            if STREAM.candles(symbol,'1m',61,int(time.time()*1000)) is not None:continue
+            try:request_market('/fapi/v1/klines',{'symbol':symbol,'interval':'1m','limit':100},ttl=30)
+            except Exception as exc:
+                print('R10 seed:',symbol,str(exc)[:100],flush=True)
+                if STREAM.stop.wait(300 if 'rate limit' in str(exc).lower() else 10):return
+            if STREAM.stop.wait(.8):return
+        STREAM.stop.wait(30)
+
+
 def serve():
+    global RUNTIME
     host = os.getenv('HOST', '0.0.0.0')
     port = int(os.getenv('PORT', '8765'))
     server = ThreadingHTTPServer((host, port), Handler)
     # Bind successfully before starting workers or launching a browser.
+    RUNTIME = Runtime(STORE.path) if R10 is not None else None
+    def worker(name,fn):
+        if RUNTIME:RUNTIME.supervise(name,fn)
+        else:threading.Thread(target=fn,daemon=True,name=name).start()
+    def scan_status():
+        # Read only primitive values without acquiring a potentially stalled lock.
+        return {k:SCAN_STATE.get(k) for k in ('running','progressAt','processed','total','startedAt')}
+    if RUNTIME:
+        threading.Thread(target=RUNTIME.watch,args=(scan_status,),daemon=True,name='r10-watchdog').start()
     if STREAM is not None:
-        threading.Thread(target=STREAM.run_forever,daemon=True,name='ws-streams').start()
-        threading.Thread(target=minute_research_loop,daemon=True,name='ws-research').start()
+        worker('ws-streams',STREAM.run_forever)
+        worker('ws-research',minute_research_loop)
+        if RUNTIME:worker('r10-minute-seed',minute_seed_loop)
         print('R09 WebSocket enabled; status /api/websocket; research /api/research/1m',flush=True)
     if os.getenv('SCANNER_BACKGROUND', '1') == '1':
-        threading.Thread(target=scheduler_loop, daemon=True, name='scan-scheduler').start()
-        threading.Thread(target=fast_watch_loop, daemon=True, name='fast-watch').start()
+        worker('scan-scheduler',scheduler_loop)
+        worker('fast-watch',fast_watch_loop)
     if ARCHIVE is not None:
-        threading.Thread(target=ARCHIVE.collect_forever, daemon=True, name='all-pair-archive').start()
+        worker('all-pair-archive',ARCHIVE.collect_forever)
         print('OVERNIGHT ALL crypto pairs enabled; status /api/overnight',flush=True)
     print('Scalp Radar v0.5: host %s port %d' % (host,port),flush=True)
     print('DB:',STORE.path,'| background scanner:',os.getenv('SCANNER_BACKGROUND','1'),flush=True)
@@ -925,6 +965,7 @@ def serve():
     except KeyboardInterrupt:
         print('Server stopped')
     finally:
+        if RUNTIME:RUNTIME.stop.set()
         if STREAM is not None:STREAM.stop.set()
         if ARCHIVE is not None:
             ARCHIVE.stop.set()

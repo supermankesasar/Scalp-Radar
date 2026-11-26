@@ -3,7 +3,8 @@ import os,sqlite3,zipfile,tempfile
 from datetime import datetime
 from pathlib import Path
 ROOT=Path(__file__).resolve().parent
-source=Path(os.getenv('SCANNER_DB',str(ROOT/'data'/'signals.sqlite3'))).resolve()
+canonical=Path(os.environ.get('LOCALAPPDATA',str(Path.home()/'.local'/'share')))/'ScalpRadar'/'data'/'signals.sqlite3'
+source=Path(os.getenv('SCANNER_DB',str(canonical if canonical.exists() else ROOT/'data'/'signals.sqlite3'))).resolve()
 if not source.is_file(): raise SystemExit('Database not found: '+str(source))
 out=ROOT/'exports'
 out.mkdir(exist_ok=True)
@@ -16,4 +17,7 @@ with tempfile.TemporaryDirectory() as d:
     finally: dst.close();src.close()
     with zipfile.ZipFile(dest,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=6) as z:
         z.write(snapshot,'signals.sqlite3')
+        for name in ('r10-heartbeat.json','r10-runtime.jsonl'):
+            p=source.parent/name
+            if p.is_file():z.write(p,name)
 print('EXPORT OK:',dest)

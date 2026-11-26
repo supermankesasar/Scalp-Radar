@@ -29,7 +29,7 @@ class StreamResearch:
             try:yield db;db.commit()
             except Exception:db.rollback();raise
             finally:db.close()
-    def process(self,engine,cutoff,now,ema,atr,parse):
+    def process(self,engine,cutoff,now,ema,atr,parse,r10=None):
         with engine.lock:symbols=sorted(engine.symbols)
         records=[]
         for s in symbols:
@@ -46,6 +46,9 @@ class StreamResearch:
             tags=microstructure.evaluate(m,tail,ema) if a and receipt is not None and receipt<=now and 0<=now-cutoff<=15000 else []
             base=float(rows[-1][4]);atrpct=100*a/base if a else None
             records.append((s,rows,m,tags,base,atrpct))
+        if r10 is not None:
+            try:r10.minute(records,engine,cutoff,now)
+            except Exception as exc:print('R10 minute ledger:',str(exc)[:180],flush=True)
         with self.db() as db:
             # Reuse central raw archive when enabled. No fabricated data.
             archive=db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='market_observations'").fetchone()

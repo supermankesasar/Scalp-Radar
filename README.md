@@ -69,3 +69,8 @@ Untuk menjalankan tes: `python -m unittest discover -p "test_*.py" -v` dan `pyth
 START-WINDOWS.bat installs the pinned public WebSocket client when needed and starts R09 automatically. R08 live ranking remains the default control; all R08 rules and new independent minute microstructure rules run together. See [R09](research/R09_WEBSOCKET.md). Health: /api/websocket and /api/research/1m. No keys or orders.
 
 R09 adds 12 independent 1m microstructure/EMA/volume rules and R09_HYBRID on the 5m grid (39 total research formula IDs). Use /api/research for 5m and /api/research/1m for minute results. Optional R09_HYBRID live filter; default R08 CORE. Data receipt and coverage are recorded separately.
+
+
+## R10 local research
+
+See [R10 methodology, persistent database and recovery](research/R10_RESEARCH.md). Use the same START-WINDOWS.bat. New local endpoints /api/runtime and /api/research/r10. Dashboard live filter unchanged; all R10 rules are shadow only. No hosting required.
