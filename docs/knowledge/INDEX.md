@@ -43,3 +43,7 @@ Knowledge Base juga menampung keputusan dari chat terpisah tentang **scalping fu
 <!-- migration-note:2026-11-26-r09-r10-operational-audit -->
 ## R09/R10 operational chat migration (2026-11-26)
 Latest reading priority: [CURRENT_STATUS](CURRENT_STATUS.md) and [DECISION_LOG](DECISION_LOG.md) for operational-first directive (research in background, no hosting), [EXPERIMENT_RESULTS](EXPERIMENT_RESULTS.md) for two overnight exports and handoff statistics, [COIN_CASE_STUDIES](COIN_CASE_STUDIES.md) for 45-pair discovery, [KNOWN_ISSUES](KNOWN_ISSUES.md) for Claude audit and access limits. Prior notes about unavailable data are specific to earlier migrations. See [MIGRATION_LOG](MIGRATION_LOG.md).
+
+<!-- migration-note:2026-11-26-early-45-pair-chat-detail -->
+## Original 45-pair discovery chat — detailed evidence
+[Early discovery detail](research/EARLY_DISCOVERY_2026-11-22_24.md) adds original candle/OI timelines, pair-level return/drawdown/run-up and failed-signal tables, historical calculation differences, external report audit and exact NIGHT squeeze retest. This is an extension of the earlier 45-pair handoff, not a new cohort or a live rule. Read [CURRENT_STATUS](CURRENT_STATUS.md) first for current R10 operational direction.

@@ -88,3 +88,6 @@ OOS label is historical report wording, not genuine forward validation: see leak
 | Liquidation Burst |1|−.600%|
 Recomputed above from SQLite state TARGET=target−.20, STOP=−stop−.20, TIMEOUT=endpoint−.20; excludes unobserved. Prior rounded EMA14 −.221% corrected to −.220% at 3 decimals. Legacy ideal threshold proxy, not execution.
 Prior R08 audit 60m/5m confirm net: exhaustion +.2541% (120); sweep −.0599%; breadth −.1309%; EMA14 cross1m Sync5 −.1339%; EMA21 pullback −.1399%; fast reversal −.1424%; absorption −.1426%; ScalpV2 −.1603%; core −.2223%; baseline −.3587%; positioning flow −.4308%. Exhaustion 15m n123 +.2711%, 30m n120 +.3175%; fragile concentration as documented. No promotion. R10 no live outcome data yet.
+
+<!-- migration-note:2026-11-26-early-45-pair-chat-detail -->
+Detailed per-pair outcomes, first-batch failed SHORT examples, batch3 filter ablations, hourly group medians and NIGHT two-signal retest are preserved in [original discovery appendix §§B–E](research/EARLY_DISCOVERY_2026-11-22_24.md). Same 45-pair research already summarized above, **not another 45 or a new backtest**. Batch2 SKDD initially included (equity) then excluded; only corrected totals belong in crypto results. Batch3 true median differs from earlier upper-middle baseline. No independent validation implied.
