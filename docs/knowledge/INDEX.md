@@ -39,3 +39,7 @@ Do not merge experiment tags into a single success metric, infer whale identity 
 ## Tambahan migrasi chat: fokus scalping/swing dan AI lokal
 
 Knowledge Base juga menampung keputusan dari chat terpisah tentang **scalping futures, swing trading, whale monitor dikesampingkan karena Arkham, dan preferensi AI lokal/framework siap pakai**. Lihat [MASTER_PROJECT](MASTER_PROJECT.md), [DECISION_LOG](DECISION_LOG.md) dan entri tambahan di [MIGRATION_LOG](MIGRATION_LOG.md). Catatan ini adalah konteks produk dan tidak mengubah filter/default R10.
+
+<!-- migration-note:2026-11-26-r09-r10-operational-audit -->
+## R09/R10 operational chat migration (2026-11-26)
+Latest reading priority: [CURRENT_STATUS](CURRENT_STATUS.md) and [DECISION_LOG](DECISION_LOG.md) for operational-first directive (research in background, no hosting), [EXPERIMENT_RESULTS](EXPERIMENT_RESULTS.md) for two overnight exports and handoff statistics, [COIN_CASE_STUDIES](COIN_CASE_STUDIES.md) for 45-pair discovery, [KNOWN_ISSUES](KNOWN_ISSUES.md) for Claude audit and access limits. Prior notes about unavailable data are specific to earlier migrations. See [MIGRATION_LOG](MIGRATION_LOG.md).

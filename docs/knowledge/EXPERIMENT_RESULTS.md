@@ -50,3 +50,41 @@ Caution: some groups change sign across dates (e.g. account shift November 23 �
 - **R10:** 13 shadow hypotheses, fixed future holdout and symbol/day clustering planned/implemented in ledger/reporting infrastructure, but **no completed independently profitable holdout or real-fill evaluation available here**. Costs tested as assumptions 0.10/0.20/0.35%. [R10](../../research/R10_RESEARCH.md), [report generator](../../research/report_r10.py).
 
 No numeric new experiment was performed **in this chat**; no raw exchange market dataset or local live-result ZIP for this migration was available. Never conflate simulated outcome counts with live positions.
+
+<!-- migration-note:2026-11-26-r09-r10-operational-audit -->
+## Handoff research — 22–24 Nov discovery, reported not recomputed
+Initial rule TP5%/SL3%, 1h, no fees/leverage: batch2 LONG 20 (8 TP first/9 SL/3 neither), SHORT 15 (1/9/5); batch3 LONG 20 (3/7/10), SHORT 18 (1/9/8). No-go.
+Batch3 620 hourly snapshots: 11 +5% extreme, 8 −5% extreme, 227 intermediate, 374 <1% moves. Median RSI/RVOL5m/ATR%/normalized delta30m: pump 52.80/1.19/.91/−4.41%; dump 57.88/2.08/1.38/−2.31%; quiet 47.84/.78/.47/−1.73%. Prior ret30m pump −.21%, dump +1.28%. 7/8 dumps had EMA9>EMA21 beforehand. Small exploratory sample.
+Squeeze fuel on BLESS PIEVERSE NIGHT XRP LTC: 1,005 snapshots, 2 qualifiers both NIGHT, zero +5% in following hour. External archive reported big print 13.3% probability of 5% move in 1h, lift2.8×, direction53% up/47% down; unverified, no valid controls.
+Claude V1 reported 131 pairs (60 additional, 30 random control, 41 validation), 884,512 5m candles, 1,172 events (547 pump/625 dump), 8,204 snapshots, 52,455 simulations including repeated parameters, 1–24 Nov. AUC at −60m in extra 1–22 Nov, pump/dump: trade count Z .660/.568; ATR ratio .652/.606; RVOL15 .648/.589; RVOL5 .648/.565; BB width .643/.518; OI .523/.542; funding .537/.530; RSI14 .515/.434; CVD1h .489/.465. AUC is not win rate.
+| Claude reported OOS strategy | n | mean net |
+|---|---:|---:|
+| Breakout expansion LONG |1386|−.250%|
+| Breakout expansion SHORT |1873|−.261%|
+| OI continuation LONG |1220|−.232%|
+| OI continuation SHORT |1027|−.238%|
+| Exhaustion fade LONG |164|−.369%|
+| Exhaustion fade SHORT |110|−.128%|
+| Failed breakout LONG |12350|−.268%|
+| Failed breakout SHORT |9796|−.146%|
+OOS label is historical report wording, not genuine forward validation: see leakage caveats. Market sync extra 1–22 Nov: 356/591 dumps and 60/430 pumps in hours with ≥10 same-direction events; removing synchronized events reduced several AUCs toward .5. Independent market-wide case 23 Nov 20:55–21:30 WIB: XRP+8.50 SOL+7.83 ADA+7.36 LTC+6.82 ETH+6.73 BNB+5.57 NIGHT+5.18 BTC+5.14%; 7/8 local high 21:25. Cause not established.
+
+## Overnight exports (separate, not cumulative)
+25 Nov `scalp-radar-20261125-081109.zip` prior audit, historical assistant report: 507 dashboard events (17 target,50 stop,323 replaced,112 timeout unobserved,5 pending); 26/33 archive runs complete,42 errors,516 pairs,33,682 snapshots,61,866 candidates,353,866 outcomes,1,321,806 observations; 191 5m cutoffs, mean coverage34%, delay151s. 60m/5m confirm net at .20% assumed cost: BASELINE −.0578%, EMA21 pullback −.2019%, EMA9 cross −.1929%, 1h EMA21 trend −.0554%; 60m/15m confirm trend −.0369%. Do not pool with next export.
+26 Nov `scalp-radar-20261126-082750.zip`, SQLite reopened, quick_check ok, 591,126,528 bytes. Directly recounted 516 pairs, 1,338,449 observations; 25,402 5m snapshots,79,837 candidates,451,124 outcomes; 79,512 WS snapshots,49,867 candidates,142,965 outcomes; 198 events (10 target/18 stop/151 rank replacement/14 timeout unobserved/5 pending); 11 archive runs (4 complete,4 partial,2 interrupted,1 running),21 errors. 10/28=35.71% among TP/SL only, **not overall win rate**. Prior audit reports active ~4h25m, gap ~17h49m, WS mean lag5.49s, 5m131.7s, 5m coverage86.4%, WS average ~300/516, candle WS98.9%, liquidation coverage97.7%, trades95.8%, depth88.5%, ATR ready56.9%. Coverage not proof of complete trade feed. 26.6% WS 60m outcomes unobserved (prior audit).
+| R09 60m rule | observed n | mean net at .20% |
+|---|---:|---:|
+| Depth Vacuum |214|−.167%|
+| Acceleration |3000|−.208%|
+| Absorption |631|−.209%|
+| Multi Micro |2915|−.213%|
+| EMA9 |6055|−.219%|
+| EMA10 |5762|−.219%|
+| EMA14 |4953|−.220%|
+| RVOL Control |4814|−.221%|
+| Flow Continuation |3438|−.222%|
+| Book Imbalance |3073|−.233%|
+| Big Agg Print |103|−.251%|
+| Liquidation Burst |1|−.600%|
+Recomputed above from SQLite state TARGET=target−.20, STOP=−stop−.20, TIMEOUT=endpoint−.20; excludes unobserved. Prior rounded EMA14 −.221% corrected to −.220% at 3 decimals. Legacy ideal threshold proxy, not execution.
+Prior R08 audit 60m/5m confirm net: exhaustion +.2541% (120); sweep −.0599%; breadth −.1309%; EMA14 cross1m Sync5 −.1339%; EMA21 pullback −.1399%; fast reversal −.1424%; absorption −.1426%; ScalpV2 −.1603%; core −.2223%; baseline −.3587%; positioning flow −.4308%. Exhaustion 15m n123 +.2711%, 30m n120 +.3175%; fragile concentration as documented. No promotion. R10 no live outcome data yet.

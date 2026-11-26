@@ -34,3 +34,10 @@ Sources: user chat and requirements attachments; [v0.5](../../research/BACKTEST_
 | ASSISTANT-CHAT | Timeframe 1m/5m/15m untuk scalp, 4h/1D untuk swing | Contoh pembagian analisis | **SARAN**; belum dikonfirmasi pengguna sebagai parameter |
 
 Jika diskusi AI-local tampak bertentangan dengan **R10 tanpa runtime AI**, keduanya benar dalam konteksnya masing-masing: pengguna membahas **arah produk masa depan**, sedangkan main yang diaudit masih berupa scanner/research read-only tanpa Ollama/LLM. Jangan mengganti formula aktif berdasarkan diskusi ini.
+
+<!-- migration-note:2026-11-26-r09-r10-operational-audit -->
+## Latest workflow decisions (USER-CHAT, 26 Nov after R10)
+- **CURRENT:** "gas r10 secara keseluruhan ... abaikan web untuk di buat online" — implement all R10 locally, not hosting.
+- **CURRENT:** "tanpa penelitian lagi ... langsung aja kita skip sambil ambil data ... terlalu banyak test" — proceed operationally now; collect/evaluate in background; prioritize practical entry/exit monitoring, speed and reliability. **SUPERSEDES** older handoff instruction to delay all coding until research completes and assistant's suggestion to wait seven days before further development. Holdout remains recorded for scientific validation; not a release gate for routine improvements. No change to active filter, no permission for actual orders, no assertion of profit.
+- **CURRENT:** User asks each old chat to read existing KB then merge only missing information, preserve failures/conflicts, commit docs to main, no force push or source modification. Use this index on new chats.
+- **HISTORICAL:** free hosting/no card/normal fixed URL desired; InfinityFree, Quick Tunnel, Render and Tailscale did not produce verified working remote dashboard. Deferred; do not restart hosting task without request.

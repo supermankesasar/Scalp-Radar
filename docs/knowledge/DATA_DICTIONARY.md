@@ -33,3 +33,7 @@
 - In R09 gaps cannot reconstruct historical aggTrade/depth/liquidation stream from 5m OHLCV. Persisted minute summaries are **not** raw tick archives.
 
 Primary sources: [README](../../README.md), [R08](../../research/R08_MULTI.md), [R09](../../research/R09_WEBSOCKET.md), [R10](../../research/R10_RESEARCH.md), [r10.py](../../filters/r10.py).
+
+<!-- migration-note:2026-11-26-r09-r10-operational-audit -->
+## R10 additive ledger / operational telemetry
+`r10_cycles`: cutoff, decision, universe, observed/fresh/ATR-ready count, regime, coverage. `r10_setups`: symbol/source/cutoff/direction unique, decision, entry_at, ATR%, context JSON, deduplicated rule/version tags, completion marker. `r10_outcomes`: setup_id/horizon/policy key, state TARGET/STOP/TRAIL/TIMEOUT/UNOBSERVED, proxy entry, gross_pct, exit_at, threshold params. `r10_meta`: fixed holdout_start (creation +7 days). R10 report groups by filter/version, source, side, regime, period, horizon/policy, symbol/day clusters; observed-only mean costs and removal of top2 contributors (descriptive). Runtime heartbeat JSON and JSONL events exported alongside SQLite when available. Keep raw exports private; never confuse ledger row count with independent trades.
