@@ -40,3 +40,7 @@ Primary sources: [README](../../README.md), [R08](../../research/R08_MULTI.md), 
 
 <!-- migration-note:2026-11-26-early-45-pair-chat-detail -->
 Historical discovery RVOL uses prior20 **quote-volume median** (upper-middle approximation in earlier batches; true median batch3), distinct from current code's mean-based metric. Normalized 30m delta = sum(2*takerBuyQuote−quoteVolume)/sum(quoteVolume) over six 5m bars. Raw CVD would be cumulative signed volume, not this normalized ratio. Body/previous ATR, wick fractions, price efficiency and exact timing are defined in [appendix §D](research/EARLY_DISCOVERY_2026-11-22_24.md). Do not compare differently scaled metrics or use future OI snapshots as leading data.
+
+<!-- migration-note:2026-11-26-claude-v1-original-artifacts -->
+## Claude V1 derived CSV schema (not R10 ledger)
+[Field dictionary and exact unit/timestamp conventions](research/CLAUDE_V1_ARTIFACT_AUDIT.md#f-original-csv-field-dictionary). Event/snapshot timestamps reference open, features available after close, trade returns fractional, summary percent, OI/funding backward fill, RVOL prior288 median, Kaufman eff12 versus early price/volume efficiency. Separate from live R08/R10. Manifest in appendix permits identifying original local artifacts.

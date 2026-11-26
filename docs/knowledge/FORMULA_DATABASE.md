@@ -50,3 +50,7 @@ R10 1m fresh decision cap15s, contiguous 61 bars for ATR, 5m decision cap300s. E
 
 <!-- migration-note:2026-11-26-early-45-pair-chat-detail -->
 The [original discovery appendix §D](research/EARLY_DISCOVERY_2026-11-22_24.md#d-exact-historical-calculations-caveats-and-rejected-proposals) records exact historic RVOL median convention differences, normalized delta, ATR/efficiency/wick formulas, entry/exit proxy and unadopted RSI/MACD/BB/VP/OBV/funding/OI proposals. These are historical experimental rules, not R08/R10 active parameters.
+
+<!-- migration-note:2026-11-26-claude-v1-original-artifacts -->
+## Claude Research Lab V1 (historical, no promotion)
+[Exact source-derived formula registry](research/CLAUDE_V1_ARTIFACT_AUDIT.md#b-exact-v1-calculations-source-functions-feat-add_labels-signals-sim_one-run-auc_table) records 288-bar volatility and RVOL references, normalized CVD, OI/funding alignment, four base rules, tuning grid, TP/SL as 2×/1× sigma, slippage, label and recall semantics. These are separate from early median20 and R08 mean20 and from R10 exit policies. All base/improved variants failed combined OOS criterion; do not substitute them for live filters.

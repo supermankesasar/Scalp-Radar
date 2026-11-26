@@ -28,3 +28,7 @@ Checked main at `3bfc820969376ec5835e7b8eaf6e5da850f80381`; later commits after 
 
 <!-- migration-note:2026-11-26-early-45-pair-chat-detail -->
 Additional audit at pre-migration main `3e9ca4e4e4c9ec11d41a58e8f320ba89a6b291d1`: comparison with code baseline b9e5b28 showed three intervening commits, changes only within docs/knowledge; R08 default/R09–R10 shadow and operational-first local scope unchanged. Original 45-pair chat adds historical evidence, not new runtime state, code changes or validated holdout.
+
+<!-- migration-note:2026-11-26-claude-v1-original-artifacts -->
+## Source access update (26 Nov)
+At pre-migration main 3d5f55fcaf2c203f4024e370c50f3f06cb51e998, compare with code baseline b9e5b2883f958d053ab9db432cb4ddacbf839bbd shows four intervening docs-only commits. R10 local/shadow, R08 core default and operational-first directive remain unchanged. Original Claude Research Lab V1 files now audited (not deployed); no new runtime or forward validation. [Audit](research/CLAUDE_V1_ARTIFACT_AUDIT.md).

@@ -42,3 +42,7 @@ R09 export 26 Nov: pooled R08 exhaustion 60m result concentrated in EVAAUSDT (7 
 
 <!-- migration-note:2026-11-26-early-45-pair-chat-detail -->
 [Original chat detailed evidence](research/EARLY_DISCOVERY_2026-11-22_24.md) is now available: retained connector-derived 1m/5m/15m price, RSI/EMA, OI, funding and account-share observations, per-pair 45-cohort tables and contrary cases. Earlier claims of absent coin-specific evidence apply to earlier migration scope; these are original historical derived observations, not full raw arrays or independent holdout. Do not count them twice.
+
+<!-- migration-note:2026-11-26-claude-v1-original-artifacts -->
+## Claude V1 cohort appendix
+[All 131 original pair summaries](research/CLAUDE_V1_PAIR_DATA.md) preserve exact separate 22–24 Nov window, category, return, drawdown, open-based run-up and event time/counts. [Selected event counterexamples](research/CLAUDE_V1_ARTIFACT_AUDIT.md#c-result-details-beyond-existing-aggregate) include ACE, IDOL, PIEVERSE rebound, AKE, BULLA, AGT, JCT and INIT. Unlike early discovery, Claude max_runup is relative to first open, not chronological low-to-later-high. 132 combined unique symbols, not independent event counts.

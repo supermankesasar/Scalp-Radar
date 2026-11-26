@@ -91,3 +91,7 @@ Prior R08 audit 60m/5m confirm net: exhaustion +.2541% (120); sweep −.0599%; b
 
 <!-- migration-note:2026-11-26-early-45-pair-chat-detail -->
 Detailed per-pair outcomes, first-batch failed SHORT examples, batch3 filter ablations, hourly group medians and NIGHT two-signal retest are preserved in [original discovery appendix §§B–E](research/EARLY_DISCOVERY_2026-11-22_24.md). Same 45-pair research already summarized above, **not another 45 or a new backtest**. Batch2 SKDD initially included (equity) then excluded; only corrected totals belong in crypto results. Batch3 true median differs from earlier upper-middle baseline. No independent validation implied.
+
+<!-- migration-note:2026-11-26-claude-v1-original-artifacts -->
+## Claude original CSV re-audit
+[Full audit](research/CLAUDE_V1_ARTIFACT_AUDIT.md#c-result-details-beyond-existing-aggregate) verifies 52,455 rows, 27,926 base combined OOS rows, 32,804 distinct symbol/time/side keys (not independent trades), fee difference .1% exactly, eight negative gross returns (gross includes modeled slip), precise lift/precision/recall/control and test-only metrics. [Synchronization audit](research/CLAUDE_V1_ARTIFACT_AUDIT.md#d-recomputed-cross-pair-synchronization-and-direction-discovery) reproduces earlier cluster counts and adds −60m medians and directional AUC before/after filter (1,021→605); most differences disappear. No corrected backtest or new holdout. Earlier statements of unavailable source/CSV apply only to previous migrations.

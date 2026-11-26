@@ -47,3 +47,7 @@ Latest reading priority: [CURRENT_STATUS](CURRENT_STATUS.md) and [DECISION_LOG](
 <!-- migration-note:2026-11-26-early-45-pair-chat-detail -->
 ## Original 45-pair discovery chat — detailed evidence
 [Early discovery detail](research/EARLY_DISCOVERY_2026-11-22_24.md) adds original candle/OI timelines, pair-level return/drawdown/run-up and failed-signal tables, historical calculation differences, external report audit and exact NIGHT squeeze retest. This is an extension of the earlier 45-pair handoff, not a new cohort or a live rule. Read [CURRENT_STATUS](CURRENT_STATUS.md) first for current R10 operational direction.
+
+<!-- migration-note:2026-11-26-claude-v1-original-artifacts -->
+## Claude V1 — original research artifacts now audited
+[Source/CSV audit, formulas, negative results, synchronization and manifest](research/CLAUDE_V1_ARTIFACT_AUDIT.md) and [131-pair main-window table](research/CLAUDE_V1_PAIR_DATA.md). Supplements earlier handoff without recounting cohorts; original script/CSV accessible in this migration, not raw exchange candles. Historical only; read CURRENT_STATUS first.
