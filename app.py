@@ -22,6 +22,7 @@ from stream_engine import StreamEngine, LIMIT as WS_LIMIT, close_at
 from stream_research import StreamResearch
 from research_r10 import ResearchR10
 from radar_r11 import RadarR11
+from radar_r111 import RadarR111, restore_minutes
 from runtime_r10 import Runtime
 from rest_guard import REST_GUARD
 from urllib.error import HTTPError, URLError
@@ -40,6 +41,7 @@ STREAM = StreamEngine() if os.getenv('SCANNER_WEBSOCKET','0')=='1' else None
 WS_HISTORY = StreamResearch(STORE.path, STORE.lock) if STREAM is not None else None
 R10 = ResearchR10(STORE.path, STORE.lock) if os.getenv('SCANNER_R10','0')=='1' and STREAM is not None else None
 R11 = RadarR11(STORE.path, STORE.lock, STREAM) if STREAM is not None and os.getenv('SCANNER_R11','0')=='1' else None
+R111 = RadarR111(STORE.path, STORE.lock, STREAM) if R11 is not None and os.getenv('SCANNER_R111','0')=='1' else None
 RUNTIME = None
 # Research cohort is a historical experiment only; live shadow rules apply to all scanned crypto pairs.
 BASE = "https://fapi.binance.com"
@@ -813,6 +815,10 @@ class Handler(BaseHTTPRequestHandler):
             self._reply(200,json.dumps(dict(RUNTIME.status(),scan={k:SCAN_STATE.get(k) for k in ('running','progressAt','processed','total','startedAt')},restCooldownSeconds=REST_GUARD.remaining(),stream=STREAM.status() if STREAM else None) if RUNTIME else {'enabled':False}).encode(),'application/json')
         elif route.path == '/api/radar/r11':
             self._reply(200,json.dumps(R11.status() if R11 else {'enabled':False},allow_nan=False).encode(),'application/json')
+        elif route.path == '/api/radar/r111':
+            self._reply(200,json.dumps(R111.status() if R111 else {'enabled':False},allow_nan=False).encode(),'application/json')
+        elif route.path == '/api/research/r111':
+            self._reply(200,json.dumps(R111.report() if R111 else {'enabled':False},allow_nan=False).encode(),'application/json')
         elif route.path == '/api/rest-budget':
             self._reply(200,json.dumps(REST_GUARD.status()).encode(),'application/json')
         elif route.path == '/api/research/r10':
@@ -920,12 +926,21 @@ def minute_research_loop():
 
 
 def minute_seed_loop():
-    # Paced 1m recovery independent of slow 5m scan; never fake WS provenance.
+    # Restore local historical candles first; paced REST only for remaining gaps.
+    restored=set()
     while not STREAM.stop.is_set():
         with STREAM.lock:symbols=sorted(STREAM.symbols)
+        if ARCHIVE is not None and R111 is not None:
+            todo=set(symbols)-restored
+            if todo:
+                try:restore_minutes(ARCHIVE,STREAM,todo,int(time.time()*1000));restored.update(todo)
+                except Exception as exc:print('R11.1 local warmup:',str(exc)[:120],flush=True)
         for symbol in symbols:
             if STREAM.stop.is_set():return
-            if STREAM.candles(symbol,'1m',61,int(time.time()*1000)) is not None:continue
+            now=int(time.time()*1000)
+            # Do not race normal WS delivery immediately after close.
+            if now%60000<15000:now-=60000
+            if STREAM.candles(symbol,'1m',61,now) is not None:continue
             try:request_market('/fapi/v1/klines',{'symbol':symbol,'interval':'1m','limit':100},ttl=30)
             except Exception as exc:
                 print('R10 seed:',symbol,str(exc)[:100],flush=True)
@@ -955,6 +970,8 @@ def serve():
         worker('ws-research',minute_research_loop)
         if R11 is not None:
             worker('r11-radar',lambda:R11.run(lambda:RUNTIME.beat('r11-radar') if RUNTIME else None))
+        if R111 is not None:
+            worker('r111-radar',lambda:R111.run(lambda:RUNTIME.beat('r111-radar') if RUNTIME else None))
         if RUNTIME:worker('r10-minute-seed',minute_seed_loop)
         print('R09 WebSocket enabled; status /api/websocket; research /api/research/1m',flush=True)
     if os.getenv('SCANNER_BACKGROUND', '1') == '1':

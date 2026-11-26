@@ -60,3 +60,6 @@ Latest reading priority: [CURRENT_STATUS](CURRENT_STATUS.md) and [DECISION_LOG](
 <!-- migration-note:2026-11-26-r01-r06-modular-overnight-chat -->
 ## Original R01–R06 modular / first overnight chat (24 Nov)
 [Detailed evidence appendix](research/R01_R06_MODULAR_OVERNIGHT_CHAT_2026-11-24.md) preserves the original attached two-window R01–R05 tables, earlier 28-pair crossing pilot, discarded scoring proposals, ALL-pair correction, modular implementation and observed startup/screenshot. Later expanded technical/R06 reports remain authoritative; no additional independent cohort or R10 validation.
+
+## R11.1 coverage and entry work
+[R11.1 P1–P6 implementation and limitations](R111.md). R11 v1 remains comparison; see CURRENT_STATUS for branch/release state and EXPERIMENT_RESULTS for the underlying first export audit.

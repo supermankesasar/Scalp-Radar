@@ -19,7 +19,8 @@ def chunks(values,n):
     return [values[i:i+n] for i in range(0,len(values),n)]
 def stream_groups(symbols):
     syms=sorted(s.lower() for s in symbols)
-    return [('market','candles',g,[s+'@kline_'+tf for s in g for tf in TF]) for g in chunks(syms,30)]+[
+    return [('market','candles',g,[s+'@kline_1m' for s in g]) for g in chunks(syms,60)]+[
+      ('market','candles',g,[s+'@kline_'+tf for s in g for tf in TF if tf!='1m']) for g in chunks(syms,45)]+[
       ('market','trades',g,[s+'@aggTrade' for s in g]) for g in chunks(syms,50)]+[
       ('public','depth',g,[s+'@depth5@500ms' for s in g]) for g in chunks(syms,60)]+[
       ('market','liquidations',syms,['!forceOrder@arr']),('market','tickers',syms,['!ticker@arr'])]
@@ -31,6 +32,7 @@ class StreamEngine:
         self.symbols=set()
         self.bars={}
         self.quotes={}
+        self.best_book={}  # independent current bid/ask snapshot, not a last-trade quote
         self.buckets={}
         self.last_trade={}
         self.last_depth={}
@@ -52,7 +54,7 @@ class StreamEngine:
             for mapping in (self.bars,self.buckets,self.connected,self.candle_received):
                 for k in list(mapping):
                     if k[0] not in self.symbols: del mapping[k]
-            for mapping in (self.quotes,self.last_trade,self.last_depth,self.last_liq):
+            for mapping in (self.quotes,self.best_book,self.last_trade,self.last_depth,self.last_liq):
                 for k in list(mapping):
                     if k not in self.symbols: del mapping[k]
     def seed(self,symbol,tf,rows,now):
@@ -147,6 +149,8 @@ class StreamEngine:
             bq=sum(p*q for p,q in bids);aq=sum(p*q for p,q in asks);total=bq+aq
             if total<=0 or not finite(total):return
             self.last_depth[s]=u
+            old_book=self.best_book.get(s)
+            if old_book is None or t>=old_book[2]:self.best_book[s]=(bid,ask,t,received)
             b=self.bucket(s,t);b['depthCount']+=1;b['depthSum']+=total;b['imbSum']+=(bq-aq)/total
             if b['depthTs'] is None or t>=b['depthTs']:
                 b['depthLast']=total;b['spreadLast']=100*(ask-bid)/((ask+bid)/2);b['depthTs']=t
@@ -164,7 +168,9 @@ class StreamEngine:
                 if online:self.connected[(s,kind)]=now
                 else:self.connected.pop((s,kind),None)
                 if kind=='trades':self.last_trade.pop(s,None)
-                if kind=='depth':self.last_depth.pop(s,None)
+                if kind=='depth':
+                    self.last_depth.pop(s,None)
+                    self.best_book.pop(s,None)
     def minute(self,s,cutoff,now):
         start=cutoff-59999
         with self.lock:
@@ -212,7 +218,7 @@ class StreamEngine:
     async def session(self,route,kind,group,streams,delay):
         from websockets.asyncio.client import connect
         await asyncio.sleep(delay)
-        label=kind+':'+group[0]
+        label=kind+':'+group[0]+(':'+streams[0].split('@')[-1] if kind=='candles' else '')
         url=BASE+'/'+route+'/stream?streams='+'/'.join(streams)
         backoff=2
         while not self.stop.is_set():
