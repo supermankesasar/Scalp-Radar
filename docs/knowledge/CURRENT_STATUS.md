@@ -50,3 +50,6 @@ User approved early radar pipeline and delegated transport choice. [PR #3](https
 
 ## R11.1 P1–P6 development (2026-11-26)
 Supersedes the earlier NOT merged R11 note: PR #3 merged at 12417cb06caac35f60def8ec964c1c2ebbb321c8; first operational export documented in EXPERIMENT_RESULTS. This R11.1 branch implements P1–P6 as a separate preview; [R111](R111.md). R08 dashboard and R11 v1 comparison preserved. CI and runtime performance not yet verified at commit creation. No fresh data audit or threshold promotion.
+
+## R11.1 release update (26 Nov 2026)
+PR #4 merged into main at `07543d22cc0492ba5afedce363ce3a37b7d2db71` after offline Windows/Linux CI run [45777543773](https://github.com/supermankesasar/Scalp-Radar/actions/runs/45777543773) completed successfully for head f74c0cd. User reports CPU/RAM are sufficiently capable; no measured resource capacity or benchmark supplied. Prioritize ALL-pair coverage and timely decisions over premature local resource optimization, while preserving Binance transport limits, bounded memory and measured CPU/DB contention. Existing R08 dashboard, R10 and R11 v1 comparator remain; R11.1 preview enabled by launcher. Runtime/coverage gains and trading decision quality not yet verified on user's PC. Use existing canonical DB and stop old process before starting upgraded main.
