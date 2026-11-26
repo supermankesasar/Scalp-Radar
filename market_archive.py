@@ -69,10 +69,13 @@ class MarketArchive:
             if delay>0 and self.stop.wait(delay): raise RuntimeError('Stopping')
             if self.stop.is_set(): raise RuntimeError('Stopping')
             self.next_request=time.monotonic()+.55
+        REST_GUARD.check()
         url=BASE+endpoint+('?' + urlencode(params) if params else '')
         try:
             with urlopen(Request(url,headers={'Accept':'application/json','User-Agent':'ScalpRadar-market-archive/1.0'}),timeout=18) as r:
-                return json.loads(r.read()),now_ms()
+                data=json.loads(r.read())
+                REST_GUARD.observe(getattr(r,'headers',None),data if endpoint=='/fapi/v1/exchangeInfo' else None)
+                return data,now_ms()
         except HTTPError as e:
             if e.code in (429,418,403,451):
                 if e.code in (429,418):REST_GUARD.pause(e.headers)

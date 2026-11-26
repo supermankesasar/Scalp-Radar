@@ -21,6 +21,7 @@ from market_archive import MarketArchive, crypto_universe
 from stream_engine import StreamEngine, LIMIT as WS_LIMIT, close_at
 from stream_research import StreamResearch
 from research_r10 import ResearchR10
+from radar_r11 import RadarR11
 from runtime_r10 import Runtime
 from rest_guard import REST_GUARD
 from urllib.error import HTTPError, URLError
@@ -38,6 +39,7 @@ ARCHIVE = MarketArchive(STORE.path, STORE.lock) if OVERNIGHT else None
 STREAM = StreamEngine() if os.getenv('SCANNER_WEBSOCKET','0')=='1' else None
 WS_HISTORY = StreamResearch(STORE.path, STORE.lock) if STREAM is not None else None
 R10 = ResearchR10(STORE.path, STORE.lock) if os.getenv('SCANNER_R10','0')=='1' and STREAM is not None else None
+R11 = RadarR11(STORE.path, STORE.lock, STREAM) if STREAM is not None and os.getenv('SCANNER_R11','0')=='1' else None
 RUNTIME = None
 # Research cohort is a historical experiment only; live shadow rules apply to all scanned crypto pairs.
 BASE = "https://fapi.binance.com"
@@ -79,6 +81,7 @@ def request_market(endpoint: str, params: dict, ttl: int = 20):
     try:
         with urlopen(req, timeout=13) as response:
             data = json.loads(response.read().decode("utf-8"))
+            REST_GUARD.observe(getattr(response, "headers", None), data if endpoint=="/fapi/v1/exchangeInfo" else None)
     except HTTPError as e:
         detail = e.read(600).decode("utf-8", "replace")
         if e.code in (403, 451):
@@ -808,6 +811,10 @@ class Handler(BaseHTTPRequestHandler):
             self._reply(200, json.dumps({'ok':True,'version':'0.5','storage':'SQLite','activeTracked':len(STORE.active_symbols())}).encode(), 'application/json')
         elif route.path == '/api/runtime':
             self._reply(200,json.dumps(dict(RUNTIME.status(),scan={k:SCAN_STATE.get(k) for k in ('running','progressAt','processed','total','startedAt')},restCooldownSeconds=REST_GUARD.remaining(),stream=STREAM.status() if STREAM else None) if RUNTIME else {'enabled':False}).encode(),'application/json')
+        elif route.path == '/api/radar/r11':
+            self._reply(200,json.dumps(R11.status() if R11 else {'enabled':False},allow_nan=False).encode(),'application/json')
+        elif route.path == '/api/rest-budget':
+            self._reply(200,json.dumps(REST_GUARD.status()).encode(),'application/json')
         elif route.path == '/api/research/r10':
             self._reply(200,json.dumps(R10.status() if R10 else {'enabled':False}).encode(),'application/json')
         elif route.path == '/api/websocket':
@@ -946,6 +953,8 @@ def serve():
     if STREAM is not None:
         worker('ws-streams',STREAM.run_forever)
         worker('ws-research',minute_research_loop)
+        if R11 is not None:
+            worker('r11-radar',lambda:R11.run(lambda:RUNTIME.beat('r11-radar') if RUNTIME else None))
         if RUNTIME:worker('r10-minute-seed',minute_seed_loop)
         print('R09 WebSocket enabled; status /api/websocket; research /api/research/1m',flush=True)
     if os.getenv('SCANNER_BACKGROUND', '1') == '1':
