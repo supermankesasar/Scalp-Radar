@@ -78,6 +78,7 @@ def request_market(endpoint: str, params: dict, ttl: int = 20):
         if hit and hit[0] > time.monotonic() and not ws_kline:
             return hit[1]
     REST_GUARD.check()
+    if REST_GUARD.history_delay(endpoint)>0:raise RuntimeError('Binance history request budget active')
     url = BASE + endpoint + "?" + urlencode(params)
     req = Request(url, headers={"User-Agent": "ScalpMonitor/1.0 (market-data-only)", "Accept": "application/json"})
     try:
@@ -676,14 +677,13 @@ def scan_job(generation, mode, min_turnover):
                     for score, turnover, direction, candidate in promotion_candidates(eligible_rows, quote_prices=quotes):
                         sym = candidate['symbol']
                         if STORE.activate_top_candidate(candidate, recent_candles[sym], direction):
+                            match = next(iter(STORE.latest_rows(symbol=sym)),None)
                             with SCAN_LOCK:
-                                for i, prior in enumerate(SCAN_STATE['rows']):
-                                    if prior['symbol'] == sym:
-                                        # Re-read persisted snapshot with just-created event.
-                                        match = next((r for r in STORE.latest_rows() if r['symbol']==sym), None)
-                                        if match:
-                                            SCAN_STATE['rows'][i] = match
-                                        break
+                                if generation==SCAN_STATE['generation'] and match:
+                                    for i, prior in enumerate(SCAN_STATE['rows']):
+                                        if prior['symbol']==sym:
+                                            SCAN_STATE['rows'][i]=match
+                                            break
                 except Exception as exc:
                     with SCAN_LOCK:
                         SCAN_STATE['errors'].append('Peringatan ranking/kutipan: '+str(exc)[:120])
@@ -721,7 +721,7 @@ def _saved_visible(rows, mode, min_turnover):
     return [r for r in ranked if r['symbol'] in keep or r.get('categories')]
 
 
-def read_scanner(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
+def schedule_scan(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
     if OVERNIGHT:
         mode = 'all'  # browser filters must not reduce the overnight scan universe
     validate_scan_options(mode, min_turnover)
@@ -748,43 +748,50 @@ def read_scanner(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
             })
             job = threading.Thread(target=scan_job, args=(SCAN_STATE['generation'],mode,min_turnover), daemon=True)
             job.start()
-        fresh = list(SCAN_STATE['rows'])
-        from_disk = STORE.latest_rows()
-        # While the scan progresses, snapshots may be up to 36h old: explicitly
-        # mark them stale, never mistake them for fresh candle data.
-        visible_disk = _saved_visible(from_disk, mode, min_turnover)
-        # Quote watcher updates can be newer than the full scanner result; use
-        # persisted quote+journey when its quote timestamp is newer than the row.
-        persisted = {x['symbol']: x for x in visible_disk}
-        combined = []
-        for x in fresh:
-            cached = persisted.pop(x['symbol'], None)
-            if cached and (cached.get('quoteAt') or 0) > (x.get('quoteAt') or 0):
-                combined.append(cached)
-            else:
-                combined.append(x)
-        combined.extend(dict(x, stale=True) for x in persisted.values())
-        pending = SCAN_STATE['running'] and new_filters
-        active = STORE.active_pending(now_ms)
-        return {
-            'running': SCAN_STATE['running'], 'rows': combined,
-            'activeSignals': len(active), 'activeLimit': 5,
-            'signals': active,
-            'processed': SCAN_STATE['processed'], 'total': SCAN_STATE['total'],
-            'successful': len(fresh),
-            'failed': SCAN_STATE['processed'] - len(fresh),
-            'eligible': SCAN_STATE['eligible'], 'universe': SCAN_STATE['universe'],
-            'missingTicker': SCAN_STATE['missingTicker'], 'trackedExtra': SCAN_STATE['trackedExtra'],
-            'errors': SCAN_STATE['errors'][:10], 'errorCount': len(SCAN_STATE['errors']),
-            'startedAt': SCAN_STATE['startedAt'], 'completedAt': SCAN_STATE['completedAt'],
-            'mode': SCAN_STATE['mode'], 'requestedMode': mode, 'configPending': pending,
-            'minTurnover': SCAN_STATE['minTurnover'], 'requestedMinTurnover': min_turnover,
-            'message': SCAN_STATE['message'],
-            'source': 'Binance USD-M Futures public API',
-            'categories': list(CATEGORIES),
-            'tracking': 'SQLite: status Sudah memerlukan sinyal Potensi lebih dulu dan candle berikutnya',
-            'scoring': 'Aturan heuristik, bukan probabilitas atau sinyal tervalidasi',
-        }
+        # Return a shallow immutable-by-convention snapshot without SQLite I/O.
+        state=dict(SCAN_STATE,rows=list(SCAN_STATE['rows']),errors=list(SCAN_STATE['errors']))
+        return state,new_filters,mode,now_ms
+
+
+def read_scanner(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
+    state,new_filters,mode,now_ms=schedule_scan(mode,min_turnover,force)
+    fresh = state['rows']
+    from_disk = STORE.latest_rows()
+    # While the scan progresses, snapshots may be up to 36h old: explicitly
+    # mark them stale, never mistake them for fresh candle data.
+    visible_disk = _saved_visible(from_disk, mode, min_turnover)
+    # Quote watcher updates can be newer than the full scanner result; use
+    # persisted quote+journey when its quote timestamp is newer than the row.
+    persisted = {x['symbol']: x for x in visible_disk}
+    combined = []
+    for x in fresh:
+        cached = persisted.pop(x['symbol'], None)
+        if cached and (cached.get('quoteAt') or 0) > (x.get('quoteAt') or 0):
+            combined.append(cached)
+        else:
+            combined.append(x)
+    combined.extend(dict(x, stale=True) for x in persisted.values())
+    pending = state['running'] and new_filters
+    active = STORE.active_pending(now_ms)
+    return {
+        'running': state['running'], 'rows': combined,
+        'activeSignals': len(active), 'activeLimit': 5,
+        'signals': active,
+        'processed': state['processed'], 'total': state['total'],
+        'successful': len(fresh),
+        'failed': state['processed'] - len(fresh),
+        'eligible': state['eligible'], 'universe': state['universe'],
+        'missingTicker': state['missingTicker'], 'trackedExtra': state['trackedExtra'],
+        'errors': state['errors'][:10], 'errorCount': len(state['errors']),
+        'startedAt': state['startedAt'], 'completedAt': state['completedAt'],
+        'mode': state['mode'], 'requestedMode': mode, 'configPending': pending,
+        'minTurnover': state['minTurnover'], 'requestedMinTurnover': min_turnover,
+        'message': state['message'],
+        'source': 'Binance USD-M Futures public API',
+        'categories': list(CATEGORIES),
+        'tracking': 'SQLite: status Sudah memerlukan sinyal Potensi lebih dulu dan candle berikutnya',
+        'scoring': 'Aturan heuristik, bukan probabilitas atau sinyal tervalidasi',
+    }
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -903,7 +910,7 @@ def scheduler_loop():
         try:
             with SCAN_LOCK:
                 mode, turnover = SCAN_STATE['requestedMode'], SCAN_STATE['requestedMinTurnover']
-            read_scanner(mode, turnover)
+            schedule_scan(mode, turnover)
         except Exception as exc:
             print('Background scheduler:',str(exc),flush=True)
         if RUNTIME:RUNTIME.beat('scan-scheduler')
@@ -978,6 +985,7 @@ def serve():
         worker('scan-scheduler',scheduler_loop)
         worker('fast-watch',fast_watch_loop)
     if ARCHIVE is not None:
+        if STREAM is not None:ARCHIVE.stream=STREAM
         if RUNTIME:ARCHIVE.heartbeat=lambda **kw:RUNTIME.beat('all-pair-archive',**kw)
         worker('all-pair-archive',ARCHIVE.collect_forever)
         print('OVERNIGHT ALL crypto pairs enabled; status /api/overnight',flush=True)

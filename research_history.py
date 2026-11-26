@@ -37,6 +37,11 @@ class ResearchHistory:
             """)
             if 'observed_at' not in {r['name'] for r in db.execute('PRAGMA table_info(research_candidates)')}:
                 db.execute('ALTER TABLE research_candidates ADD COLUMN observed_at INTEGER')
+            if 'complete' not in {r['name'] for r in db.execute('PRAGMA table_info(research_candidates)')}:
+                db.execute('ALTER TABLE research_candidates ADD COLUMN complete INTEGER NOT NULL DEFAULT 0')
+                db.execute('UPDATE research_candidates SET complete=1 WHERE (SELECT COUNT(*) FROM research_outcomes WHERE candidate_id=research_candidates.id)=6')
+            db.execute('CREATE INDEX IF NOT EXISTS research_pending_age ON research_candidates(candle_time) WHERE complete=0')
+            db.execute('CREATE INDEX IF NOT EXISTS research_pending_symbol ON research_candidates(symbol,candle_time) WHERE complete=0')
     @contextmanager
     def connection(self):
         with self.lock:
@@ -54,15 +59,10 @@ class ResearchHistory:
     def pending_symbols(self, now):
         with self.connection() as db:
             # Finalize aged missing evaluations explicitly; never count them as stop.
-            for h in HORIZONS:
-                for tf in CONFIRM:
-                    db.execute("""INSERT OR IGNORE INTO research_outcomes
-                       (candidate_id,horizon,confirm,state,evaluated_at)
-                       SELECT id,?,?,'UNOBSERVED',? FROM research_candidates
-                       WHERE candle_time < ?""", (h,tf,now,now-MAX_RETRY))
-            return {r[0] for r in db.execute("""SELECT DISTINCT c.symbol FROM research_candidates c
-                       WHERE c.candle_time>=? AND
-                       (SELECT COUNT(*) FROM research_outcomes o WHERE o.candidate_id=c.id) < 6""",(now-MAX_RETRY,))}
+            expired=[r[0] for r in db.execute('SELECT id FROM research_candidates WHERE complete=0 AND candle_time<? ORDER BY candle_time LIMIT 1000',(now-MAX_RETRY,))]
+            db.executemany("INSERT OR IGNORE INTO research_outcomes(candidate_id,horizon,confirm,state,evaluated_at) VALUES(?,?,?,'UNOBSERVED',?)",((i,h,tf,now) for i in expired for h in HORIZONS for tf in CONFIRM))
+            db.executemany('UPDATE research_candidates SET complete=1 WHERE id=?',((i,) for i in expired))
+            return {r[0] for r in db.execute('SELECT DISTINCT symbol FROM research_candidates WHERE complete=0 AND candle_time>=?',(now-MAX_RETRY,))}
     def record_and_evaluate(self, row, candles, now):
         sym, t = row['symbol'], int(row['lastClosed5m'])
         tags = row.get('researchCandidates', [])
@@ -83,8 +83,7 @@ class ResearchHistory:
             if not bars:
                 return
             last = max(bars)
-            for c in db.execute("""SELECT * FROM research_candidates c WHERE symbol=? AND candle_time<?
-                         AND (SELECT COUNT(*) FROM research_outcomes o WHERE o.candidate_id=c.id)<6""",(sym,last)).fetchall():
+            for c in db.execute("""SELECT * FROM research_candidates c WHERE complete=0 AND symbol=? AND candle_time<?""",(sym,last)).fetchall():
                 sign = 1 if c['direction']=='UP' else -1
                 base = c['baseline']
                 signed = lambda p: sign*100*(p/base-1)
@@ -111,6 +110,7 @@ class ResearchHistory:
                                 break
                         db.execute("""INSERT OR IGNORE INTO research_outcomes
                             VALUES(?,?,?,?,?,?,?,?,?,?)""",(c['id'],h,tf,state,target_t,stop_t,endpoint,mfe,mae,now))
+                db.execute('UPDATE research_candidates SET complete=1 WHERE id=? AND (SELECT COUNT(*) FROM research_outcomes WHERE candidate_id=?)=6',(c['id'],c['id']))
     def summary(self):
         with self.connection() as db:
             rows = db.execute("""SELECT c.filter_id,c.version,o.horizon,o.confirm,o.state,COUNT(*) AS n

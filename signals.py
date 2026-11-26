@@ -307,12 +307,15 @@ class SignalStore:
             row['fastClosed5m'] = candles[-1]['closeTime']
             return self._refresh_payload(db,row,now,preserve_technical=True)
 
-    def latest_rows(self, age_ms=MAX_ROWS_AGE_MS, now_ms=None):
+    def latest_rows(self, age_ms=MAX_ROWS_AGE_MS, now_ms=None, symbol=None):
         now = int(time.time()*1000) if now_ms is None else now_ms
         with self.lock, self._conn() as db:
             self._expire_unobserved(db, now)
             out=[]
-            for entry in db.execute('SELECT data FROM last_rows WHERE updated_at>=?',(now-age_ms,)).fetchall():
+            query='SELECT data FROM last_rows WHERE updated_at>=?'
+            args=(now-age_ms,)
+            if symbol is not None:query+=' AND symbol=?';args+=(symbol,)
+            for entry in db.execute(query,args).fetchall():
                 row = json.loads(entry['data'])
                 events = [self._public(e) for e in self._live_events(db,row['symbol'],now)]
                 row['journeys'] = events
