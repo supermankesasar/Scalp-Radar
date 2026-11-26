@@ -37,7 +37,7 @@ class Runtime:
             try:
                 tmp=self.path.with_suffix('.tmp');tmp.write_text(json.dumps(status),encoding='utf-8');os.replace(tmp,self.path)
             except OSError as e:print('R10 heartbeat:',e,flush=True)
-            stalled=[k for k,v in status['workers'].items() if k in ('scan-scheduler','ws-research','r11-radar') and now-v['time']>600]
+            stalled=[k for k,v in status['workers'].items() if k in ('scan-scheduler','ws-research','r11-radar','r111-radar') and now-v['time']>600]
             if scan.get('running') and scan.get('progressAt') and now-scan['progressAt']/1000>900:stalled.append('scan-job')
             if stalled:
                 self.event('watchdog_restart',workers=stalled)
