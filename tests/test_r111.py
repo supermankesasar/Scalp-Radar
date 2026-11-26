@@ -47,6 +47,15 @@ class R111Tests(unittest.TestCase):
         x=r111.enrich(f,rows,{'structure15':'UP','ret15Closed':1})
         old={'state':'PREPARE','direction':'DOWN','cutoff':cut-60000,'prepareAt':cut-57000,'anchor':10}
         self.assertEqual(r111.advance(old,x,cut,cut+3000,f['price'],.01)['prepareAt'],cut+3000)
+    def test_native_regime_fallback_is_separate(self):
+        e=StreamEngine();s='BTCUSDT';e.set_symbols({s});cut=7200000-1
+        e.seed(s,'15m',bars(2,900000,cut),cut+1)
+        with tempfile.TemporaryDirectory() as d:
+            h=RadarR111(Path(d)/'test.db',threading.RLock(),e);h.universe=[s]
+            ctx=h.regime(cut,cut+15000)
+            self.assertEqual(ctx['source'],'ROLLING_15M_WS')
+            self.assertEqual(ctx['nativeContext']['source'],'NATIVE_CLOSED_15M')
+            self.assertEqual(ctx['nativeContext']['ageMs'],0)
     def test_movement_requires_contiguous_window(self):
         cut=7200000-1;rows=bars(17,60000,cut)
         self.assertIsNotNone(movement(rows,cut))

@@ -78,7 +78,20 @@ class RadarR111:
                 a,b=float(rows[0][4]),float(rows[-1][4])
                 if a>0 and b>0 and math.isfinite(a) and math.isfinite(b):returns[s]=100*(b/a-1)
             except (ValueError,TypeError,IndexError):continue
-        return r10.regime(returns,len(self.universe))
+        primary=r10.regime(returns,len(self.universe))
+        # Independently labelled fallback on the latest completed native 15m bar.
+        # Never present it as the live rolling 15m regime.
+        native={}
+        for s in self.universe:
+            bars=self.engine.candles(s,'15m',2,cut+1)
+            if not bars:continue
+            try:
+                a,b=float(bars[0][4]),float(bars[1][4])
+                if a>0 and b>0 and math.isfinite(a) and math.isfinite(b):native[s]=100*(b/a-1)
+            except (ValueError,TypeError,IndexError):continue
+        native_cut=(cut+1)//900000*900000-1
+        fallback=dict(r10.regime(native,len(self.universe)),source='NATIVE_CLOSED_15M',cutoff=native_cut,ageMs=cut-native_cut)
+        return dict(primary,source='ROLLING_15M_WS',cutoff=cut,nativeContext=fallback)
     def market(self,s,now,direction):
         # Side-specific best bid/ask, not a simulated fill, from existing partial depth.
         with self.engine.lock:
@@ -144,7 +157,7 @@ class RadarR111:
         d=row[0]
         if d is not None:return ('BEFORE_WINDOW' if d<=start else 'DURING_WINDOW',cut-d)
         return ('NO_READY_WITH_DATA' if coverage==15 else 'COVERAGE_GAP',None)
-    def movement_audit(self,db,cut,eligible):
+    def movement_audit(self,db,cut,symbols):
         start=cut-15*STEP
         def coverage(table,col):
             result=Counter()
@@ -152,17 +165,18 @@ class RadarR111:
                 try:result.update(set(json.loads(row[0])))
                 except (ValueError,TypeError):pass
             return result
-        c1=coverage('r11_cycles','eligible_symbols') if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='r11_cycles'").fetchone() else Counter()
+        has_v1=db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='r11_cycles'").fetchone() is not None
+        c1=coverage('r11_cycles','eligible_symbols') if has_v1 else Counter()
         c2=coverage('r111_cycles','eligible_symbols')
         paths=0
-        for s in self.universe:
+        for s in symbols:
             values=movement(self.engine.candles(s,'1m',17,cut+1) or [],cut)
             if values is None:continue
             paths+=1;current,prior=values
             di='UP' if current>=MOVE and prior<MOVE else 'DOWN' if current<=-MOVE and prior>-MOVE else None
             if di is None:continue
             if db.execute("SELECT 1 FROM r111_moves WHERE symbol=? AND direction=? AND cutoff>? AND cutoff<=?",(s,di,start,cut)).fetchone():continue
-            a,al=self.compare(db,'r11_ready',s,di,start,cut,c1[s])
+            a,al=self.compare(db,'r11_ready',s,di,start,cut,c1[s]) if has_v1 else ('COVERAGE_GAP',None)
             b,bl=self.compare(db,'r111_ready',s,di,start,cut,c2[s])
             db.execute("INSERT OR IGNORE INTO r111_moves VALUES(?,?,?,?,?,?,?,?,?,?,?)",
                        (s,cut,di,current,start,a,b,al,bl,c1[s],c2[s]))
@@ -210,14 +224,21 @@ class RadarR111:
                     db.execute("INSERT OR IGNORE INTO r111_ready(symbol,cutoff,decision,direction,entry_at,atr,setup,variant) VALUES(?,?,?,?,?,?,?,?)",
                                (s,cut,result['decisionAt'],result['direction'],entry_time(result['decisionAt']),result['readyAtr'],result['setup'],result['features']['entryVariant']))
             db.execute("INSERT OR IGNORE INTO r111_cycles VALUES(?,?,?,?,?,?,?,?)",
-                       (cut,ms(),len(self.universe),len(eligible),pack(eligible),pack(diagnostics),pack(regime),0))
-            paths=self.movement_audit(db,cut,eligible)
-            db.execute("UPDATE r111_cycles SET move_paths=? WHERE cutoff=?",(paths,cut))
+                       (cut,ms(),len(self.universe),len(eligible),pack(eligible),pack(diagnostics),pack(regime),None))
+            # Give v1 one full minute to commit its same-cutoff coverage/results.
+            # Audit previous frozen universe(s), not today's changed symbol set.
+            last_audit=None
+            pending=db.execute("SELECT cutoff,reasons FROM r111_cycles WHERE move_paths IS NULL AND cutoff<? ORDER BY cutoff LIMIT 3",(cut,)).fetchall()
+            for cycle in pending:
+                old_cut=cycle['cutoff'];old_symbols=sorted({s for group in json.loads(cycle['reasons']).values() for s in group})
+                paths=self.movement_audit(db,old_cut,old_symbols)
+                db.execute("UPDATE r111_cycles SET move_paths=? WHERE cutoff=?",(paths,old_cut))
+                last_audit={'cutoff':old_cut,'paths':paths,'universe':len(old_symbols)}
             self.settle(db,cut)
         with self.lock:
             self.states={s:v for s,v in self.states.items() if cut-v['cutoff']<=r11.WATCH_MS}
             self.latest={'cutoff':cut,'universe':len(self.universe),'eligible':len(eligible),
-                         'reasons':{k:len(v) for k,v in diagnostics.items()},'regime':regime,'movePaths':paths}
+                         'reasons':{k:len(v) for k,v in diagnostics.items()},'regime':regime,'lastMovementAudit':last_audit}
         self.finished=True
     def run(self,heartbeat=lambda:None):
         while not self.engine.stop.is_set():
@@ -250,6 +271,6 @@ class RadarR111:
               AVG(o.gross_pct-.10) net010,AVG(o.gross_pct-.20) net020,AVG(o.gross_pct-.35) net035
               FROM r111_ready r LEFT JOIN r111_outcomes o USING(symbol,cutoff) GROUP BY 1,2""")]
             moves=[dict(r) for r in db.execute("SELECT v1_class,v2_class,COUNT(*) n,AVG(v1_lead_ms) v1LeadMs,AVG(v2_lead_ms) v2LeadMs FROM r111_moves GROUP BY 1,2")]
-            coverage=dict(db.execute("SELECT COUNT(*) cycles,AVG(1.0*eligible/NULLIF(universe,0)) eligibleShare,AVG(1.0*move_paths/NULLIF(universe,0)) movePathShare FROM r111_cycles").fetchone())
+            coverage=dict(db.execute("SELECT COUNT(*) cycles,COUNT(move_paths) auditedCycles,AVG(1.0*eligible/NULLIF(universe,0)) eligibleShare,AVG(1.0*move_paths/NULLIF(universe,0)) movePathShare FROM r111_cycles").fetchone())
         return {'version':r111.VERSION,'coverage':coverage,'outcomes':outcomes,'movementComparison':moves,
                 'note':'Rolling 15m threshold crossings, not independent trades or known onset. Lead to threshold close; missing paths excluded; v1/v2 data definitions differ.'}
