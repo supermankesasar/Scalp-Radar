@@ -13,6 +13,8 @@
 | Nov 26, R10 | **CURRENT** local-only; no paid/runtime AI, hosting or auto-order; 13 R10 tags shadow only | R09 weak audit, concentrated R08 exhaustion and missing real forward data; prioritize prospective holdout and operational resilience |
 | Nov 26, R10 | **CURRENT** fixed future holdout, explicit UNOBSERVED, no look-ahead; local persistent canonical DB and restart telemetry | Avoid selection bias, missing-path false wins, accidental data loss |
 
+| Nov 26, user clarification | **PERMANENT NON-GOAL:** auto-trading is excluded, not deferred | User: “autotrading tidak akan di lakukan sama sekali, jadi tidak perlu jadikan itu patokan”; see [canonical scope and research criteria](MASTER_PROJECT.md#current-scope-and-non-goals-current-verified-repo) |
+
 ## Conflict/supersession register
 
 1. **Static GitHub Pages idea vs Python scanner:** early single-file demo hosting idea was superseded in practice by local Python/SQLite scanner; GitHub repository hosting alone does not run an always-on scanner.
