@@ -65,3 +65,6 @@ PR #5 merged at `30757ae58c1afdacf12303450fc33463d23e22f6` after Windows/Linux C
 
 ## R11.1 performance work
 User reported slow archive/UI at 14:51–14:56 WIB. [Performance hotfix](PERFORMANCE_R111.md) describes code changes, pending CI/release at creation. No fresh latency benchmark or signal performance claim.
+
+## Performance hotfix release (26 Nov 2026)
+PR #6 merged at `0d412c3982a03893f56981f26d9af34d976201a8`; Windows and Linux jobs in [CI run 45779408170](https://github.com/supermankesasar/Scalp-Radar/actions/runs/45779408170) both completed successfully for f3b27de. Archive cache reuse, .40s pacing, local aggregate history budget, bounded pending ledgers and scheduler isolation now in main. Actual archive speed, UI response time and R11.1 freshness/coverage on user's PC remain unmeasured. Database migration adds indexes and completion markers on first start; original observed outcomes preserved. No formula changes, no data deletion. See PERFORMANCE_R111.md.
