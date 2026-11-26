@@ -7,6 +7,7 @@ from urllib.request import Request, urlopen
 from urllib.parse import urlencode
 from urllib.error import HTTPError
 from contextlib import contextmanager
+from rest_guard import REST_GUARD
 
 BASE = 'https://fapi.binance.com'
 KINDS = {
@@ -32,6 +33,7 @@ class MarketArchive:
         self.stop=threading.Event()
         self.breadth_lock=threading.Lock()
         self.breadth_cache={}
+        self.heartbeat=lambda **kw:None
         with self.db() as db:
             db.execute('PRAGMA journal_mode=WAL')
             db.executescript("""
@@ -63,7 +65,7 @@ class MarketArchive:
     def fetch(self,endpoint,params=None):
         # Shared pacing across workers. A restricted endpoint is not bypassed.
         with self.pace:
-            delay=max(self.next_request,self.pause_until)-time.monotonic()
+            delay=max(self.next_request-time.monotonic(),self.pause_until-time.monotonic(),REST_GUARD.remaining())
             if delay>0 and self.stop.wait(delay): raise RuntimeError('Stopping')
             if self.stop.is_set(): raise RuntimeError('Stopping')
             self.next_request=time.monotonic()+.55
@@ -73,6 +75,7 @@ class MarketArchive:
                 return json.loads(r.read()),now_ms()
         except HTTPError as e:
             if e.code in (429,418,403,451):
+                if e.code in (429,418):REST_GUARD.pause(e.headers)
                 with self.pace:
                     try: retry=float(e.headers.get('Retry-After','300'))
                     except (ValueError,TypeError): retry=300.
@@ -168,6 +171,7 @@ class MarketArchive:
         first=True
         while not self.stop.is_set():
             started=now_ms()
+            self.heartbeat(state='collecting',processed=0)
             with self.db() as db:
                 run=db.execute("INSERT INTO market_collection_runs(started_at,state) VALUES(?,'RUNNING')",(started,)).lastrowid
             errors=processed=complete=0
@@ -194,6 +198,7 @@ class MarketArchive:
                     for f in as_completed(futures):
                         n=f.result(); processed+=1;errors+=n;complete+=int(n==0)
                         if processed%25==0 or processed==len(universe):
+                            self.heartbeat(state='collecting',processed=processed,total=len(universe),errors=errors)
                             with self.db() as db:
                                 db.execute('UPDATE market_collection_runs SET processed=?,complete=?,errors=? WHERE id=?',(processed,complete,errors,run))
                             print('[ARCHIVE]',processed,'/',len(universe),'complete:',complete,'errors:',errors,flush=True)
@@ -204,6 +209,7 @@ class MarketArchive:
             with self.db() as db:
                 db.execute('UPDATE market_collection_runs SET ended_at=?,processed=?,complete=?,errors=?,state=? WHERE id=?',(now_ms(),processed,complete,errors,state,run))
             first=False
+            self.heartbeat(state='waiting',processed=processed,total=len(universe),errors=errors)
             # At least 30 minutes between sweep starts. Endpoint batches return 5m samples
             # for past four hours; this is not a claim of simultaneous live 5m polling.
             self.stop.wait(max(30.,1800-(now_ms()-started)/1000))

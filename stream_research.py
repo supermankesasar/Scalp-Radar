@@ -47,8 +47,10 @@ class StreamResearch:
             base=float(rows[-1][4]);atrpct=100*a/base if a else None
             records.append((s,rows,m,tags,base,atrpct))
         if r10 is not None:
-            try:r10.minute(records,engine,cutoff,now)
-            except Exception as exc:print('R10 minute ledger:',str(exc)[:180],flush=True)
+            try:
+                r10.minute(records,engine,cutoff,now);r10.last_error=None
+            except Exception as exc:
+                r10.last_error=str(exc)[:180];print('R10 minute ledger:',r10.last_error,flush=True)
         with self.db() as db:
             # Reuse central raw archive when enabled. No fabricated data.
             archive=db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='market_observations'").fetchone()

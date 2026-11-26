@@ -22,6 +22,15 @@ class R10Tests(unittest.TestCase):
                 self.assertEqual(db.execute('SELECT COUNT(*) FROM r10_setups').fetchone()[0],1)
                 h.settle(db,{},120000+80*60000)
                 self.assertEqual(db.execute("SELECT COUNT(*) FROM r10_outcomes WHERE state='UNOBSERVED'").fetchone()[0],9)
+    def test_future_open_and_trailing(self):
+        rows=[[i*60000,'100','104','98',str(v),0,(i+1)*60000-1] for i,v in enumerate([100.6,100.2]+[100.2]*13)]
+        self.assertEqual(simulate(rows,'UP',.3,15,'ATR_TRAIL')[0],'TRAIL')
+        self.assertAlmostEqual(simulate(rows,'UP',.3,15,'ATR_TRAIL')[2],.2)
+    def test_shared_rate_limit(self):
+        from rest_guard import RestGuard
+        g=RestGuard();g.check();g.pause({'Retry-After':'60'})
+        self.assertGreater(g.remaining(),290)
+        with self.assertRaisesRegex(RuntimeError,'rate limit'):g.check()
     def test_no_missing_flow_as_evidence(self):
         bars=[[i*60000,'100','101','99','100',0,(i+1)*60000-1,100] for i in range(61)]
         self.assertEqual(r10.tags1({}, {}, bars,.3,{'regime':'UNKNOWN'}),[])

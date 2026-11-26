@@ -30,6 +30,7 @@ def simulate(bars,direction,a,h,policy):
 class ResearchR10:
     def __init__(self,path,lock):
         self.path,self.lock=str(path),lock
+        self.last_error=None
         with self.db() as db:
             db.executescript("""
             CREATE TABLE IF NOT EXISTS r10_meta(key TEXT PRIMARY KEY,value INTEGER NOT NULL);
@@ -38,6 +39,10 @@ class ResearchR10:
             CREATE INDEX IF NOT EXISTS r10_setups_entry ON r10_setups(entry_at);
             CREATE TABLE IF NOT EXISTS r10_outcomes(setup_id INTEGER,horizon INTEGER,policy TEXT,state TEXT,entry REAL,gross_pct REAL,exit_at INTEGER,target_pct REAL,stop_pct REAL,PRIMARY KEY(setup_id,horizon,policy));
             """)
+            if 'complete' not in {x['name'] for x in db.execute('PRAGMA table_info(r10_setups)')}:
+                db.execute('ALTER TABLE r10_setups ADD COLUMN complete INTEGER NOT NULL DEFAULT 0')
+                db.execute('UPDATE r10_setups SET complete=1 WHERE (SELECT COUNT(*) FROM r10_outcomes WHERE setup_id=r10_setups.id)=9')
+            db.execute('CREATE INDEX IF NOT EXISTS r10_pending ON r10_setups(entry_at) WHERE complete=0')
             db.execute("INSERT OR IGNORE INTO r10_meta VALUES('holdout_start',?)",(int(time.time()*1000)+7*86400000,))
     @contextmanager
     def db(self):
@@ -82,11 +87,17 @@ class ResearchR10:
                 for s,a,ctx,tags in prepared:self.insert(db,s,'1m',cutoff,decision,a,ctx,tags)
             self.settle(db,{r[0]:r[1] for r in records},cutoff)
     def settle(self,db,rows_by_symbol,cutoff):
-        pending=db.execute("""SELECT * FROM r10_setups s WHERE entry_at<=? AND
-          (SELECT COUNT(*) FROM r10_outcomes o WHERE o.setup_id=s.id)<9""",(cutoff,)).fetchall()
+        pending=db.execute("SELECT * FROM r10_setups WHERE complete=0 AND entry_at<=?",(cutoff,)).fetchall()
+        if not pending:return
+        by_symbol={s:{int(r[6]):r for r in rows} for s,rows in rows_by_symbol.items()}
+        done_map={}
+        for x in db.execute("""SELECT o.setup_id,o.horizon,o.policy FROM r10_outcomes o
+              JOIN r10_setups s ON s.id=o.setup_id WHERE s.complete=0 AND s.entry_at<=?""",(cutoff,)):
+            done_map.setdefault(x[0],set()).add((x[1],x[2]))
+        writes=[];complete=[]
         for c in pending:
-            bars={int(r[6]):r for r in rows_by_symbol.get(c['symbol'],[])}
-            done={(x[0],x[1]) for x in db.execute('SELECT horizon,policy FROM r10_outcomes WHERE setup_id=?',(c['id'],))}
+            bars=by_symbol.get(c['symbol'],{})
+            done=done_map.get(c['id'],set())
             for h in HORIZONS:
                 end=c['entry_at']+h*STEP-1
                 if end>cutoff:continue
@@ -97,8 +108,12 @@ class ResearchR10:
                         out=simulate(seq,c['direction'],c['atr_pct'],h,policy)
                     elif cutoff>end+15*STEP:out=('UNOBSERVED',None,None,None,None,None)
                     else:continue
-                    if out:db.execute('INSERT OR IGNORE INTO r10_outcomes VALUES(?,?,?,?,?,?,?,?,?)',(c['id'],h,policy,*out))
+                    if out:
+                        writes.append((c['id'],h,policy,*out));done.add((h,policy))
+            if len(done)==9:complete.append((c['id'],))
+        db.executemany('INSERT OR IGNORE INTO r10_outcomes VALUES(?,?,?,?,?,?,?,?,?)',writes)
+        db.executemany('UPDATE r10_setups SET complete=1 WHERE id=?',complete)
     def status(self):
         with self.db() as db:
             cycle=db.execute('SELECT * FROM r10_cycles ORDER BY cutoff DESC LIMIT 1').fetchone()
-            return {'enabled':True,'latestCycle':dict(cycle) if cycle else None,'setups':db.execute('SELECT COUNT(*) FROM r10_setups').fetchone()[0],'outcomes':db.execute('SELECT COUNT(*) FROM r10_outcomes').fetchone()[0],'holdoutStart':db.execute("SELECT value FROM r10_meta WHERE key='holdout_start'").fetchone()[0],'note':'Shadow only; future minute open proxy; close exits; no orders.'}
+            return {'enabled':True,'latestCycle':dict(cycle) if cycle else None,'setups':db.execute('SELECT COUNT(*) FROM r10_setups').fetchone()[0],'outcomes':db.execute('SELECT COUNT(*) FROM r10_outcomes').fetchone()[0],'holdoutStart':db.execute("SELECT value FROM r10_meta WHERE key='holdout_start'").fetchone()[0],'lastError':self.last_error,'note':'Shadow only; future minute open proxy; close exits; no orders.'}

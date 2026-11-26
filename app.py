@@ -22,6 +22,7 @@ from stream_engine import StreamEngine, LIMIT as WS_LIMIT, close_at
 from stream_research import StreamResearch
 from research_r10 import ResearchR10
 from runtime_r10 import Runtime
+from rest_guard import REST_GUARD
 from urllib.error import HTTPError, URLError
 from urllib.parse import parse_qs, urlencode, urlparse
 from urllib.request import Request, urlopen
@@ -72,6 +73,7 @@ def request_market(endpoint: str, params: dict, ttl: int = 20):
         hit = CACHE.get(key)
         if hit and hit[0] > time.monotonic() and not ws_kline:
             return hit[1]
+    REST_GUARD.check()
     url = BASE + endpoint + "?" + urlencode(params)
     req = Request(url, headers={"User-Agent": "ScalpMonitor/1.0 (market-data-only)", "Accept": "application/json"})
     try:
@@ -82,6 +84,7 @@ def request_market(endpoint: str, params: dict, ttl: int = 20):
         if e.code in (403, 451):
             raise RuntimeError("Akses Binance dibatasi dari jaringan/server ini (HTTP %s). Coba jaringan yang mengizinkan akses resmi Binance." % e.code) from e
         if e.code in (418, 429):
+            REST_GUARD.pause(e.headers)
             raise RuntimeError("Binance rate limit (HTTP %s). Kurangi refresh dan coba lagi." % e.code) from e
         raise RuntimeError("Binance API HTTP %s: %s" % (e.code, detail)) from e
     except (URLError, TimeoutError) as e:
@@ -804,7 +807,7 @@ class Handler(BaseHTTPRequestHandler):
         elif route.path == '/api/health':
             self._reply(200, json.dumps({'ok':True,'version':'0.5','storage':'SQLite','activeTracked':len(STORE.active_symbols())}).encode(), 'application/json')
         elif route.path == '/api/runtime':
-            self._reply(200,json.dumps(RUNTIME.status() if RUNTIME else {'enabled':False}).encode(),'application/json')
+            self._reply(200,json.dumps(dict(RUNTIME.status(),scan={k:SCAN_STATE.get(k) for k in ('running','progressAt','processed','total','startedAt')},restCooldownSeconds=REST_GUARD.remaining(),stream=STREAM.status() if STREAM else None) if RUNTIME else {'enabled':False}).encode(),'application/json')
         elif route.path == '/api/research/r10':
             self._reply(200,json.dumps(R10.status() if R10 else {'enabled':False}).encode(),'application/json')
         elif route.path == '/api/websocket':
@@ -877,6 +880,7 @@ def fast_watch_loop():
                             print('Fast watch',symbol,str(exc)[:90],flush=True)
         except Exception as exc:
             print('Fast watch error:', str(exc)[:140],flush=True)
+        if RUNTIME:RUNTIME.beat('fast-watch')
         time.sleep(ACTIVE_FAST_POLL_SECONDS)
 
 
@@ -920,6 +924,7 @@ def minute_seed_loop():
                 print('R10 seed:',symbol,str(exc)[:100],flush=True)
                 if STREAM.stop.wait(300 if 'rate limit' in str(exc).lower() else 10):return
             if STREAM.stop.wait(.8):return
+        if RUNTIME:RUNTIME.beat('r10-minute-seed')
         STREAM.stop.wait(30)
 
 
@@ -947,6 +952,7 @@ def serve():
         worker('scan-scheduler',scheduler_loop)
         worker('fast-watch',fast_watch_loop)
     if ARCHIVE is not None:
+        if RUNTIME:ARCHIVE.heartbeat=lambda **kw:RUNTIME.beat('all-pair-archive',**kw)
         worker('all-pair-archive',ARCHIVE.collect_forever)
         print('OVERNIGHT ALL crypto pairs enabled; status /api/overnight',flush=True)
     print('Scalp Radar v0.5: host %s port %d' % (host,port),flush=True)

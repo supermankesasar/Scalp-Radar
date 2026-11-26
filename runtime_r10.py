@@ -13,7 +13,9 @@ class Runtime:
         except (OSError,ValueError,KeyError):pass
     def event(self,event,**details):
         with self.lock:
-            with self.log.open('a',encoding='utf-8') as f:f.write(json.dumps(dict(time=time.time(),event=event,**details))+'\n')
+            try:
+                with self.log.open('a',encoding='utf-8') as f:f.write(json.dumps(dict(time=time.time(),event=event,**details))+'\n')
+            except OSError as e:print('R10 runtime log:',e,flush=True)
     def beat(self,name,**details):
         with self.lock:self.workers.setdefault(name,{}).update(time=time.time(),**details)
     def supervise(self,name,fn):

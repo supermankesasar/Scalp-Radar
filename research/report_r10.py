@@ -15,6 +15,20 @@ def report(path):
     try:
         comparison=[dict(r) for r in db.execute(base+'SELECT '+group+','+agg+' FROM x GROUP BY '+group)]
         clusters=[dict(r) for r in db.execute(base+'SELECT '+group+',symbol,day,'+agg+' FROM x GROUP BY '+group+',symbol,day')]
+        # Descriptive concentration stress test, separately within each fixed cohort.
+        grouped={}
+        keys=group.split(',')
+        for row in clusters:
+            k=tuple(row[x] for x in keys);coin=grouped.setdefault(k,{}).setdefault(row['symbol'],[0,0.])
+            if row['observed']:
+                coin[0]+=row['observed'];coin[1]+=row['observed']*row['net20']
+        for row in comparison:
+            k=tuple(row[x] for x in keys);coins=grouped.get(k,{})
+            ranked=sorted(((s,n,total) for s,(n,total) in coins.items() if n),key=lambda x:x[2],reverse=True)
+            removed=ranked[:2];remaining=ranked[2:];n=sum(x[1] for x in remaining)
+            row['top2_contributors']=[x[0] for x in removed]
+            row['net20_excluding_top2']=sum(x[2] for x in remaining)/n if n else None
+            row['observed_excluding_top2']=n
         return {'comparison':comparison,'symbol_day_clusters':clusters,'holdoutStart':db.execute("SELECT value FROM r10_meta WHERE key='holdout_start'").fetchone()[0],
                 'note':'Overlapping signals; not independent trials. Holdout is a fixed temporal split, not proof. Costs are assumed round trip; funding and fill slippage not modeled.'}
     finally:db.close()

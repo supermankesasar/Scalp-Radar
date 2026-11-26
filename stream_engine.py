@@ -44,6 +44,7 @@ class StreamEngine:
         self.cache_hits=0
         self.late=0
         self.messages=0
+        self.last_message_at=None
         self.gaps=0
     def set_symbols(self,symbols):
         with self.lock:
@@ -100,6 +101,7 @@ class StreamEngine:
         if kind=='forceOrder':s=e['o']['s']
         if s not in self.symbols:return
         self.messages+=1
+        self.last_message_at=received
         if kind=='kline':
             k=e['k'];tf=k['i']
             if tf not in TF:return
@@ -205,7 +207,7 @@ class StreamEngine:
     def status(self):
         with self.lock:
             return {'enabled':True,'symbols':len(self.symbols),'cachedSymbols':len({k[0] for k in self.bars}),
-              'connections':dict(self.conn),'onlineConnections':sum(v=='connected' for v in self.conn.values()),'messages':self.messages,'lateEvents':self.late,'tradeIdGaps':self.gaps,
+              'connections':dict(self.conn),'onlineConnections':sum(v=='connected' for v in self.conn.values()),'messages':self.messages,'lastMessageAt':self.last_message_at,'lateEvents':self.late,'tradeIdGaps':self.gaps,
               'restKlineRequests':self.rest_hits,'wsCacheHits':self.cache_hits,'recentErrors':list(self.errors)}
     async def session(self,route,kind,group,streams,delay):
         from websockets.asyncio.client import connect
