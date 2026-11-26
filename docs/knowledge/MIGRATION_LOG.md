@@ -33,3 +33,28 @@
 - This was a **documentation-only** migration; no source code, production config, database, files outside `docs/knowledge/`, or live deployments were changed.
 
 **Source baseline SHA:** `b9e5b2883f958d053ab9db432cb4ddacbf839bbd`. The actual migration commit ID is in GitHub history and the completion report; not guessed in this file.
+
+<!-- migration-note:2026-11-26-scalping-swing-local-ai-arkham -->
+## 2026-11-26 — migrasi tambahan dari chat scalping futures / swing / Arkham / AI lokal
+
+**Konteks:** saat audit, main berubah dari `b9e5b2883f958d053ab9db432cb4ddacbf839bbd` ke `14a3414b98dfe2b2334dbffb7898f2753e18dfb5` akibat **commit migrasi Knowledge Base dari chat lain**. Tidak dilakukan penulisan berdasarkan snapshot lama. Semua 13 file Knowledge Base baru pada commit `14a3414b` dibaca ulang; migrasi ini **hanya menambahkan delta chat yang belum dicakup**, tidak menghapus atau mengganti catatan percakapan lain. Sumber code/research lama tetap dibaca untuk memisahkan proposal dari implementasi.
+
+### Materi chat dan lampiran yang bisa diakses
+
+1. **USER-CHAT:** pengguna menolak bentuk custom web lama dan lebih memilih framework trading-AI web yang sudah ada, memakai model AI di komputernya sendiri; user menempelkan ringkasan Google tentang TradingView/webhook, Streamlit/Gradio, Backtrader/Jesse, OpenAlgo, QuantDinger/OpenByte OS, HKUDS AI-Trader, TraderMagic. Ini **kutipan pengguna**, bukan audit independen fitur tiap platform.
+2. **ASSISTANT-CHAT:** asisten merekomendasikan QuantDinger + Ollama dan menggambarkan pilihan timeframe/scalping; bukan pengesahan bahwa komponen tersebut terpasang.
+3. **USER-CHAT:** gaya trading kini **scalping futures dan swing trade**; **whale monitor dikesampingkan** karena Arkham dapat digunakan secara terpisah.
+4. **ATTACHMENT:** analisis.txt membahas TradingAgents, alat bantu beginner, candles dan awalnya shark/whale; kondisi-dasar.txt membahas aplikasi awal, eksplorasi forex/crypto, dan masalah terlambat TP. Kedua file tersedia/dibaca penuh; informasi umum yang sudah tercantum di KB lain tidak digandakan.
+5. **REPO:** audit struktur main, commit mutakhir, seluruh KB yang ada, laporan R01–R10, filter/runner/data ledger yang relevan; implementasi **R08 CORE default, R09/R10 shadow, tanpa runtime AI dan tanpa auto-order** tetap otoritatif.
+
+### Delta dan deduplikasi
+
+**Ditambahkan** ke MASTER_PROJECT, DECISION_LOG, RESEARCH_HISTORY, DEVELOPMENT_HISTORY, FUTURE_RESEARCH, CURRENT_STATUS, KNOWN_ISSUES, dan INDEX: preferensi trading scalping/swing, keputusan Arkham, alasan web custom tidak cocok, opsi framework/AI lokal sebagai proposal, serta gap validasi mode swing. **Tidak disalin ulang:** semua numerik v0.5/R01–R10 yang sudah lengkap di EXPERIMENT_RESULTS, parameter aktif di FORMULA_DATABASE, tabel definisi DATA_DICTIONARY, atau motif COIN_CASE_STUDIES. Tidak ada formula, coin dataset, statistik eksperimen, atau threshold baru dari chat ini.
+
+### Konflik dan batas akses
+
+- **Kebutuhan awal whale** vs **penggunaan Arkham dan whale diprioritaskan rendah**: perubahan keinginan pengguna. Kebutuhan awal disimpan sebagai sejarah.
+- **Saran QuantDinger/Ollama** vs **main R10 tanpa LLM**: ide belum diterapkan, bukan state produksi.
+- **Saran timeframe asisten** vs **konfigurasi pengguna**: tidak ada timeframe yang disetujui secara eksplisit dalam chat ini.
+- Tidak tersedia transkrip chat lain di luar yang ditampilkan, original raw coin cases, database PC, screenshots lokal, hasil live-trade atau spesifikasi hardware PC. Klaim lampiran/diskusi lain pada catatan migrasi sebelumnya tidak diubah.
+- Tidak ada perubahan pada kode, formula aktif, konfigurasi, database, atau file di luar docs/knowledge. Commit ini harus dibaca dari riwayat GitHub, bukan dari perkiraan ID.

@@ -22,3 +22,12 @@
 Beginner-readable labels for Potential vs Confirmed, source freshness and insufficient data; explicit **No Trade / Watch** states; TP monitoring as a research requirement, not a promise of push notifications or guaranteed fills. Consider a future optional AI analysis layer only after stable data provenance, validation, and cost/security review.
 
 Sources: this conversation, `analisis.txt`, `kondisi-dasar.txt`; [README](../../README.md), [R08](../../research/R08_MULTI.md), [R10](../../research/R10_RESEARCH.md).
+
+<!-- migration-note:2026-11-26-scalping-swing-local-ai-arkham -->
+## Handoff tambahan: scalping futures + swing dan AI lokal (USER-CHAT; dimigrasikan 2026-11-26)
+
+Dalam percakapan terpisah yang kini dimigrasikan ini, pengguna secara eksplisit menyatakan **gaya trading saat ini adalah scalping futures dan swing trade**. Tujuan produk bergeser dari pemantauan whale menjadi **asisten keputusan untuk kedua gaya tersebut**. Pengguna menyatakan **whale monitor dapat dikesampingkan karena dapat dicek lewat Arkham**. Pernyataan ini lebih baru dalam alur chat terkait dibanding kebutuhan awal shark/whale dan perlu digunakan saat mengklarifikasi roadmap; *tidak* berarti Arkham terhubung ke aplikasi.
+
+Pengguna juga menegaskan **web custom yang sebelumnya dicoba tidak cocok**, sehingga ingin memanfaatkan solusi trading-AI berbasis web yang sudah ada, dengan **AI berjalan di komputer sendiri**. Ia membawa daftar kandidat framework dari hasil Google; itu merupakan **ide eksplorasi produk, bukan verifikasi fitur, pilihan final platform, dependensi yang sudah terpasang, atau izin mengganti arsitektur R10**. Saran asisten waktu itu adalah QuantDinger + Ollama, tetapi tidak pernah menjadi implementasi di source main.
+
+Kebutuhan tetap **decision support dahulu, bukan auto order**. Pertanyaan spesifikasi Windows/RAM/GPU pernah diajukan asisten, tetapi **tidak dijawab dalam chat ini**. Timeframe scalping 1m/5m/15m dan swing 4h/1D yang disebut asisten hanyalah **saran desain**, bukan konfigurasi yang dikonfirmasi pengguna. Sumber: chat ini; status kode: [CURRENT_STATUS](CURRENT_STATUS.md).

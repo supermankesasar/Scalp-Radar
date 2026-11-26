@@ -15,3 +15,11 @@
 | 9 | Full case study reconstruction | Require symbol, UTC time, timeframe, OHLCV/flow/depth source and receipt, decision, outcomes, contrary examples | Named R08 narratives have no independent case-level data in accessible chat |
 
 Method template for each future experiment: date/period, pair/eligibility, regime, timeframe, source and receipt, version/thresholds, hypothesis, preregistered protocol, sample N + independent clusters, net-cost scenario, missing-data count, results incl. nulls, failure modes and explicit promotion decision. Preserve rejected/deprecated variants.
+
+<!-- migration-note:2026-11-26-scalping-swing-local-ai-arkham -->
+## Pertanyaan terbuka dari chat scalping/swing [USER-CHAT]
+
+- **Mode scalping futures vs swing:** pengguna mengonfirmasi kedua gaya; perlu spesifikasi horizon tahan posisi, risiko/leverage, kondisi market, dan validasi **terpisah**. Timeframe 1m/5m/15m atau 4h/1D hanyalah contoh asisten sebelumnya, bukan preset yang disetujui.
+- **Asisten AI lokal:** uji apakah LLM via Ollama (atau alternatif) benar-benar memperjelas konteks sinyal yang dihitung deterministik, tanpa menambah jeda berbahaya untuk scalping dan tanpa mengirim order. Kandidat dashboard/framework adalah proposal; lakukan evaluasi perawatan, latensi, footprint PC, kemampuan akses lokal sebelum memilih platform.
+- **TP terlambat:** pertahankan masalah awal pengguna sebagai hipotesis research exit/alert; jangan menyebut peringatan otomatis, push HP atau profit peningkatan sebagai fitur teruji tanpa pengukuran.
+- **Whale monitor:** **deprioritized**; Arkham digunakan pengguna secara terpisah. Jangan menjadikan identifikasi whale sebagai dependency fase scalp/swing, dan jangan mengklaim integrasi Arkham.

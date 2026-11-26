@@ -22,3 +22,10 @@
 `START-WINDOWS.bat` is single Windows launcher; server local URL documented as `http://127.0.0.1:8765`; PC, terminal and network remain on for scanning. `export_overnight.bat` creates a consistent SQLite backup ZIP; never casually overwrite canonical local DB or copy only live SQLite with active WAL. Python requirements may change by release; follow current main launcher. Source paths: [README](../../README.md), [OVERNIGHT](../../research/OVERNIGHT.md), [R10](../../research/R10_RESEARCH.md).
 
 **No code or production configuration was modified by this Knowledge Base migration.**
+
+<!-- migration-note:2026-11-26-scalping-swing-local-ai-arkham -->
+## Alternatif arsitektur yang dibahas, tetapi tidak diimplementasikan [CHAT]
+
+Di samping sejarah prototype Whale Radar, sebuah chat lain merekam **penolakan pengguna terhadap web custom yang sudah dicoba** dan preferensi **memakai aplikasi/framework trading-AI open-source yang memiliki dashboard web dengan AI lokal di PC**. Kandidat yang disebut/dibawa pengguna: TradingAgents sebagai inspirasi, TradingView integrations/webhooks, Streamlit/Gradio, Backtrader/Jesse, OpenAlgo, QuantDinger/OpenByte OS, HKUDS AI-Trader dan TraderMagic. **QuantDinger + Ollama adalah rekomendasi asisten saat itu**, bukan release/tag, migrasi aplikasi ataupun dependency yang terverifikasi di repository.
+
+Pengguna setelahnya mengutamakan **scalping futures dan swing trade**, tidak lagi mengutamakan whale monitor internal karena memakai **Arkham terpisah**. Ini dicatat sebagai **perubahan perspektif produk**, bukan perintah saat ini untuk mengganti backend Python R10. Tidak ada bukti bahwa framework kandidat tersebut dipasang atau diuji pada komputer pengguna.

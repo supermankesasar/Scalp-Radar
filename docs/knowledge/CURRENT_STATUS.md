@@ -15,3 +15,8 @@
 Historical `DEPLOY_ONLINE.md` and a paragraph in `README.md` describe Render deployment; these do not override the **current R10 local-only** decision. Older R07 default SCALP_V2 was **superseded** by R08. Early Whale Radar HTML/GitHub Pages concept is a different historical prototype, not the current app runtime.
 
 Sources: [README](../../README.md), [R08](../../research/R08_MULTI.md), [R09](../../research/R09_WEBSOCKET.md), [R10](../../research/R10_RESEARCH.md), [implementation](../../filters/r10.py). This document reflects repository evidence, not a live exchange or on-PC test.
+
+<!-- migration-note:2026-11-26-scalping-swing-local-ai-arkham -->
+## Preferensi terbaru dari chat yang dimigrasikan (produk, bukan status rilis)
+
+Pengguna menyatakan **scalping futures dan swing trading** adalah fokus sekarang. Fitur **whale monitor internal bukan prioritas**, karena pengguna memeriksanya melalui **Arkham** secara terpisah. Sebelumnya pengguna ingin memakai framework trading-AI berbasis web yang sudah jadi dengan **AI berjalan di PC sendiri**, bukan web custom lama. **Tidak ada bukti Ollama/QuantDinger/TradingAgents berjalan dalam runtime main**; ini tetap usulan arsitektur. Status code R08 default + R09/R10 shadow di bagian atas **tidak berubah**. Mode swing khusus dan TP-coaching belum teruji/terimplementasi.

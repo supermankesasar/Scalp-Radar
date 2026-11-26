@@ -27,3 +27,10 @@
 - No other chat transcripts, local SQLite databases, run exports, raw P&L or coin-specific user screenshots are available in this conversation for migration.
 
 Resolution: prioritize upstream research for method, exact code for implementation, current R10 direction for scope, and new timestamped user evidence for future overrides. Keep conflicts explicit.
+
+<!-- migration-note:2026-11-26-scalping-swing-local-ai-arkham -->
+## Kesenjangan terhadap gaya trading yang dikonfirmasi pengguna
+
+- **Tidak ada bukti fitur atau backtest swing terpisah** walaupun swing trading sudah menjadi kebutuhan yang dinyatakan. Jangan menganggap timeframe 4h/1D contoh asisten otomatis diimplementasikan.
+- **AI lokal dan migrasi ke framework siap pakai masih ide**, sedangkan R10 main tanpa LLM; spesifikasi PC (OS/RAM/GPU) tidak dijawab dalam chat ini. Jangan mengeluarkan langkah instalasi atau klaim performa model lokal seolah sudah diverifikasi.
+- **Arkham digunakan terpisah oleh pengguna** dan tidak ada konektor Arkham yang diaudit; jangan mengklaim data Arkham telah masuk ke scanner.

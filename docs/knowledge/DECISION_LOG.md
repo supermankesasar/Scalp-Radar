@@ -21,3 +21,16 @@
 4. **AI aspiration vs implementation:** TradingAgents-inspired AI was an idea; R10 specifically states **no runtime/paid AI**. No contradiction when dated and classified correctly.
 
 Sources: user chat and requirements attachments; [v0.5](../../research/BACKTEST_V05_2026_REPORT.md), [R07](../../research/R07_SCALP_V2.md), [R08](../../research/R08_MULTI.md), [R10](../../research/R10_RESEARCH.md).
+
+<!-- migration-note:2026-11-26-scalping-swing-local-ai-arkham -->
+## Tambahan keputusan pengguna dari chat terpisah (waktu pesan asal tidak lengkap; migrasi 2026-11-26)
+
+| Sumber / urutan | Keputusan atau pembahasan | Alasan | Klasifikasi |
+| --- | --- | --- | --- |
+| USER-CHAT, sebelum penegasan gaya trading | Custom web yang pernah dicoba **tidak cocok**; ingin memakai framework/trading-AI web yang telah tersedia dengan AI **lokal di PC** | Mengurangi pembangunan UI khusus; tidak bergantung pada AI cloud berbayar | **PREFERENSI**; bukan otorisasi migrasi kode R10 |
+| USER-CHAT, setelahnya | **Scalping futures + swing trading** adalah gaya trading saat ini | Menyesuaikan fokus alat bantu entry, monitoring dan exit | **KEPUTUSAN KEBUTUHAN**; belum ada bukti mode swing teruji pada main |
+| USER-CHAT, setelahnya | Built-in **whale monitor dikesampingkan** karena pengguna cek **Arkham** secara terpisah | Tidak menggandakan alat eksternal | **SUPERSEDED** dari prioritas whale awal; Arkham bukan integrasi kode |
+| ASSISTANT-CHAT | QuantDinger + Ollama direkomendasikan; TradingAgents, OpenAlgo, AI-Trader dan platform lain dibahas | Alternatif reuse open-source | **PROPOSAL**, bukan pilihan final dan bukan komponen R10 |
+| ASSISTANT-CHAT | Timeframe 1m/5m/15m untuk scalp, 4h/1D untuk swing | Contoh pembagian analisis | **SARAN**; belum dikonfirmasi pengguna sebagai parameter |
+
+Jika diskusi AI-local tampak bertentangan dengan **R10 tanpa runtime AI**, keduanya benar dalam konteksnya masing-masing: pengguna membahas **arah produk masa depan**, sedangkan main yang diaudit masih berupa scanner/research read-only tanpa Ollama/LLM. Jangan mengganti formula aktif berdasarkan diskusi ini.

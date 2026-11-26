@@ -20,3 +20,10 @@
 - R09 latency/coverage and R10 anti-concentration safeguards show why raw signal counts and pooled averages can mislead.
 
 Historical documentation sometimes speaks as if a branch was still in staging, and older README sections discuss cloud hosting. Prefer [CURRENT_STATUS](CURRENT_STATUS.md) and latest code for current state; retain historical language only as timestamped evidence.
+
+<!-- migration-note:2026-11-26-scalping-swing-local-ai-arkham -->
+## Diskusi produk trading-AI lokal pada chat lain [USER-CHAT / bukan eksperimen]
+
+Pengguna menolak bentuk web custom sebelumnya dan mengusulkan memakai solusi open-source berbasis browser serta model AI yang berjalan di komputer pribadi. Salinan hasil pencarian Google yang dibawa pengguna mencantumkan **TradingView/webhook, Streamlit, Gradio, Backtrader, Jesse, OpenAlgo, QuantDinger/OpenByte OS, HKUDS AI-Trader, dan TraderMagic**. Sebelumnya TradingAgents dijadikan acuan konseptual di analisis.txt. Asisten mengusulkan QuantDinger + Ollama; kemudian pengguna **mengubah fokus menjadi scalping futures dan swing**, serta mengesampingkan whale radar karena **Arkham**.
+
+**Status evidensi:** ini sejarah penentuan kebutuhan/arsitektur, **bukan penelitian coin, backtest, pengukuran win rate, keberhasilan instalasi lokal, atau bukti library tersebut ada di main**. Deskripsi fitur dari hasil pencarian tersebut tidak diaudit sebagai bagian migrasi; klaim mengenai TraderMagic belum terverifikasi. Baseline R10 yang lebih baru tetap menjadi sumber kebenaran untuk implementasi. Tidak ada hasil eksperimen baru dari chat ini.

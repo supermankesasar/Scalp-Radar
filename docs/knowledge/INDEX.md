@@ -34,3 +34,8 @@ Updated: 2026-11-26. Scope: consolidated knowledge with research provenance; **n
 **VERIFIED-REPO** = observed in repository documentation/code at migration; not proof of on-device performance. **USER-CHAT** = user requirement from this conversation. **ASSISTANT-CHAT** = proposal or claim in old assistant response, not independently verified. **HYPOTHESIS** = unvalidated proposed mechanism. **EXPLORATORY** = retrospective non-independent test. **SHADOW** = recorded/tested but not live ranking. **CURRENT** = checked against main on 2026-11-26. **HISTORICAL / SUPERSEDED** = preserved for provenance, not current behavior.
 
 Do not merge experiment tags into a single success metric, infer whale identity from volume/flow, promote rules from a discovery sample, or infer real fills from candle-close outcomes. For exact numbers, prefer the linked original research over this navigational synthesis.
+
+<!-- migration-note:2026-11-26-scalping-swing-local-ai-arkham -->
+## Tambahan migrasi chat: fokus scalping/swing dan AI lokal
+
+Knowledge Base juga menampung keputusan dari chat terpisah tentang **scalping futures, swing trading, whale monitor dikesampingkan karena Arkham, dan preferensi AI lokal/framework siap pakai**. Lihat [MASTER_PROJECT](MASTER_PROJECT.md), [DECISION_LOG](DECISION_LOG.md) dan entri tambahan di [MIGRATION_LOG](MIGRATION_LOG.md). Catatan ini adalah konteks produk dan tidak mengubah filter/default R10.
