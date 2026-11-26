@@ -44,3 +44,11 @@ Historical discovery RVOL uses prior20 **quote-volume median** (upper-middle app
 <!-- migration-note:2026-11-26-claude-v1-original-artifacts -->
 ## Claude V1 derived CSV schema (not R10 ledger)
 [Field dictionary and exact unit/timestamp conventions](research/CLAUDE_V1_ARTIFACT_AUDIT.md#f-original-csv-field-dictionary). Event/snapshot timestamps reference open, features available after close, trade returns fractional, summary percent, OI/funding backward fill, RVOL prior288 median, Kaufman eff12 versus early price/volume efficiency. Separate from live R08/R10. Manifest in appendix permits identifying original local artifacts.
+
+<!-- migration-note:2026-11-26-v05-scalp-swing-desktop-chat -->
+## Historical feature-branch V0.5 profile fields (not R10 ledger schema)
+
+- `strategy`: `scalping` or `swing`; `timeframes`: fixed closed-candle inputs per profile. `rsi5m` is Scalp RSI14; `rsi1h` is Swing RSI14. `rsiRiskValue/rsiRiskTimeframe/rsiRiskLongThreshold/rsiRiskShortThreshold/rsiRiskLong/rsiRiskShort` are threshold values/flags at last indicator scan, **not live tick-level triggers**.
+- `pct24h` is *percent price movement* (ignored/None for Scalp directional logic); `turnover24h` is *24h USDT quote volume* used for universe selection/liquidity including TOP80. TOP80 = 80 high-turnover tickers *before* technical indicators, plus potential tracked-event extras. `lastClosed1m` vs `lastClosed1h` identifies event bar cadence.
+- The branch wrote separate `data/signals_scalping.sqlite3` and `data/signals_swing.sqlite3`; old `data/signals.sqlite3` remained legacy. `events` retains original score and terminal reason; replaceable `last_rows` is **not an immutable indicator timeline**. `setup_active` is last known Boolean only. `STOP_HIT` = *close-based proxy*; `TIMEOUT_UNOBSERVED` = insufficient observation; `RANK_REPLACED` = queue rotation; none alone implies executed P&L. The current main R10 canonical Windows DB is separate and must not be overwritten by a feature-branch folder.
+- Precise version-level definitions in [feature appendix](research/V05_SCALPING_SWING_FEATURE_CHAT_2026-11-22_25.md#c4-top5-candidates--persistence--event-reasoning).

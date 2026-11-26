@@ -51,3 +51,8 @@ Latest reading priority: [CURRENT_STATUS](CURRENT_STATUS.md) and [DECISION_LOG](
 <!-- migration-note:2026-11-26-claude-v1-original-artifacts -->
 ## Claude V1 — original research artifacts now audited
 [Source/CSV audit, formulas, negative results, synchronization and manifest](research/CLAUDE_V1_ARTIFACT_AUDIT.md) and [131-pair main-window table](research/CLAUDE_V1_PAIR_DATA.md). Supplements earlier handoff without recounting cohorts; original script/CSV accessible in this migration, not raw exchange candles. Historical only; read CURRENT_STATUS first.
+
+<!-- migration-note:2026-11-26-v05-scalp-swing-desktop-chat -->
+## V0.5 feature-branch Scalping/Swing chat and desktop discussion
+
+[Historical V0.5 branch evidence](research/V05_SCALPING_SWING_FEATURE_CHAT_2026-11-22_25.md) consolidates user-corrected timeframes, exact historical scoring, TOP80 meaning, RSI warnings, coin-logo work, failed-event/Signal Journal design, and the **not-yet-approved** desktop packaging concept. This was **not** a new profitable market experiment or a change to R10 main. Cross-reference [CURRENT_STATUS](CURRENT_STATUS.md), [FORMULA_DATABASE](FORMULA_DATABASE.md), [DECISION_LOG](DECISION_LOG.md), [KNOWN_ISSUES](KNOWN_ISSUES.md), [FUTURE_RESEARCH](FUTURE_RESEARCH.md) and [MIGRATION_LOG](MIGRATION_LOG.md).

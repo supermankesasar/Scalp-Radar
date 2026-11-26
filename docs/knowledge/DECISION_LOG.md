@@ -44,3 +44,18 @@ Jika diskusi AI-local tampak bertentangan dengan **R10 tanpa runtime AI**, kedua
 
 <!-- migration-note:2026-11-26-early-45-pair-chat-detail -->
 22–25 Nov original discovery chat: user explicitly wanted independent pattern discovery, not identical indicator definitions across AIs; standardize only metadata and compare definitions transparently. User explicitly rejected adding chart-pattern/indicator panels: keep existing UI, run complex backend locally without runtime AI. Historical research-first gate was superseded by the later 26 Nov operational-first directive above; do not revive gate or change current code on this migration. See [original discovery appendix](research/EARLY_DISCOVERY_2026-11-22_24.md).
+
+<!-- migration-note:2026-11-26-v05-scalp-swing-desktop-chat -->
+## Further user decisions from the historical V0.5 feature chat (not the current main policy)
+
+| User requirement or decision | Temporal/validation status | Consequence |
+| --- | --- | --- |
+| Scalping **1m/5m/15m/1h** | **USER-CHAT, corrected** | Original requested 3m was explicitly **SUPERSEDED**. Feature branch changed scanner and 1m event cadence; speed/edge not validated |
+| Second category named **Swing 15m/1h/4h/8h/1d/1w** | **USER-CHAT, corrected** | Original **Intraday** UI-only 24h sign filter and shared Top5 became historical; independent mode/DB implemented on unmerged branch |
+| Exclude 24h price movement from Scalp, but turnover still selects liquid pairs | **USER-CHAT with assistant design choice** | Swing uses 24h price-change *sign gate* (not weighted score); TOP80 refers to pre-filter universe, not passed candidates |
+| Display RSI>60 warning in Potensi Naik; opposite in Potensi Turun | >60 explicit **USER-CHAT**; <40 SHORT **ASSISTANT interpretation** | Warnings were added as passive badge, not invalidation/order; thresholds not empirically proven |
+| Preserve data of failed/invalidated radar setups | **USER-CHAT** | Separate technical validity from price outcome; Signal Journal proposed, **not yet implemented** |
+| Discuss desktop Windows app before development | **USER-CHAT: "jangan di buat langsung, kita bahas dulu"** | Wrapping current local web UI preferred by assistant, but no user decision, no installer or native app built |
+| Keep later R10 main operational direction | **CURRENT-MAIN** | R08 CORE default, R09/R10 shadow/research and local-only persist; unmerged V0.5 branch is not replacement |
+
+[Full chronological source and distinctions](research/V05_SCALPING_SWING_FEATURE_CHAT_2026-11-22_25.md).

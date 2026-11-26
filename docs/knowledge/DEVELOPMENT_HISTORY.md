@@ -38,3 +38,10 @@ Historical online attempt: InfinityFree static/PHP host unsuitable for long-runn
 <!-- migration-note:2026-11-26-claude-v1-original-artifacts -->
 ## Research Lab V1 external script (historical standalone)
 The Claude-authored crypto_pattern_research.py and original CSVs were inspected; Python AST parses, no runtime AI, no evidence script integrated into Scalp Radar. [Audit and proposed V2](research/CLAUDE_V1_ARTIFACT_AUDIT.md#e-source-code-audit-and-conflicts). Keep original baseline immutable locally, use current main for runtime. Research-first historical constraint does not supersede newer operational-first instruction.
+
+<!-- migration-note:2026-11-26-v05-scalp-swing-desktop-chat -->
+## Experimental V0.5 side branch not merged to R10 main
+
+From the accessible chat: configurable RSI70 reversal watch + revisioned SQLite/manual control → initial **Scalping/Intraday** tab with shared events and 24h sign UI filter (**SUPERSEDED**) → corrected user choice **Scalping 1m/5m/15m/1h**, **Swing 15m/1h/4h/8h/1d/1w** → `scalp_engine.py`, `swing_engine.py`, `scalp_runtime.py`, separate `signals_scalping.sqlite3`/`signals_swing.sqlite3`, separate strategy-aware API → lazy coin-logo/fallback `coin_logos.js`, RSI>60 LONG and RSI<40 SHORT warning badges (as interpreted) → regression-tested fix for hardcoded 15m Swing expiration. Feature commit `7e404b84`/run 45012562202; no proof of profitability or on-PC runtime.
+
+User then asked to **discuss before coding** a desktop app. Existing web UI packaged as a Windows app shell was assistant's preferred option, but Qt/native rewrite, system tray, notifications, sound, autostart and installer/updater remain ideas only. Signal Journal was also **proposed**, not implemented. [Detailed historical appendix](research/V05_SCALPING_SWING_FEATURE_CHAT_2026-11-22_25.md). This does not alter the later main R08 default/R09–R10 shadow history.

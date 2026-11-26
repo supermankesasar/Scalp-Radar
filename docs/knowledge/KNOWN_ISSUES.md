@@ -47,3 +47,14 @@ Original screener's missed PIEVERSE/SKYAI events were user-reported; old logs/co
 <!-- migration-note:2026-11-26-claude-v1-original-artifacts -->
 ## Claude original artifact access and precise audit
 Supersedes only prior access limitation for Claude source/CSV: all ten artifacts now available. [Detailed audit](research/CLAUDE_V1_ARTIFACT_AUDIT.md#e-source-code-audit-and-conflicts) confirms base exit-open split leakage 19 TRAIN/24 EXTRA, both versions 38/41; full-horizon crossing may be larger; 25/259 caught events have zero lead; raw recall not emitted alerts. Gross includes some slip; TP exit no slip, gap stop optimism, outcome-bar excursion ambiguity. Pair run-up is open-based and group controls drawn from remaining future-selected pool. Two tokenized-gold symbols included. Earlier source report OOS mostly before TRAIN, true TEST two events. No new runtime bug inferred; do not erase prior notes or promote these rules.
+
+<!-- migration-note:2026-11-26-v05-scalp-swing-desktop-chat -->
+## V0.5 side-branch issues: preserve separately from current R10
+
+- **Version divergence:** branch `feature/v05-data-backtest-oneclick` includes dual Scalp/Swing engines with TOP80 default; current main has R08 default and R09/R10 research, with an older README saying ALL default. Do not cross-apply settings, database layouts or performance claims.
+- **Incomplete signal reasoning:** `setup_active` holds latest Boolean but no immutable series of indicator-invalidated times/reasons; `EXPIRED` groups stop, timeout, missing observation, and Top5 rank replacement that should remain distinct. RSI warnings 60/40 do not cancel candidate signals.
+- **Bug caught and fixed only on the feature branch:** Swing had a 15-minute hardcoded expiry in `_expire_unobserved` although configured for 3 days. Changed to `self.pending_ms` and regression-tested at `7e404b84`. Do not assume main R10 has that defect.
+- **No evidence of production performance:** 1m REST input does not guarantee scanning all TOP80/ALL with minute latency; Swing 3-day choice is experimental, candidate TP/SL are close-based proxies and event counts are not fills. User trial logs and real P&L were not accessible. A cached live quote can be newer than its RSI/EMA candle.
+- **Presentation/deployment limitations:** icons depend on an outside CDN (fallback initials); desktop app, Windows notifications/sound/tray, optional autostart/updater, and an append-only Signal Journal were **discussed but not implemented**. User did not authorize immediate desktop conversion.
+
+[Feature evidence and historical code links](research/V05_SCALPING_SWING_FEATURE_CHAT_2026-11-22_25.md).

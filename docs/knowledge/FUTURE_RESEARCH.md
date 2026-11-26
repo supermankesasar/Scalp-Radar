@@ -32,3 +32,14 @@ Historical unimplemented Research Lab V2 proposal: raw cache/quality, sequence d
 <!-- migration-note:2026-11-26-claude-v1-original-artifacts -->
 ## Claude V1 follow-up (historical research backlog, not an implementation gate)
 [Audited V1](research/CLAUDE_V1_ARTIFACT_AUDIT.md) motivates purge/embargo, actual emitted-signal recall, matched coin/time baseline, chronological excursions, frozen point-in-time universe, data continuity and raw immutable cache; compare anomaly vs directional performance and cluster-adjusted estimates. Keep original file hashes for reproducibility. Apply only when useful to current operational R10 development; no delay mandate or live promotion.
+
+<!-- migration-note:2026-11-26-v05-scalp-swing-desktop-chat -->
+## Chat-derived future investigations and architecture choices (not implementation authorization)
+
+1. **Immutable Signal Journal:** capture initial symbol/side/strategy, settings revision, indicator values, baseline+decision timestamps, score components and price; update independent **setup validity** (VALID/INVALIDATED/UNKNOWN) and **price outcome** (TARGET/STOP/TIMEOUT/UNOBSERVED/RANK_REPLACED) with timestamped reasons. Invalidation should not erase a prior event or be classified automatically as loss. Track market coverage, missing paths, MFE/MAE, timing, fee/slippage and false-warning rate. This was a proposal, **not code shipped**.
+2. **Test 60/40 RSI risk labels:** conditional among actual pending signals, compare long RSI5m>60, short RSI1h<40 to matched non-warning cases with point-in-time source freshness, per-pair/day clusters, realistic latency/costs and independent holdout. The SHORT <40 number was assistant-inferred, not proven by user backtest.
+3. **Independent profiles:** if historical Scalp/Swing branch is revived, run full replay separately for 1m 15-minute Scalp vs 1h 3-day Swing outcomes. Freeze eligibility, time of TOP80 universe selection, version, RSI settings and bars. Original v0.5 negative sample cannot validate or invalidate a different formula without retesting.
+4. **Windows app decision:** user explicitly requested discussion before coding. Compare packaged local web/python wrapper against PySide6 native for RAM/CPU, background worker when window closes, tray, sound/notifications, secure update, backup and possible distribution to friends. No desktop/installer work is authorized by the historical chat.
+5. **Keep newer R10 as operational baseline:** compare this backlog against main's prospective ledger, canonical SQLite and local-only/no-autotrade directive; do not create conflicting duplicate production journals by copying the old feature DB blindly.
+
+[Full historical branch appendix](research/V05_SCALPING_SWING_FEATURE_CHAT_2026-11-22_25.md).

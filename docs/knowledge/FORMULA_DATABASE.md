@@ -54,3 +54,15 @@ The [original discovery appendix §D](research/EARLY_DISCOVERY_2026-11-22_24.md#
 <!-- migration-note:2026-11-26-claude-v1-original-artifacts -->
 ## Claude Research Lab V1 (historical, no promotion)
 [Exact source-derived formula registry](research/CLAUDE_V1_ARTIFACT_AUDIT.md#b-exact-v1-calculations-source-functions-feat-add_labels-signals-sim_one-run-auc_table) records 288-bar volatility and RVOL references, normalized CVD, OI/funding alignment, four base rules, tuning grid, TP/SL as 2×/1× sigma, slippage, label and recall semantics. These are separate from early median20 and R08 mean20 and from R10 exit policies. All base/improved variants failed combined OOS criterion; do not substitute them for live filters.
+
+<!-- migration-note:2026-11-26-v05-scalp-swing-desktop-chat -->
+## Historical V0.5 Scalp/Swing feature branch (UNMERGED; not current R08/R10)
+
+Exact code verified at feature commit `7e404b84`. [Detailed weight/gate/threshold tables](research/V05_SCALPING_SWING_FEATURE_CHAT_2026-11-22_25.md#c-feature-branch-formula-database-not-active-main).
+
+| Profile | Closed-candle timeframes | 100-point scoring components | Additional gates | Pending / TP / SL |
+| --- | --- | --- | --- | --- |
+| Scalping | **1m/5m/15m/1h** | 1h trend EMA200 **24**, 15m EMA200 **12** (MIXED=5), 5m EMA21 **14**, 1m EMA21 **11**, 1m MACD hist **10**, RSI14 5m **10**, RVOL 1m **11** (partial=6), VWAP 5m **8** | Score≥68 default; directional trend, 1m EMA21 distance and 1m return/chase bands; 24h price change **excluded** (but 24h turnover used for TOP80/liquidity) | **15m** / max(**0.65%**,1.5×ATR5m%) / max(**0.40%**,ATR5m%); closed 1m event outcomes |
+| Swing | **15m/1h/4h/8h/1d/1w** | 1w EMA21 trend **16**, 1d EMA200 **20**, 8h EMA200 **12**, 4h EMA200 **12**, 1h EMA21 **11**, 15m MACD hist **10**, RSI14 1h **10**, RVOL15m **9** (partial=4) | Score≥68 default; weekly+daily regime; 1h EMA21 distance; 24h price-change *sign* confirmation LONG>0, SHORT<0 (not weighted) | **3d** experimental / max(**2%**,1.5×ATR1d%) / max(**1%**,ATR1d%); closed 1h outcomes |
+
+Editable persisted keys/defaults on branch: `rsi_watch_threshold=70`, `rsi_warning_long=60` (**RSI>60**, Potensi Naik), `rsi_warning_short=40` (**RSI<40**, Potensi Turun), `rsi_long_max=70`, `min_score=68`, `volume_full_score_min=1.10`, `max_chase_pct=0.30%`. Warning badge **does not** change score, signal eligibility, targets or actual orders. RSI watch/reversal70 is separate. **SHORT 40** was the assistant's interpretation of user's "sebaliknya"; no threshold research supports the value. The 3m and earlier UI-only Intraday variants are **SUPERSEDED**. All values are branch-only, not R08/R10 production formulas.

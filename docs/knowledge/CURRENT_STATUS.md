@@ -32,3 +32,10 @@ Additional audit at pre-migration main `3e9ca4e4e4c9ec11d41a58e8f320ba89a6b291d1
 <!-- migration-note:2026-11-26-claude-v1-original-artifacts -->
 ## Source access update (26 Nov)
 At pre-migration main 3d5f55fcaf2c203f4024e370c50f3f06cb51e998, compare with code baseline b9e5b2883f958d053ab9db432cb4ddacbf839bbd shows four intervening docs-only commits. R10 local/shadow, R08 core default and operational-first directive remain unchanged. Original Claude Research Lab V1 files now audited (not deployed); no new runtime or forward validation. [Audit](research/CLAUDE_V1_ARTIFACT_AUDIT.md).
+
+<!-- migration-note:2026-11-26-v05-scalp-swing-desktop-chat -->
+## V0.5 chat-specific branch audit — not main release (2026-11-26)
+
+The separately reviewed `feature/v05-data-backtest-oneclick` branch exists at `7e404b84e9f5038559ce792f4338ddac9432e307`. It contains independent 1m/5m/15m/1h Scalping and 15m/1h/4h/8h/1d/1w Swing scanners, Top80 as default, separate event databases, public coin icons, 60/40 passive RSI warnings and a branch-only Swing timeout correction. GitHub Actions offline tests passed; no separate profitable profile backtest, Windows runtime audit or live fill verification was supplied.
+
+**These branch features are not the authoritative main application:** main continues R08 CORE default, R09/R10 research/shadow and local operational-first scope described above. The desktop-app wrapper and Signal Journal were discussed, **not implemented/approved**. Baseline main was `3d5f55fc` at migration start and was subsequently advanced by an independent Claude research-document migration; see Git history for latest HEAD. [Evidence appendix](research/V05_SCALPING_SWING_FEATURE_CHAT_2026-11-22_25.md).

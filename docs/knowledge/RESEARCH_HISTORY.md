@@ -38,3 +38,8 @@ Two overnight audits (25 and 26 Nov) are distinct exports, not a cumulative time
 <!-- migration-note:2026-11-26-claude-v1-original-artifacts -->
 ## Claude V1 original evidence (24 Nov 2026)
 The original source and all nine companion files were reopened in this migration; prior handoff-only caveat no longer applies to these files. [Artifact audit](research/CLAUDE_V1_ARTIFACT_AUDIT.md) preserves exact calculations, source manifest, split leakage, 131-pair coverage, conditional directional AUC and failed OOS rules. No new exchange fetch or forward validation. The early 45-pair and external nine-pair reports were already fully summarized in the existing appendix; no duplicate research cohort.
+
+<!-- migration-note:2026-11-26-v05-scalp-swing-desktop-chat -->
+## Prototype design timeline, not quantitative new research
+
+Approx. 22–25 Nov, a separate V0.5 feature discussion moved from configurable RSI70 reversal watch to a **Scalping/Intraday two-tab UI filter** (24h sign confirmation, shared signals; subsequently **SUPERSEDED**). The user then explicitly corrected the timeframe set to **Scalping 1m/5m/15m/1h** (3m removed) and **Swing 15m/1h/4h/8h/1d/1w**. The branch implemented independent close-bar event streams and archives; added coin-logo fallback and RSI >60 LONG / assistant-inferred <40 SHORT visual warnings. Finally, user requested a taxonomy for invalidated/failed signals and discussed—but did not authorize building—a Windows desktop app. Feature regression CI passed, **no new coin-level datasets or strategy performance measurements** were produced in this chat. [Source appendix](research/V05_SCALPING_SWING_FEATURE_CHAT_2026-11-22_25.md). R01–R10 research findings remain authoritative separately.
