@@ -13,7 +13,8 @@
 
 - Current system is Scalp Radar, a local Python/Windows **Binance USDⓈ-M USDT perpetual** scanner and research ledger with desktop/mobile web UI capability, not the one-file early prototype.
 - **R08_MULTI_CORE** is live default *ranking/monitoring filter*, while R09/R10 research is independent/shadow unless explicitly configured as documented. A watchlist is not a validated entry recommendation.
-- **No auto-trading, Binance account keys, runtime/paid AI, or order placement.** R10 user direction is local-only; prior hosting guidance is historical, not present authorization.
+- **Permanent product boundary (USER-CHAT, 2026-11-26): no auto-trading or automated order execution, ever; not a deferred feature or development milestone.** Scalp Radar supports manual trading decisions only. Do not use readiness for auto-trading as a research benchmark, acceptance criterion, or roadmap goal. Evaluate signal quality, direction, actionable timing, entry/exit monitoring, and realistic costs for manual decision support. Historical auto-entry NO-GO results remain evidence about signal quality, not a gate toward automation.
+- No Binance account keys or runtime/paid AI in current R10. R10 user direction is local-only; prior hosting guidance is historical, not present authorization.
 - Preserve evidence of failed experiments, avoid look-ahead and false precision; compare directional setups under realistic fee, latency, regime and data-coverage constraints.
 - Prioritize availability/freshness of data and actual outcome observation over flashy scoring, and **do not treat whale/shark identity as directly observable** from order flow, account ratios or aggregated prints.
 
