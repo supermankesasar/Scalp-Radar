@@ -7,6 +7,7 @@ from urllib.request import Request, urlopen
 from urllib.parse import urlencode
 from urllib.error import HTTPError
 from contextlib import contextmanager
+from pathlib import Path
 from rest_guard import REST_GUARD
 
 BASE = 'https://fapi.binance.com'
@@ -29,6 +30,8 @@ class MarketArchive:
         self.path,self.lock=str(path),lock
         self.pace=threading.Lock()
         self.next_request=0.
+        self.stream=None
+        self.metrics_lock=threading.Lock();self.metrics={'restRequests':0,'cached5m':0,'rest5m':0}
         self.pause_until=0.
         self.stop=threading.Event()
         self.breadth_lock=threading.Lock()
@@ -64,12 +67,18 @@ class MarketArchive:
             finally: db.close()
     def fetch(self,endpoint,params=None):
         # Shared pacing across workers. A restricted endpoint is not bypassed.
-        with self.pace:
-            delay=max(self.next_request-time.monotonic(),self.pause_until-time.monotonic(),REST_GUARD.remaining())
-            if delay>0 and self.stop.wait(delay): raise RuntimeError('Stopping')
-            if self.stop.is_set(): raise RuntimeError('Stopping')
-            self.next_request=time.monotonic()+.55
+        while True:
+            with self.pace:
+                delay=max(self.next_request-time.monotonic(),self.pause_until-time.monotonic(),REST_GUARD.remaining())
+                if delay<=0:
+                    delay=REST_GUARD.history_delay(endpoint)
+                    if delay<=0:
+                        self.next_request=time.monotonic()+.40
+                        break
+            if self.stop.wait(max(.01,delay)):raise RuntimeError('Stopping')
+        if self.stop.is_set():raise RuntimeError('Stopping')
         REST_GUARD.check()
+        with self.metrics_lock:self.metrics['restRequests']+=1
         url=BASE+endpoint+('?' + urlencode(params) if params else '')
         try:
             with urlopen(Request(url,headers={'Accept':'application/json','User-Agent':'ScalpRadar-market-archive/1.0'}),timeout=18) as r:
@@ -91,6 +100,22 @@ class MarketArchive:
         with self.db() as db:
             cur=db.executemany('INSERT OR IGNORE INTO market_observations VALUES(?,?,?,?,?)',rows)
             return cur.rowcount
+    def cached_5m(self,symbol,limit,now):
+        """Reuse exact closed rows already in SQLite or WS; never imply fresh WS provenance."""
+        step=300000;cut=now//step*step-1;start=cut-(limit-1)*step
+        expected=set(range(start,cut+1,step))
+        # Read-only WAL snapshot; do not queue behind unrelated ledger writes.
+        db=sqlite3.connect(Path(self.path).resolve().as_uri()+'?mode=ro',uri=True,timeout=10)
+        try:
+            stored={r[0] for r in db.execute("SELECT source_ts FROM market_observations WHERE kind='kline_5m' AND symbol=? AND source_ts BETWEEN ? AND ? AND received_at<=?",(symbol,start,cut,now))}
+        finally:db.close()
+        missing=expected-stored
+        if not missing:return True
+        cached=self.stream.candles(symbol,'5m',limit,now,require=False) if self.stream is not None else None
+        additions={int(r[6]):r for r in (cached or []) if int(r[6]) in missing}
+        if missing-set(additions):return False
+        self.put('kline_5m',symbol,list(additions.items()),now)
+        return True
     def warmup(self,symbol,tf,rows,received):
         # Archive longer-timeframe input already fetched by the scanner.
         kind='kline_'+tf
@@ -162,6 +187,12 @@ class MarketArchive:
         for kind,endpoint,params in jobs:
             if self.stop.is_set(): break
             try:
+                if kind=='kline_5m':
+                    # REST limit usually includes open candle; require complete closed window conservatively.
+                    if self.cached_5m(symbol,params['limit']-1,now_ms()):
+                        with self.metrics_lock:self.metrics['cached5m']+=1
+                        continue
+                    with self.metrics_lock:self.metrics['rest5m']+=1
                 data,received=self.fetch(endpoint,params)
                 if not isinstance(data,list) or not data: raise ValueError('Empty or invalid market response')
                 items=[(r[6],r) for r in data] if kind=='kline_5m' else [(r['timestamp'],r) for r in data]
@@ -174,6 +205,7 @@ class MarketArchive:
         first=True
         while not self.stop.is_set():
             started=now_ms()
+            with self.metrics_lock:self.metrics={'restRequests':0,'cached5m':0,'rest5m':0}
             self.heartbeat(state='collecting',processed=0)
             with self.db() as db:
                 run=db.execute("INSERT INTO market_collection_runs(started_at,state) VALUES(?,'RUNNING')",(started,)).lastrowid
@@ -190,13 +222,17 @@ class MarketArchive:
                     try:
                         data,received=self.fetch(endpoint)
                         if not isinstance(data,list): raise ValueError('Expected bulk list')
+                        batch=[]
                         for r in data:
                             if r.get('symbol') in universe:
                                 stamp=int(r.get('time',r.get('closeTime',received-1)))
-                                self.put(kind,r['symbol'],[(min(stamp,received-1),r)],received)
+                                batch.append((kind,r['symbol'],min(stamp,received-1),received,json.dumps(r,separators=(',',':'),allow_nan=False)))
+                        # Bounded transactions instead of opening a connection per symbol.
+                        for offset in range(0,len(batch),64):
+                            with self.db() as db:db.executemany('INSERT OR IGNORE INTO market_observations VALUES(?,?,?,?,?)',batch[offset:offset+64])
                     except Exception as e:
                         errors+=1; self.error(run,'*',kind,e)
-                with ThreadPoolExecutor(max_workers=4) as pool:
+                with ThreadPoolExecutor(max_workers=6) as pool:
                     futures={pool.submit(self.collect_symbol,run,s,first):s for s in sorted(universe)}
                     for f in as_completed(futures):
                         n=f.result(); processed+=1;errors+=n;complete+=int(n==0)
@@ -204,7 +240,8 @@ class MarketArchive:
                             self.heartbeat(state='collecting',processed=processed,total=len(universe),errors=errors)
                             with self.db() as db:
                                 db.execute('UPDATE market_collection_runs SET processed=?,complete=?,errors=? WHERE id=?',(processed,complete,errors,run))
-                            print('[ARCHIVE]',processed,'/',len(universe),'complete:',complete,'errors:',errors,flush=True)
+                            with self.metrics_lock:metrics=dict(self.metrics)
+                            print('[ARCHIVE]',processed,'/',len(universe),'complete:',complete,'errors:',errors,'REST:',metrics['restRequests'],'cached5m:',metrics['cached5m'],flush=True)
                 state='COMPLETE' if processed==len(universe) and not errors else 'PARTIAL'
             except Exception as e:
                 errors+=1; self.error(run,'*','sweep',e);state='ERROR'
@@ -221,5 +258,6 @@ class MarketArchive:
             row=db.execute('SELECT * FROM market_collection_runs ORDER BY id DESC LIMIT 1').fetchone()
             counts=db.execute('SELECT kind,COUNT(*) n,COUNT(DISTINCT symbol) pairs,MAX(source_ts) latest,MAX(received_at) last_received FROM market_observations GROUP BY kind').fetchall()
             recent=db.execute('SELECT symbol,kind,at,message FROM market_collection_errors ORDER BY id DESC LIMIT 10').fetchall()
-            return {'run':dict(row) if row else None,'data':[dict(r) for r in counts],'recentErrors':[dict(r) for r in recent],
+            with self.metrics_lock:metrics=dict(self.metrics)
+            return {'run':dict(row) if row else None,'data':[dict(r) for r in counts],'recentErrors':[dict(r) for r in recent],'transport':metrics,
                     'note':'ALL active crypto USDT perpetuals; archived historical sample time and actual receipt time differ. No trades.'}

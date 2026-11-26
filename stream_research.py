@@ -21,6 +21,11 @@ class StreamResearch:
               candidate_id INTEGER,horizon INTEGER,state TEXT,endpoint_pct REAL,mfe REAL,mae REAL,evaluated_at INTEGER,
               PRIMARY KEY(candidate_id,horizon));
             """)
+            if 'complete' not in {r['name'] for r in db.execute('PRAGMA table_info(ws_candidates)')}:
+                db.execute('ALTER TABLE ws_candidates ADD COLUMN complete INTEGER NOT NULL DEFAULT 0')
+                db.execute('UPDATE ws_candidates SET complete=1 WHERE (SELECT COUNT(*) FROM ws_outcomes WHERE candidate_id=ws_candidates.id)=3')
+            db.execute('CREATE INDEX IF NOT EXISTS ws_pending_age ON ws_candidates(candle_time) WHERE complete=0')
+            db.execute('CREATE INDEX IF NOT EXISTS ws_pending_symbol ON ws_candidates(symbol,candle_time) WHERE complete=0')
     @contextmanager
     def db(self):
         with self.lock:
@@ -69,7 +74,7 @@ class StreamResearch:
                 candles={int(r[6]):r for r in rows}
                 pending=db.execute("""SELECT c.*,h.horizon FROM ws_candidates c CROSS JOIN
                    (SELECT 15 horizon UNION ALL SELECT 30 UNION ALL SELECT 60) h
-                   WHERE c.symbol=? AND c.candle_time>=? AND c.candle_time+h.horizon*60000<=?
+                   WHERE c.complete=0 AND c.symbol=? AND c.candle_time>=? AND c.candle_time+h.horizon*60000<=?
                    AND NOT EXISTS(SELECT 1 FROM ws_outcomes o WHERE o.candidate_id=c.id AND o.horizon=h.horizon)""",
                    (s,cutoff-75*60000,cutoff)).fetchall()
                 for c in pending:
@@ -86,9 +91,12 @@ class StreamResearch:
                     mfe=max(0.,*(ret(r[2 if sign==1 else 3]) for r in seq))
                     mae=min(0.,*(ret(r[3 if sign==1 else 2]) for r in seq))
                     db.execute("INSERT OR IGNORE INTO ws_outcomes VALUES(?,?,?,?,?,?,?)",(c['id'],h,state,ret(seq[-1][4]),mfe,mae,now))
+                db.execute('UPDATE ws_candidates SET complete=1 WHERE complete=0 AND symbol=? AND candle_time<=? AND (SELECT COUNT(*) FROM ws_outcomes WHERE candidate_id=ws_candidates.id)=3',(s,cutoff-60*60000))
             for h in HORIZONS:
                 db.execute("""INSERT OR IGNORE INTO ws_outcomes(candidate_id,horizon,state,evaluated_at)
-                  SELECT id,?,'UNOBSERVED',? FROM ws_candidates WHERE candle_time<=?""",(h,now,cutoff-(h+15)*60000))
+                  SELECT id,?,'UNOBSERVED',? FROM ws_candidates c WHERE complete=0 AND candle_time<=?
+                  AND NOT EXISTS(SELECT 1 FROM ws_outcomes o WHERE o.candidate_id=c.id AND o.horizon=?) ORDER BY candle_time LIMIT 2000""",(h,now,cutoff-(h+15)*60000,h))
+            db.execute('UPDATE ws_candidates SET complete=1 WHERE complete=0 AND candle_time<=? AND (SELECT COUNT(*) FROM ws_outcomes WHERE candidate_id=ws_candidates.id)=3',(cutoff-60*60000,))
         return len(records)
     def summary(self):
         with self.db() as db:

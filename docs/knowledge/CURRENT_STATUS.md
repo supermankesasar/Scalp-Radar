@@ -62,3 +62,6 @@ User requests smaller uploads and continuity per coin. [Lite export](LITE_EXPORT
 
 ## Storage and Lite export release (26 Nov 2026)
 PR #5 merged at `30757ae58c1afdacf12303450fc33463d23e22f6` after Windows/Linux CI [45779049971](https://github.com/supermankesasar/Scalp-Radar/actions/runs/45779049971) success for e5e65e0. Earlier Windows failures were migration test handle/path-normalization issues; corrected and retested. Main includes MIGRATE-DATABASE.bat, EXPORT-LITE.bat, persistent location config and per-coin continuity. User PC migration, free D-drive capacity and export size/time on actual cumulative data are not yet verified. Lite cap 9 MiB (fail explicitly if required content exceeds cap); full database remains cumulative and intact. Old C copy retained. Existing signal engines/formulas unchanged.
+
+## R11.1 performance work
+User reported slow archive/UI at 14:51–14:56 WIB. [Performance hotfix](PERFORMANCE_R111.md) describes code changes, pending CI/release at creation. No fresh latency benchmark or signal performance claim.

@@ -67,3 +67,5 @@ Latest reading priority: [CURRENT_STATUS](CURRENT_STATUS.md) and [DECISION_LOG](
 [Database relocation](DATABASE_RELOCATION.md) — persistent drive selection and safe migration.
 
 [Lite export and per-coin continuity](LITE_EXPORT.md) — compact routine upload and targeted candle history.
+
+[R11.1 performance hotfix](PERFORMANCE_R111.md) — archive cache, pending-only ledgers and scheduler isolation.
