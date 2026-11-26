@@ -53,3 +53,6 @@ Supersedes the earlier NOT merged R11 note: PR #3 merged at 12417cb06caac35f60de
 
 ## R11.1 release update (26 Nov 2026)
 PR #4 merged into main at `07543d22cc0492ba5afedce363ce3a37b7d2db71` after offline Windows/Linux CI run [45777543773](https://github.com/supermankesasar/Scalp-Radar/actions/runs/45777543773) completed successfully for head f74c0cd. User reports CPU/RAM are sufficiently capable; no measured resource capacity or benchmark supplied. Prioritize ALL-pair coverage and timely decisions over premature local resource optimization, while preserving Binance transport limits, bounded memory and measured CPU/DB contention. Existing R08 dashboard, R10 and R11 v1 comparator remain; R11.1 preview enabled by launcher. Runtime/coverage gains and trading decision quality not yet verified on user's PC. Use existing canonical DB and stop old process before starting upgraded main.
+
+## Database relocation request
+User requests moving database off C. [Database relocation](DATABASE_RELOCATION.md) adds a one-click D-drive migration with persistent config and shared exporter/launcher resolution. Source preserved; actual migration on user's PC not performed. Branch implementation pending CI/release at commit creation.
