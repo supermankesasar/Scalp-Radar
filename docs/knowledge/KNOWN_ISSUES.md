@@ -58,3 +58,7 @@ Supersedes only prior access limitation for Claude source/CSV: all ten artifacts
 - **Presentation/deployment limitations:** icons depend on an outside CDN (fallback initials); desktop app, Windows notifications/sound/tray, optional autostart/updater, and an append-only Signal Journal were **discussed but not implemented**. User did not authorize immediate desktop conversion.
 
 [Feature evidence and historical code links](research/V05_SCALPING_SWING_FEATURE_CHAT_2026-11-22_25.md).
+
+<!-- migration-note:2026-11-26-r01-r06-modular-overnight-chat -->
+## Historical adverse signal screenshot / presentation mismatch (24 Nov)
+[Evidence](research/R01_R06_MODULAR_OVERNIGHT_CHAT_2026-11-24.md#f-screenshot-apparent-opposite-direction-24-nov-1641-wib-chat): 4/5 displayed moves opposed direction at age3–6m; no final outcome. Historical v0.5 code verified no swapped LONG/SHORT sign in registry/return calculation. UI colors raw price change and displays initialScore, not current strength; stale quote, slow EMA200, permissive small adverse anti-FOMO band and pending eligibility may explain apparent mismatch. BNB displayed 100 but current RVOL .64× contributes0 if evaluated now. Proposed direction-aware favorability, separate initial/current score and validity label; not applied in that turn. Do not reverse rules or assert R10 same defect without verification. Original two-window replay and older isolated pilot distinct; latter raw inputs not recovered. 25/516 successful early collector log not proof all-night coverage.

@@ -43,3 +43,7 @@ Historical unimplemented Research Lab V2 proposal: raw cache/quality, sequence d
 5. **Keep newer R10 as operational baseline:** compare this backlog against main's prospective ledger, canonical SQLite and local-only/no-autotrade directive; do not create conflicting duplicate production journals by copying the old feature DB blindly.
 
 [Full historical branch appendix](research/V05_SCALPING_SWING_FEATURE_CHAT_2026-11-22_25.md).
+
+<!-- migration-note:2026-11-26-r01-r06-modular-overnight-chat -->
+## Follow-up from original EMA / adverse signal discussion
+Investigate timing rather than blanket EMA substitution: compare EMA9 cross vs EMA21 pullback, EMA21 1h vs EMA200 across coin/day/regime, separate 15m score vs distance gate; normal/spiking RVOL and VWAP side/distance jointly with price response, OI and taker flow. Test warning-to-invalidated timeline and MFE/MAE, stale quote, initial/current score and rank vs unshown candidates. Assess whether adverse 3–6m moves recover or hit stop using matched, timestamped DB rows, not inverse-signal inference. Coin historical profile (listing age, contract high/low, distances, ranges, technical history) remains product idea unless verified implemented. [Original evidence](research/R01_R06_MODULAR_OVERNIGHT_CHAT_2026-11-24.md). Keep simple UI, concurrent research and later R10 operational-first direction.

@@ -59,3 +59,10 @@ Jika diskusi AI-local tampak bertentangan dengan **R10 tanpa runtime AI**, kedua
 | Keep later R10 main operational direction | **CURRENT-MAIN** | R08 CORE default, R09/R10 shadow/research and local-only persist; unmerged V0.5 branch is not replacement |
 
 [Full chronological source and distinctions](research/V05_SCALPING_SWING_FEATURE_CHAT_2026-11-22_25.md).
+
+<!-- migration-note:2026-11-26-r01-r06-modular-overnight-chat -->
+## Original research workflow decisions (24 Nov; later R10 workflow supersedes research-first gate)
+- USER: Futures-only, rule/real-time basis; history technical/context/outcomes, not predictor standard; no separate adaptive engine. Keep explicit thresholds relative or fixed where appropriate.
+- USER: EMA9/21 alternatives; 15/30m validity and 5/15m confirmation; record 60m follow-up; all passing candidates tracked, Top5 only UI; no neutral display; split filters into independent files and centralize history.
+- USER: archive previous 28 for R06 and select 30 new; explicitly corrected overnight to **ALL** active crypto pair incl previous ones. Do not conflate research cohort with scan scope.
+- Assistant withdrew draft 40/20/20/20 weights pending testing; other early score schemes unadopted. User requested Windows theme preference and D-drive storage (old path only). During adverse screenshot no signal rule change was made. [Provenance](research/R01_R06_MODULAR_OVERNIGHT_CHAT_2026-11-24.md). Current R08/R10 and later operational-first instruction preserved.

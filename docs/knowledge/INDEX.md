@@ -56,3 +56,7 @@ Latest reading priority: [CURRENT_STATUS](CURRENT_STATUS.md) and [DECISION_LOG](
 ## V0.5 feature-branch Scalping/Swing chat and desktop discussion
 
 [Historical V0.5 branch evidence](research/V05_SCALPING_SWING_FEATURE_CHAT_2026-11-22_25.md) consolidates user-corrected timeframes, exact historical scoring, TOP80 meaning, RSI warnings, coin-logo work, failed-event/Signal Journal design, and the **not-yet-approved** desktop packaging concept. This was **not** a new profitable market experiment or a change to R10 main. Cross-reference [CURRENT_STATUS](CURRENT_STATUS.md), [FORMULA_DATABASE](FORMULA_DATABASE.md), [DECISION_LOG](DECISION_LOG.md), [KNOWN_ISSUES](KNOWN_ISSUES.md), [FUTURE_RESEARCH](FUTURE_RESEARCH.md) and [MIGRATION_LOG](MIGRATION_LOG.md).
+
+<!-- migration-note:2026-11-26-r01-r06-modular-overnight-chat -->
+## Original R01–R06 modular / first overnight chat (24 Nov)
+[Detailed evidence appendix](research/R01_R06_MODULAR_OVERNIGHT_CHAT_2026-11-24.md) preserves the original attached two-window R01–R05 tables, earlier 28-pair crossing pilot, discarded scoring proposals, ALL-pair correction, modular implementation and observed startup/screenshot. Later expanded technical/R06 reports remain authoritative; no additional independent cohort or R10 validation.
