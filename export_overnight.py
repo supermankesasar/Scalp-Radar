@@ -2,14 +2,13 @@
 import os,sqlite3,zipfile,tempfile
 from datetime import datetime
 from pathlib import Path
+from database_location import existing_database,configured
 ROOT=Path(__file__).resolve().parent
-canonical=Path(os.environ.get('LOCALAPPDATA',str(Path.home()/'.local'/'share')))/'ScalpRadar'/'data'/'signals.sqlite3'
-source=Path(os.getenv('SCANNER_DB',str(canonical if canonical.exists() else ROOT/'data'/'signals.sqlite3'))).resolve()
-if not source.is_file(): raise SystemExit('Database not found: '+str(source))
-out=ROOT/'exports'
+source=existing_database(ROOT).resolve()
+out=source.parent.parent/'exports' if configured() is not None else ROOT/'exports'
 out.mkdir(exist_ok=True)
 dest=out/('scalp-radar-'+datetime.now().strftime('%Y%m%d-%H%M%S')+'.zip')
-with tempfile.TemporaryDirectory() as d:
+with tempfile.TemporaryDirectory(dir=out) as d:
     snapshot=Path(d)/'signals.sqlite3'
     src=sqlite3.connect(source.as_uri()+'?mode=ro',uri=True,timeout=30)
     dst=sqlite3.connect(snapshot)

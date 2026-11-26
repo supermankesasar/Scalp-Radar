@@ -63,3 +63,7 @@ Latest reading priority: [CURRENT_STATUS](CURRENT_STATUS.md) and [DECISION_LOG](
 
 ## R11.1 coverage and entry work
 [R11.1 P1–P6 implementation and limitations](R111.md). R11 v1 remains comparison; see CURRENT_STATUS for branch/release state and EXPERIMENT_RESULTS for the underlying first export audit.
+
+[Database relocation](DATABASE_RELOCATION.md) — persistent drive selection and safe migration.
+
+[Lite export and per-coin continuity](LITE_EXPORT.md) — compact routine upload and targeted candle history.

@@ -1,14 +1,17 @@
 """Windows/local launcher: stable DB, crash recovery, prevent idle sleep while running."""
 import ctypes,os,sqlite3,subprocess,sys,time
 from pathlib import Path
+from database_location import configured,canonical
 ROOT=Path(__file__).resolve().parent
 
 def stable_db():
-    custom=os.environ.get('SCANNER_DB')
-    if custom:return Path(custom).resolve()
+    custom=configured()
+    if custom is not None:
+        if not custom.is_file():raise RuntimeError('Configured database missing; refusing to create an empty database: '+str(custom))
+        return custom
     old=ROOT/'data'/'signals.sqlite3'
-    root=Path(os.environ.get('LOCALAPPDATA',str(Path.home()/'.local'/'share')))/'ScalpRadar'/'data'
-    root.mkdir(parents=True,exist_ok=True);dest=root/'signals.sqlite3'
+    dest=canonical();root=dest.parent
+    root.mkdir(parents=True,exist_ok=True)
     if old.is_file() and not dest.exists():
         temp=root/'migration.sqlite3.tmp'
         if temp.exists():temp.unlink()
