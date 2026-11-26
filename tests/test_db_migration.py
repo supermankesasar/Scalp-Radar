@@ -17,9 +17,9 @@ class MigrationTests(unittest.TestCase):
             dest=Path(d)/'new'/'data'/'signals.sqlite3'
             migrate(src,dest)
             self.assertTrue(src.is_file())
-            self.assertEqual(configured(),dest)
-            self.assertEqual(existing_database(d),dest)
-            self.assertEqual(stable_db(),dest)
+            self.assertEqual(configured(),dest.resolve())
+            self.assertEqual(existing_database(d),dest.resolve())
+            self.assertEqual(stable_db(),dest.resolve())
             with closing(sqlite3.connect(dest)) as db:self.assertEqual(db.execute('SELECT x FROM t').fetchone()[0],42)
             with self.assertRaises(RuntimeError):migrate(src,dest)
             dest.unlink()

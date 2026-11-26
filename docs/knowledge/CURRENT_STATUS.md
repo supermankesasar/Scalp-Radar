@@ -56,3 +56,6 @@ PR #4 merged into main at `07543d22cc0492ba5afedce363ce3a37b7d2db71` after offli
 
 ## Database relocation request
 User requests moving database off C. [Database relocation](DATABASE_RELOCATION.md) adds a one-click D-drive migration with persistent config and shared exporter/launcher resolution. Source preserved; actual migration on user's PC not performed. Branch implementation pending CI/release at commit creation.
+
+## Lite export and continuous per-coin history
+User requests smaller uploads and continuity per coin. [Lite export](LITE_EXPORT.md) adds cumulative/24h summaries, continuity per symbol/timeframe, and bounded/targeted candle samples; original DB kept intact. Migration and Lite branch requested for main; CI pending at commit creation.
