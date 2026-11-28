@@ -265,7 +265,7 @@ class StreamEngine:
             return reconnect
     def coverage_status(self,now=None):
         now=ms() if now is None else now
-        cut=close_at(now-15000,60000)
+        cut=close_at(now-14999,60000)
         with self.lock:
             missing=[];late=[];fresh=0
             for s in sorted(self.symbols):
@@ -297,7 +297,7 @@ class StreamEngine:
                     started=time.monotonic();last_message=started;frames=0
                     while not self.stop.is_set() and time.monotonic()-started<23*3600:
                         if is_minute:
-                            now=ms();cut=close_at(now-15000,60000)
+                            now=ms();cut=close_at(now-14999,60000)
                             if connected_at<=cut-59999 and self.minute_shard_check(label,group,cut,now):
                                 raise RuntimeError('missing 1m closes; reconnect shard')
                         try:message=await asyncio.wait_for(ws.recv(),timeout=5 if is_minute else 90)
