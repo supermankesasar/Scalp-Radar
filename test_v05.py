@@ -26,24 +26,24 @@ def candle(close=100., when=T, high=None, low=None):
     return {'closeTime':when,'close':close,'high':close if high is None else high,'low':close if low is None else low}
 
 
-class Top5Tests(unittest.TestCase):
+class Top10Tests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory()
         self.store=SignalStore(Path(self.temp.name)/'test.sqlite')
     def tearDown(self):
         self.temp.cleanup()
 
-    def test_top5_replaces_weakest_but_preserves_audit(self):
-        for n,score in enumerate([70,74,79,81,83]):
+    def test_top10_replaces_weakest_but_preserves_audit(self):
+        for n,score in enumerate([70,74,75,76,77,78,79,81,82,83]):
             self.assertTrue(self.store.activate_top_candidate(event_row(f'COIN{n}USDT',score),[candle()], 'UP', T))
-        self.assertEqual(len(self.store.active_pending(T)),5)
+        self.assertEqual(len(self.store.active_pending(T)),10)
         self.assertFalse(self.store.activate_top_candidate(event_row('SLOWUSDT',69),[candle()], 'UP', T))
         self.assertTrue(self.store.activate_top_candidate(event_row('TOPUSDT',94),[candle()], 'UP', T))
         scores=[x['initialScore'] for x in self.store.active_pending(T)]
-        self.assertEqual(sorted(scores),[74,79,81,83,94])
+        self.assertEqual(sorted(scores),[74,75,76,77,78,79,81,82,83,94])
         archives=self.store.audit_events()
         self.assertEqual(len([e for e in archives if e['status']=='EXPIRED' and e['endReason']=='RANK_REPLACED']),1)
-        self.assertEqual(len([e for e in archives if e['status']=='PENDING']),5)
+        self.assertEqual(len([e for e in archives if e['status']=='PENDING']),10)
 
     def test_future_quote_not_same_as_closed_candle_target(self):
         self.store.activate_top_candidate(event_row('WICKUSDT'),[candle()],'UP',T)
@@ -77,19 +77,19 @@ class Top5Tests(unittest.TestCase):
         self.assertIn('BASEUSDT',self.store.watch_symbols(now_ms=T+15_000))
 
 
-class ScannerIntegrationTop5Tests(unittest.TestCase):
-    def test_full_batch_only_promotes_five_highest_scores(self):
+class ScannerIntegrationTop10Tests(unittest.TestCase):
+    def test_full_batch_only_promotes_ten_highest_scores(self):
         with tempfile.TemporaryDirectory() as td:
             original=app.STORE
             try:
                 app.STORE=SignalStore(Path(td)/'integrated.sqlite3')
                 now=int(time.time()*1000)
                 close_time=now-120_000
-                ranks=[68,76,83,92,88,74,90]
+                ranks=[68,76,83,92,88,74,90,79,81,85,89,93]
                 tickers=[{'symbol':f'B{i}USDT','turnover24h':50_000_000,'change24h':0}
                          for i in range(len(ranks))]
                 def make_row(t, is_tracked=False):
-                    num=int(t['symbol'][1])
+                    num=int(t['symbol'][1:-4])
                     r=event_row(t['symbol'],ranks[num],bar=close_time)
                     r['_recent5m']=[candle(when=close_time)]
                     return r
@@ -97,13 +97,13 @@ class ScannerIntegrationTop5Tests(unittest.TestCase):
                     app.SCAN_STATE.update({'generation':121,'running':True,'rows':[], 'processed':0,
                         'total':0,'eligible':0,'universe':0,'errors':[], 'startedAt':now,
                         'completedAt':None,'mode':'all','minTurnover':30000000})
-                counts={'universe':7,'eligible':7,'missingTicker':0,'trackedExtra':0}
+                counts={'universe':12,'eligible':12,'missingTicker':0,'trackedExtra':0}
                 with patch.object(app,'active_tickers',return_value=(tickers,counts)),                     patch.object(app,'scan_symbol',side_effect=make_row),                     patch.object(app,'latest_quotes',return_value={t['symbol']:100.1 for t in tickers}):
                     app.scan_job(121,'all',30000000)
                 active=app.STORE.active_pending()
-                self.assertEqual(len(active),5)
-                self.assertEqual(sorted(e['initialScore'] for e in active),[76,83,88,90,92])
-                self.assertEqual(app.SCAN_STATE['processed'],7)
+                self.assertEqual(len(active),10)
+                self.assertEqual(sorted(e['initialScore'] for e in active),[76,79,81,83,85,88,89,90,92,93])
+                self.assertEqual(app.SCAN_STATE['processed'],12)
                 self.assertFalse(app.SCAN_STATE['errors'],app.SCAN_STATE['errors'])
             finally:
                 app.STORE=original
