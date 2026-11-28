@@ -71,6 +71,7 @@ def cpu_workers(value=None,cores=None):
 
 SCAN_CPU_WORKERS=cpu_workers(os.getenv('SCANNER_CPU_WORKERS'))
 CPU_POOL=None
+LOCAL_CACHE_READY=threading.Event()
 SCAN_REFRESH_MS = 180000
 ACTIVE_FAST_POLL_SECONDS = 30
 FRESH_CANDLE_MS = 8 * 60_000
@@ -507,6 +508,8 @@ def scan_cached_universe(generation,tickers,tracked,scan_now):
     compute_ms=1000*(time.perf_counter()-compute_started)
     with SCAN_LOCK:
         SCAN_STATE.update(phase='PUBLISH',message='Ranking Top 10 dan simpan hasil',progressAt=int(time.time()*1000))
+    with SCAN_LOCK:SCAN_STATE['phaseMetrics']={'cacheCheckMs':cache_ms,'computeWallMs':compute_ms}
+    print('[SCAN] Computed',len(results),'/',len(tickers),'cache skipped',len(cold),'in %.2fs; publishing'%(compute_ms/1000),flush=True)
     if RUNTIME:RUNTIME.beat('scan-pipeline',phase='PUBLISH',computed=len(results),cacheMs=cache_ms,computeMs=compute_ms)
     metrics={'cacheCheckMs':cache_ms,'computeWallMs':compute_ms,'dbLockWaitMs':0.,'dbBatchMs':0.}
     if results:
@@ -528,6 +531,7 @@ def scan_cached_universe(generation,tickers,tracked,scan_now):
     metrics['researchStageMs']=1000*(time.perf_counter()-stage_started)
     metrics['contextSumMs']=sum(r.get('contextMs',0) for r,_ in results)
     with SCAN_LOCK:SCAN_STATE['phaseMetrics']=metrics
+    print('[SCAN] DB wait %.2fs; DB publish %.2fs; research stage %.2fs'%(metrics['dbLockWaitMs']/1000,metrics['dbBatchMs']/1000,metrics['researchStageMs']/1000),flush=True)
     if RUNTIME:RUNTIME.beat('scan-pipeline',phase='DONE',**metrics)
 
 
@@ -660,7 +664,7 @@ def scan_job(generation, mode, min_turnover):
                     'Scan selesai' if SCAN_STATE['rows'] else 'Tidak ada data berhasil dianalisis')
                 audit={k:SCAN_STATE.get(k) for k in ('startedAt','completedAt','universe','total','processed','cacheSkipped','cacheSkippedSymbols','mode','errors')}
                 audit['successful']=len(SCAN_STATE['rows'])
-                audit['computed']=SCAN_STATE.get('computed',audit['successful'])
+                audit['computed']=SCAN_STATE.get('computed',audit['successful']) if STREAM is not None else audit['successful']
                 audit['phaseMetrics']=dict(SCAN_STATE.get('phaseMetrics',{}))
                 SCAN_STATE['phase']='DONE'
                 audit['cpuWorkers']=SCAN_CPU_WORKERS if CPU_POOL is not None else 0
@@ -743,7 +747,7 @@ def read_scanner(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
         'activeSignals': len(active), 'activeLimit': ACTIVE_LIMIT,
         'signals': active,
         'processed': state['processed'], 'total': state['total'],
-        'successful': len(fresh), 'computed':state.get('computed',len(fresh)),
+        'successful': len(fresh), 'computed':state.get('computed',len(fresh)) if STREAM is not None else len(fresh),
         'phase':state.get('phase'),'phaseMetrics':state.get('phaseMetrics',{}),
         'failed': max(0,state['processed'] - (state.get('computed',len(fresh)) if STREAM is not None and state['running'] else len(fresh))-state.get('cacheSkipped',0)),
         'cacheSkipped':state.get('cacheSkipped',0),'cacheSkippedSymbols':state.get('cacheSkippedSymbols',[]),
@@ -933,10 +937,46 @@ def scan_research_loop():
             STREAM.stop.wait(5)
 
 
+def local_seed_pass(symbols,now):
+    """Restore all local timeframes in parallel BEFORE slower network recovery."""
+    asof=now-15000
+    def restore(symbol):
+        count=0
+        for tf in ('1m','5m','15m','1h','4h'):
+            limit=WS_LIMIT[tf]-1
+            if STREAM.candles(symbol,tf,limit,asof) is not None:continue
+            local=ARCHIVE.cached_rows(symbol,tf,limit,asof)
+            STREAM.seed(symbol,tf,local,now)
+            count+=int(STREAM.candles(symbol,tf,limit,asof) is not None)
+        return count
+    restored=0;errors=[]
+    with ThreadPoolExecutor(max_workers=min(32,max(8,SCAN_CPU_WORKERS))) as pool:
+        futures={pool.submit(restore,s):s for s in symbols}
+        for fut in as_completed(futures):
+            try:restored+=fut.result()
+            except Exception as exc:errors.append(futures[fut]+': '+str(exc)[:100])
+    return restored,errors
+
+
+def local_seed_loop():
+    while not STREAM.stop.is_set():
+        with STREAM.lock:symbols=sorted(STREAM.symbols)
+        if symbols:
+            try:
+                count,errors=local_seed_pass(symbols,int(time.time()*1000))
+                LOCAL_CACHE_READY.set()
+                if RUNTIME:RUNTIME.beat('local-cache-seed',restoredTimeframes=count,errors=errors[:10],errorCount=len(errors))
+            except Exception as exc:
+                print('Local cache restore:',str(exc)[:150],flush=True)
+                if RUNTIME:RUNTIME.beat('local-cache-seed',error=str(exc)[:150])
+        STREAM.stop.wait(30 if symbols else 1)
+
+
 def minute_seed_loop():
-    """Repair/warm cache independently; never make live scanner wait on REST.
-    One existing worker, local WAL first, paced missing requests only.
-    """
+    """Network recovery stays paced and independent of local all-timeframe restore."""
+    if ARCHIVE is not None:
+        while not LOCAL_CACHE_READY.wait(1):
+            if STREAM.stop.is_set():return
     archived={}
     while not STREAM.stop.is_set():
         with STREAM.lock:symbols=sorted(STREAM.symbols)
@@ -948,12 +988,6 @@ def minute_seed_loop():
                 now=int(time.time()*1000);asof=now-15000
                 if asof<step:continue
                 cached=STREAM.candles(symbol,tf,limit-1,asof)
-                if cached is None and ARCHIVE is not None:
-                    try:
-                        local=ARCHIVE.cached_rows(symbol,tf,limit-1,asof)
-                        STREAM.seed(symbol,tf,local,now)
-                        cached=STREAM.candles(symbol,tf,limit-1,asof)
-                    except Exception as exc:print('Local cache seed:',symbol,tf,str(exc)[:100],flush=True)
                 if cached is None:
                     try:
                         raw=request_market('/fapi/v1/klines',{'symbol':symbol,'interval':tf,'limit':limit},ttl=30)
@@ -1004,6 +1038,7 @@ def serve():
             worker('r11-radar',lambda:R11.run(lambda:RUNTIME.beat('r11-radar') if RUNTIME else None))
         if R111 is not None:
             worker('r111-radar',lambda:R111.run(lambda:RUNTIME.beat('r111-radar') if RUNTIME else None))
+        if ARCHIVE is not None:worker('local-cache-seed',local_seed_loop)
         worker('r10-minute-seed',minute_seed_loop)
         print('R09 WebSocket enabled; status /api/websocket; research /api/research/1m',flush=True)
     if os.getenv('SCANNER_BACKGROUND', '1') == '1':
@@ -1014,7 +1049,7 @@ def serve():
         if RUNTIME:ARCHIVE.heartbeat=lambda **kw:RUNTIME.beat('all-pair-archive',**kw)
         worker('all-pair-archive',ARCHIVE.collect_forever)
         print('OVERNIGHT ALL crypto pairs enabled; status /api/overnight',flush=True)
-    print('Scalp Radar v0.5: host %s port %d' % (host,port),flush=True)
+    print('Scalp Radar v0.5 / Full Universe P12: host %s port %d' % (host,port),flush=True)
     print('DB:',STORE.path,'| background scanner:',os.getenv('SCANNER_BACKGROUND','1'),flush=True)
     try:
         if os.getenv('SCANNER_OPEN_BROWSER','0') == '1':
