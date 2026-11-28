@@ -29,6 +29,7 @@ class LauncherTests(unittest.TestCase):
             return Mock()
         with patch.dict(os.environ,{'SCANNER_BACKGROUND':'1','SCANNER_OPEN_BROWSER':'1'}), patch.object(app,'ARCHIVE',Mock()), patch.object(app,'ThreadingHTTPServer',return_value=server), patch.object(app.threading,'Thread',side_effect=thread):
             app.serve()
+        app.DRAIN_REQUEST.clear();app.APP_STOP.clear()
         self.assertEqual(workers,['scan-scheduler','fast-watch','all-pair-archive','open-dashboard'])
         server.serve_forever.assert_called_once()
         server.server_close.assert_called_once()
