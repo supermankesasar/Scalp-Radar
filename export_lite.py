@@ -98,6 +98,8 @@ def collect(db,now,deadline=None,notify=lambda message:None):
         q('r112_outcomes_'+label,['r112_entries','r112_outcomes'],"SELECT e.cohort,e.direction,o.horizon,o.policy,COUNT(*) n,COUNT(o.gross_pct) observed,SUM(o.state='UNOBSERVED') unobserved,AVG(o.gross_pct) gross,AVG(o.gross_pct)-.10 net010,AVG(o.gross_pct)-.20 net020,AVG(o.gross_pct)-.35 net035,AVG(o.mfe) mfe,AVG(o.mae) mae FROM r112_entries e JOIN r112_outcomes o USING(symbol,cutoff,cohort)"+where+" GROUP BY 1,2,3,4",args)
     q('ws_coin_24h',['ws_minute_snapshots'],"SELECT symbol,COUNT(*) n,MIN(candle_time) first,MAX(candle_time) latest,AVG(observed_at-candle_time) lagMs,SUM(json_extract(payload,'$.micro.coverage.trades')=1) tradeCovered,SUM(json_extract(payload,'$.micro.coverage.depth')=1) depthCovered FROM ws_minute_snapshots WHERE candle_time>=? GROUP BY symbol",(day,))
     # Daily all-coin denominators, not capped event samples.
+    q('daily_scan_cycles',['scan_live_cycles'],"SELECT COUNT(*) cycles,MIN(started_at) first,MAX(finished_at) latest,AVG(finished_at-started_at) meanDurationMs,MAX(finished_at-started_at) maxDurationMs,SUM(processed) processed,SUM(successful) successful,SUM(cache_skipped) cacheSkipped,SUM(failed) failed FROM scan_live_cycles WHERE started_at>=? AND started_at<=?",(day,now))
+    q('daily_research_queue',['scan_research_queue'],"SELECT COUNT(*) pending,MIN(observed_at) oldest,MAX(observed_at) newest FROM scan_research_queue")
     q('daily_coin_r111_reasons',['r111_cycles'],"SELECT s.value symbol,j.key reason,COUNT(*) n FROM r111_cycles c,json_each(c.reasons) j,json_each(j.value) s WHERE c.cutoff>=? AND c.cutoff<=? GROUP BY 1,2",(day,now))
     q('daily_coin_r111_eligible',['r111_cycles'],"SELECT s.value symbol,COUNT(*) n FROM r111_cycles c,json_each(c.eligible_symbols) s WHERE c.cutoff>=? AND c.cutoff<=? GROUP BY 1",(day,now))
     q('daily_coin_movement',['r111_moves'],"SELECT symbol,direction,v1_class,v2_class,COUNT(*) n,MAX(ABS(ret15)) maxAbsRet15,AVG(v2_lead_ms) leadMs FROM r111_moves WHERE cutoff>=? AND cutoff<=? GROUP BY 1,2,3,4",(day,now))
@@ -108,7 +110,7 @@ def collect(db,now,deadline=None,notify=lambda message:None):
     # results; expensive historical rule expansion is lower priority.
     def priority(item):
         name=item[0]
-        if name.startswith('daily_coin_') or name=='ws_coin_24h':return -1
+        if name.startswith('daily_') or name=='ws_coin_24h':return -1
         if name.startswith(('r112_','r111_')) and name.endswith('_24h'):return 0
         if name.startswith('r11_') and name.endswith('_24h'):return 1
         if name.startswith(('archive_runs','archive_errors','r10_meta','dashboard_status')):return 2
@@ -122,12 +124,12 @@ def collect(db,now,deadline=None,notify=lambda message:None):
             with query_budget(db,deadline):out['sections'][name]=rows(db,sql,args)
         except sqlite3.OperationalError as e:out['unavailable'][name]=str(e)
     for t in sorted(tables):
-        if t.startswith(('r10_','r11_','r111_','r112_','ws_','research_','market_')) or t in ('events','last_rows'):
+        if t.startswith(('r10_','r11_','r111_','r112_','ws_','research_','market_')) or t in ('events','last_rows','scan_research_queue','scan_live_cycles'):
             try:
                 with query_budget(db,deadline):
                     out['counts'][t]=db.execute('SELECT COUNT(*) FROM "'+t.replace('"','""')+'"').fetchone()[0]
             except sqlite3.OperationalError as e:out['unavailable']['count:'+t]=str(e)
-    out['dailyWindow']={'fromMs':day,'toMs':now,'kind':'rolling_24h','completeSections':[k for k in out['sections'] if k.startswith('daily_coin_')],'missingSections':{k:v for k,v in out['unavailable'].items() if k.startswith('daily_coin_')}}
+    out['dailyWindow']={'fromMs':day,'toMs':now,'kind':'rolling_24h','completeSections':[k for k in out['sections'] if k.startswith('daily_')],'missingSections':{k:v for k,v in out['unavailable'].items() if k.startswith('daily_')}}
     return out,tables
 
 def json_write(z,name,value):
@@ -166,7 +168,7 @@ def export(source,dest,coin=None,hours=24,now=None,complete=False,notify=lambda 
                 with query_budget(db,detail_deadline):return fn()
             except (sqlite3.OperationalError,OSError,ValueError) as exc:
                 optional_errors[name]=str(exc);return None
-        specs=[('r111_cycles',360),('r11_cycles',360),('r10_cycles',720),('r111_moves',2000),
+        specs=[('scan_live_cycles',288),('r111_cycles',360),('r11_cycles',360),('r10_cycles',720),('r111_moves',2000),
                ('r111_events',1500),('r11_events',1000),('r111_ready',1500),('r111_outcomes',1500),('r11_ready',1000),('r11_outcomes',1000)]
         def write(scale):
             manifest={'schema':summary['schema'],'snapshotMs':now,'detailLimits':{},'coin':coin,'hours':hours if coin else None,
@@ -197,7 +199,7 @@ def export(source,dest,coin=None,hours=24,now=None,complete=False,notify=lambda 
                 for table,n in specs:
                     if table not in tables or int(n*scale)<=0:continue
                     limit=int(n*scale)
-                    order='cutoff DESC' if table.endswith('_cycles') else 'cutoff DESC,symbol'
+                    order='started_at DESC' if table=='scan_live_cycles' else 'cutoff DESC' if table.endswith('_cycles') else 'cutoff DESC,symbol'
                     data=optional(table,lambda:csv_query(db,f'SELECT * FROM {table} ORDER BY {order} LIMIT ?',(limit,)))
                     if data is not None:
                         z.writestr(table+'.csv',data);manifest['detailLimits'][table]=limit
