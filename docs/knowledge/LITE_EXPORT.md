@@ -22,3 +22,7 @@ EXPORT-DAILY.bat invokes --daily --complete: rolling 24h rather than repeated cu
 
 ## Multicore and indicator study telemetry (28 Nov)
 Daily scan cycles include configured CPU worker count, sum of per-coin pure calculation durations and sum of submit/wait durations averaged across cycles (not elapsed scan time), CPU fallback count. New daily_indicator_cohort per coin/label and daily_indicator_profile per label/timeframe/indicator report observed future15-endpoint-v1 cohorts, explicit missing/late/pending. Queries operate on recorded extra-indicator snapshots only, no fabricated history. Export complete daily includes all available grouped rows; routine budgets may omit these sections explicitly. See FORMULA_DATABASE for definitions and limitations. Added recorded_at index for daily feature queries, additive migration.
+
+
+## P12 scan pipeline timing (28 Nov)
+Daily scan aggregates now include computed count, cache check, compute wall, DB lock wait, DB batch and research stage durations, summed per-coin context duration. A completed scan's publication may fail separately from feature calculation; inspect errors and computed vs successful. Runtime heartbeat contains current scan phase; incomplete cycles may not appear in completed cycle rows. Local cache seed telemetry reports restored TFs and errors. No live performance measurement yet.

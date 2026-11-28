@@ -26,6 +26,7 @@ class SignalStore:
         Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         self.lock = threading.RLock()
         with self._conn() as db:
+            db.execute('PRAGMA journal_mode=WAL')
             db.executescript('''
             CREATE TABLE IF NOT EXISTS events(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -235,6 +236,75 @@ class SignalStore:
             db.execute('DELETE FROM events WHERE started_at<?',(now-MAX_ARCHIVE_MS,))
             db.execute('DELETE FROM last_rows WHERE updated_at<?',(now-MAX_ROWS_AGE_MS,))
             return payload
+
+    def refresh_ranked_batch(self, records, rank, quotes):
+        """One transaction per WS pass, not per coin or candidate.
+        Refresh tracked outcomes first, rank once at actual quote time, then
+        publish final categories for all evaluated symbols. No network calls.
+        """
+        start=time.perf_counter()
+        with self.lock:
+            locked=time.perf_counter()
+            with self._conn() as db:
+                now=int(time.time()*1000)
+                # Expiry follows closed-candle observation where data exists.
+                rows=[]
+                for row in records:
+                    candles=row['_recent5m']
+                    if not candles or candles[-1]['closeTime']!=row['lastClosed5m']:
+                        raise ValueError('Data harus memakai candle 5m tertutup yang cocok')
+                    self._progress(db,row['symbol'],candles,row['price'],now,row)
+                    rows.append(row)
+                self._expire_unobserved(db,now)
+                wanted={r['symbol'] for r in rows if r.get('potentialUp') or r.get('potentialDown')}
+                decision=int(time.time()*1000)
+                candidates=rank(rows,now_ms=decision,quote_prices=quotes(wanted,decision))
+                # One query to learn cooldown and active ranking state.
+                recent={(r[0],r[1]) for r in db.execute(
+                    'SELECT symbol,direction FROM events WHERE started_at>=?',(decision-RECENT_COOLDOWN_MS,))}
+                active=[dict(r) for r in db.execute("SELECT id,last_score,started_at FROM events WHERE status='PENDING' ORDER BY last_score,started_at,id")]
+                for score,turnover,direction,row in candidates:
+                    key=(row['symbol'],direction)
+                    if key in recent:continue
+                    if len(active)>=ACTIVE_LIMIT:
+                        weakest=min(active,key=lambda e:(e['last_score'],e['started_at'],e['id']))
+                        if score<weakest['last_score']+ROTATION_MARGIN:continue
+                        db.execute("UPDATE events SET status='EXPIRED',ended_at=?,end_reason='RANK_REPLACED' WHERE id=? AND status='PENDING'",(decision,weakest['id']))
+                        active.remove(weakest)
+                    a=row['atr5mPct']
+                    cur=db.execute("""INSERT INTO events(symbol,direction,status,started_at,baseline_time,baseline_price,
+                           trigger_pct,stop_pct,initial_score,last_price,last_seen,last_score,setup_active,filter_id)
+                           VALUES(?,?,'PENDING',?,?,?,?,?,?,?,?,?,1,?)""",
+                        (row['symbol'],direction,decision,row['lastClosed5m'],row['price'],max(.65,1.5*a),max(.4,a),
+                         score,row['price'],decision,score,row.get('liveFilter','BASELINE')))
+                    active.append({'id':cur.lastrowid,'last_score':score,'started_at':decision})
+                    recent.add(key)
+                payload=[self._refresh_payload(db,r,decision) for r in rows]
+                db.execute('DELETE FROM events WHERE started_at<?',(decision-MAX_ARCHIVE_MS,))
+                db.execute('DELETE FROM last_rows WHERE updated_at<?',(decision-MAX_ROWS_AGE_MS,))
+            return payload,{'dbLockWaitMs':1000*(locked-start),'dbBatchMs':1000*(time.perf_counter()-locked)}
+    def dashboard_snapshot(self, now_ms=None, include_rows=True):
+        """One WAL read snapshot; no writer lock, expiry UPDATE or per-symbol SELECT."""
+        now=int(time.time()*1000) if now_ms is None else now_ms
+        db=sqlite3.connect(Path(self.path).resolve().as_uri()+'?mode=ro',uri=True,timeout=5)
+        db.row_factory=sqlite3.Row
+        try:
+            db.execute('BEGIN')
+            events=[self._public(e) for e in db.execute("""SELECT * FROM events WHERE
+                (status='PENDING' AND started_at>=?) OR (status='REACHED' AND confirmed_at>=?)
+                ORDER BY started_at DESC""",(now-PENDING_MS,now-REACHED_MS))]
+            active=sorted((e for e in events if e['status']=='PENDING'),key=lambda e:(-e['lastScore'],-e['startedAt']))
+            groups={}
+            for e in events:groups.setdefault(e['symbol'],[]).append(e)
+            out=[]
+            if include_rows:
+                for entry in db.execute('SELECT data FROM last_rows WHERE updated_at>=?',(now-MAX_ROWS_AGE_MS,)):
+                    row=json.loads(entry[0]);live=groups.get(row['symbol'],[])
+                    row['journeys']=live;row['categories']=self._categories(live)
+                    row['category']=row['categories'][0] if row['categories'] else 'NETRAL'
+                    out.append(row)
+            return out,active
+        finally:db.close()
 
     def _create_events(self, db, row, now):
         pending = db.execute("SELECT COUNT(*) FROM events WHERE status='PENDING' AND started_at>=?", (now-PENDING_MS,)).fetchone()[0]

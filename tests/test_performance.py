@@ -61,10 +61,77 @@ class PerformanceTests(unittest.TestCase):
         self.assertGreaterEqual(actual.pop('calcMs'),0)
         expected.pop('calcMs')
         self.assertEqual(actual,expected)
-        self.assertEqual(app.cpu_workers(None,16),8)
-        self.assertEqual(app.cpu_workers('99',24),16)
-        self.assertEqual(app.cpu_workers('bad',2),1)
+        self.assertEqual(app.cpu_workers(None,16),16)
+        self.assertEqual(app.cpu_workers('99',24),24)
+        self.assertEqual(app.cpu_workers('bad',2),2)
         self.assertEqual(app.cpu_workers('4',8),4)
+    def test_all_cached_calculations_finish_before_single_publish(self):
+        from signals import SignalStore
+        from test_v05 import event_row,candle
+        from unittest.mock import Mock
+        import time
+        with tempfile.TemporaryDirectory() as d:
+            store=SignalStore(Path(d)/'db.sqlite')
+            hist=ResearchHistory(store.path,store.lock)
+            now=int(time.time()*1000);cut=now-60000
+            tickers=[{'symbol':f'C{i}USDT','turnover24h':100000000,'change24h':0} for i in range(42)]
+            stream=Mock()
+            stream.candles.side_effect=lambda s,*a,**kw:None if s=='C41USDT' else [1]
+            stream.prices.side_effect=lambda symbols,at:{s:100.1 for s in symbols}
+            seen=set()
+            def math(t,*args):
+                sym=t['symbol'];seen.add(sym)
+                row=event_row(sym,70+int(sym[1:-4]),bar=cut)
+                row['_recent5m']=[candle(when=cut)]
+                return row
+            original=store.refresh_ranked_batch
+            def publish(records,*args):
+                self.assertEqual(len(seen),41)
+                self.assertEqual(len(records),41)
+                return original(records,*args)
+            with patch.object(app,'STREAM',stream),patch.object(app,'STORE',store),patch.object(app,'HISTORY',hist),patch.object(app,'RUNTIME',None),patch.object(app,'scan_symbol',side_effect=math),patch.object(store,'refresh_ranked_batch',side_effect=publish) as batch,patch.dict(app.SCAN_STATE,{'generation':909,'rows':[],'errors':[],'processed':0}):
+                app.scan_cached_universe(909,tickers,set(),now)
+                self.assertEqual(batch.call_count,1)
+                self.assertEqual(app.SCAN_STATE['computed'],41)
+                self.assertEqual(app.SCAN_STATE['cacheSkipped'],1)
+                self.assertEqual(app.SCAN_STATE['processed'],42)
+                self.assertEqual(len(app.SCAN_STATE['rows']),41)
+                self.assertEqual(len(store.active_pending()),10)
+                self.assertEqual(sorted(x['initialScore'] for x in store.active_pending()),list(range(101,111)))
+                self.assertEqual(len(hist.queued_scan(100)),41)
+    def test_wal_dashboard_reads_while_writer_lock_held(self):
+        from signals import SignalStore
+        from test_v05 import event_row,candle
+        import time
+        with tempfile.TemporaryDirectory() as d:
+            store=SignalStore(Path(d)/'db.sqlite')
+            now=int(time.time()*1000)
+            row=event_row('AAAUSDT',bar=now-1000)
+            store.refresh(row,[candle(when=now-1000)],now_ms=now)
+            result=[];done=threading.Event()
+            def read():
+                result.extend(store.dashboard_snapshot(now)[1]);done.set()
+            with store.lock:
+                t=threading.Thread(target=read);t.start()
+                ok=done.wait(2)
+            t.join(3)
+            self.assertTrue(ok);self.assertEqual(len(result),1)
+    def test_parallel_local_warmup_all_timeframes(self):
+        from unittest.mock import Mock
+        from stream_engine import LIMIT,TF,close_at
+        import time
+        now=1800000000000+16000
+        e=StreamEngine();e.set_symbols({'AAA','BBB'})
+        a=Mock()
+        def local(s,tf,n,asof):
+            end=close_at(asof,TF[tf])
+            return [[0,100,101,99,100,0,end-(n-1-i)*TF[tf],0,0,0,0,0] for i in range(n)]
+        a.cached_rows.side_effect=local
+        with patch.object(app,'STREAM',e),patch.object(app,'ARCHIVE',a),patch.object(app,'request_market',side_effect=AssertionError('no REST')):
+            count,errors=app.local_seed_pass(['AAA','BBB'],now)
+        self.assertEqual(count,10);self.assertEqual(errors,[])
+        for s in ('AAA','BBB'):
+            for tf,n in LIMIT.items():self.assertIsNotNone(e.candles(s,tf,n-1,now-15000))
     def test_budget_is_shared_and_bounded(self):
         g=RestGuard();g.history_cap=2
         self.assertEqual(g.history_delay('/futures/data/openInterestHist'),0)
