@@ -1,6 +1,6 @@
 import unittest,tempfile,threading
 from pathlib import Path
-from stream_engine import StreamEngine,stream_groups
+from stream_engine import StreamEngine,stream_groups,stream_lane
 from stream_research import StreamResearch
 from filters import microstructure
 import app
@@ -11,6 +11,40 @@ class StreamTests(unittest.TestCase):
         self.assertTrue(all(len(g[3])<=1024 for g in groups))
         self.assertTrue(all(g[0]=='public' for g in groups if g[1]=='depth'))
         self.assertEqual(sum(len(g[3]) for g in groups if g[1]=='candles'),516*5)
+    def test_lanes_cover_each_stream_once(self):
+        groups=stream_groups({'X%dUSDT'%i for i in range(516)})
+        lanes={name:[g for g in groups if stream_lane(g)==name] for name in ('minute','ticker','other')}
+        self.assertEqual(sum(map(len,lanes.values())),len(groups))
+        self.assertEqual(sum(len(g[3]) for g in lanes['minute']),516)
+        self.assertEqual(len(lanes['ticker']),1)
+    def test_missing_shard_and_cooldown(self):
+        e=StreamEngine();syms={'AUSDT','BUSDT','CUSDT','DUSDT','EUSDT'};e.set_symbols(syms)
+        cut=1800000059999
+        self.assertFalse(e.minute_shard_check('g',syms,cut,cut+14999))
+        e.candle_received[('AUSDT','1m')]={cut:cut+100}
+        self.assertTrue(e.minute_shard_check('g',syms,cut,cut+15000))
+        self.assertEqual(e.coverage_status(cut+15000)['fresh'],1)
+        self.assertFalse(e.minute_shard_check('g',syms,cut,cut+16000))
+        self.assertFalse(e.minute_shard_check('g',syms,cut+60000,cut+75000))
+        self.assertTrue(e.minute_shard_check('g',syms,cut+120000,cut+135000))
+        self.assertIsNone(e.receipt('BUSDT','1m',cut))
+    def test_ticker_movement_independent_of_closed_candles(self):
+        e=StreamEngine();e.set_symbols({'PORTALUSDT','BOTHUSDT'})
+        t=1800000000000
+        def tick(s,p,at):
+            e.ingest({'e':'24hrTicker','s':s,'c':str(p),'E':at},at)
+        tick('PORTALUSDT',100,t);tick('PORTALUSDT',105,t+60000)
+        tick('BOTHUSDT',100,t);tick('BOTHUSDT',103,t+50000)
+        d=e.movement_status(t+60000)
+        self.assertEqual(d['covered1m'],1)
+        self.assertEqual(d['moves'][0]['symbol'],'PORTALUSDT')
+        self.assertAlmostEqual(d['moves'][0]['pct1m'],5)
+        self.assertIsNone(e.receipt('PORTALUSDT','1m',t+59999))
+        self.assertEqual(e.movement_status(t+71000)['moves'],[])
+        tick('PORTALUSDT',90,t+300000)
+        d=e.movement_status(t+300000)
+        self.assertAlmostEqual(d['moves'][0]['pct5m'],-10)
+        self.assertIsNone(d['moves'][0]['pct1m'])
     def test_cache_continuity(self):
         e=StreamEngine();e.set_symbols({'AAAUSDT'})
         rows=fake_candles('1m',count=105)

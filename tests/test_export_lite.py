@@ -25,6 +25,23 @@ class LiteTests(unittest.TestCase):
                 self.assertEqual(c[1]['missingWithinSpan'],'0')
                 raw=z.read('sample_candles.csv').decode();self.assertIn('AAA',raw);self.assertNotIn('BBB',raw)
                 self.assertNotIn('signals.sqlite3',z.namelist())
+    def test_targeted_coin_diagnostics(self):
+        with tempfile.TemporaryDirectory() as d:
+            src=Path(d)/'test.sqlite3';dest=Path(d)/'lite.zip'
+            with closing(sqlite3.connect(src)) as db:
+                db.executescript("""CREATE TABLE research_snapshots(symbol TEXT,candle_time INTEGER,recorded_at INTEGER,payload TEXT);
+                INSERT INTO research_snapshots VALUES('AAA',1000,1001,'{}'),('BBB',1000,1001,'{}');
+                CREATE TABLE events(symbol TEXT,started_at INTEGER);
+                INSERT INTO events VALUES('AAA',2000),('BBB',2000);""")
+                db.commit()
+            export(src,dest,coin='AAA',now=3000,complete=True)
+            with zipfile.ZipFile(dest) as z:
+                for name in ('coin_research_snapshots.csv','coin_events.csv'):
+                    rows=list(csv.DictReader(io.StringIO(z.read(name).decode())))
+                    self.assertEqual([r['symbol'] for r in rows],['AAA'])
+                m=json.loads(z.read('manifest.json'))
+                self.assertEqual(m['coinDiagnostics']['symbol'],'AAA')
+                self.assertIn('coin_r112_events',m['omittedDetails'])
     def test_ready_outcome_aggregate(self):
         with tempfile.TemporaryDirectory() as d:
             src=Path(d)/'test.sqlite3';dest=Path(d)/'lite.zip'

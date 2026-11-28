@@ -834,6 +834,9 @@ class Handler(BaseHTTPRequestHandler):
             self._reply(200,json.dumps(REST_GUARD.status()).encode(),'application/json')
         elif route.path == '/api/research/r10':
             self._reply(200,json.dumps(R10.status() if R10 else {'enabled':False}).encode(),'application/json')
+        elif route.path == '/api/movement':
+            result=STREAM.movement_status() if STREAM is not None else {'enabled':False}
+            self._reply(200,json.dumps(result,allow_nan=False).encode(),'application/json')
         elif route.path == '/api/websocket':
             result=STREAM.status() if STREAM is not None else {'enabled':False}
             self._reply(200,json.dumps(result,allow_nan=False).encode(),'application/json')
@@ -928,6 +931,7 @@ def minute_research_loop():
         cutoff=close_at(now-5000,60000)
         if cutoff>last:
             try:
+                if RUNTIME:RUNTIME.beat('ws-coverage',**STREAM.coverage_status(now))
                 count=WS_HISTORY.process(STREAM,cutoff,now,ema,atr,parse_klines,r10=R10)
                 if RUNTIME:RUNTIME.beat('ws-research',count=count,cutoff=cutoff)
                 last=cutoff
@@ -977,7 +981,8 @@ def serve():
     if RUNTIME:
         threading.Thread(target=RUNTIME.watch,args=(scan_status,),daemon=True,name='r10-watchdog').start()
     if STREAM is not None:
-        worker('ws-streams',STREAM.run_forever)
+        for lane in ('minute','ticker','other'):
+            worker('ws-'+lane,lambda lane=lane:STREAM.run_forever(lane))
         worker('ws-research',minute_research_loop)
         if R11 is not None:
             worker('r11-radar',lambda:R11.run(lambda:RUNTIME.beat('r11-radar') if RUNTIME else None))
