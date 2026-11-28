@@ -23,6 +23,7 @@ function selectProfile(profile,focus=false){
  }
 }
 function initProfiles(){
+ if(!$('profileScalping')||!$('profileSwing')||!$('scalpingPanel')||!$('swingPanel'))return;
  const tabs=[['profileScalping','scalping'],['profileSwing','swing']];
  for(const [id,profile] of tabs){
   $(id).addEventListener('click',()=>selectProfile(profile));
