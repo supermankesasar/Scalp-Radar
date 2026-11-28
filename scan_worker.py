@@ -23,7 +23,7 @@ def evaluate_scan_features(features,live_filter):
         selected={k:{'score':int(v['score'] or 0),'potential':v['potential']} for k,v in hybrid.items()}
     return evaluation,hybrid,selected
 
-def compute_full_scan(raw_sets,raw,now,want_minute,minute_error,symbol,universe_size,db_path,micro,micro_at,live_filter):
+def compute_full_scan(raw_sets,raw,now,want_minute,minute_error,symbol,universe_size,db_path,micro,micro_at,live_filter,breadth=None):
     started=time.perf_counter()
     result=compute_scan_math(raw_sets,raw,now,want_minute,minute_error)
     features=result['features'];cut=result['i5']['time']
@@ -34,7 +34,7 @@ def compute_full_scan(raw_sets,raw,now,want_minute,minute_error,symbol,universe_
             reader=_READERS.get(db_path)
             if reader is None:
                 reader=_READERS[db_path]=MarketContextReader(db_path)
-            features['derivatives'],features['breadth']=reader.research_context(symbol,cut,int(time.time()*1000),universe_size)
+            features['derivatives'],features['breadth']=reader.research_context(symbol,cut,int(time.time()*1000),universe_size,breadth_override=breadth)
         except Exception as exc:context_error=str(exc)[:140]
     decision=int(time.time()*1000)
     # Input was captured in main receiver at its actual receipt time, never re-stamp it.
