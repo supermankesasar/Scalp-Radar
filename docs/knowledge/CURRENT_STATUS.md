@@ -122,3 +122,7 @@ User explicitly approves automatic check/restart while running. START-AUTO.bat e
 
 ### Live auto-update release (28 Nov 2026)
 PR #14 merged at `f560214f21e30eeff1d6ae1b03cadf37894ff719`; Windows and Ubuntu offline CI [46109495188](https://github.com/supermankesasar/Scalp-Radar/actions/runs/46109495188) passed on head 2371fe6. Git decision, child exit and scan-drain guards tested with mocks; actual end-to-end live Git restart and downtime on user PC not measured. Old startup-only launcher requires one manual pull/restart to load live supervisor. Committed data retained; incomplete minute state and restart coverage gaps remain possible. No automatic rollback following a successful merge with a subsequent application startup failure.
+
+
+## Scalping / Swing UI tabs (28 Nov 2026)
+User reports Windows startup with START-AUTO succeeded without errors; live update still being tested. Explicit scope: two selectable top-level buttons Scalping and Swing, frontend only; Swing calculation intentionally deferred. Main existing R08 scalp dashboard stays intact inside default Scalping panel; Swing is an honest empty preview page with no sample signals, data or scores. View selection only, does not change scan mode or stop server collection; existing scalp polling continues. Keyboard-accessible tabs, responsive theme-compatible styling, PWA shell v10. No new API, backend, DB, indicators, thresholds or strategy. User-PC auto-update/reload not yet verified. CI pending.
