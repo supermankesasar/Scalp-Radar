@@ -74,3 +74,13 @@ R09 adds 12 independent 1m microstructure/EMA/volume rules and R09_HYBRID on the
 ## R10 local research
 
 See [R10 methodology, persistent database and recovery](research/R10_RESEARCH.md). Use the same START-WINDOWS.bat. New local endpoints /api/runtime and /api/research/r10. Dashboard live filter unchanged; all R10 rules are shadow only. No hosting required.
+
+
+## Update otomatis Windows (Git clone)
+Install Git for Windows sekali (https://git-scm.com/download/win). Stop scanner lama. Buka Command Prompt lalu clone ke folder baru, misalnya:
+
+```bat
+git clone https://github.com/supermankesasar/Scalp-Radar.git "D:\ScalpRadar-App"
+```
+
+Pilih drive/folder yang tersedia; jangan clone ke dalam folder database atau folder aplikasi lama. Selanjutnya double-click START-AUTO.bat di folder clone. Launcher memeriksa main GitHub dan fast-forward sebelum memanggil START-WINDOWS.bat. Internet/GitHub gagal: pakai versi lokal. Branch lain, tracked changes, diverged history, atau scanner aktif: tolak update, tidak reset atau overwrite. START-WINDOWS.bat tetap bisa digunakan tanpa cek update. Database persistent/config sebelumnya tidak diubah; jika database lama hanya ada di folder ZIP lama, jalankan launcher lama untuk migrasi database atau pilih lokasi database sebelum pindah. Tidak ada hot reload/restart saat scanner aktif. 
