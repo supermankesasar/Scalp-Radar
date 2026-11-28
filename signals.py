@@ -1,6 +1,6 @@
 """Scalp Radar v0.5 signal journey engine.
 
-Five active opportunities maximum, across both directions. A result is confirmed only
+Ten active opportunities maximum, across both directions. A result is confirmed only
 by a subsequent CLOSED 5m candle. Live price is for freshness, not target execution.
 Existing v0.4 SQLite files are migrated in place without losing events.
 """
@@ -16,7 +16,7 @@ REACHED_MS = 6 * 3_600_000
 RECENT_COOLDOWN_MS = 60 * 60_000
 MAX_ARCHIVE_MS = 30 * 24 * 3_600_000
 MAX_ROWS_AGE_MS = 36 * 3_600_000
-ACTIVE_LIMIT = 5
+ACTIVE_LIMIT = 10
 ROTATION_MARGIN = 1
 
 
@@ -65,15 +65,15 @@ class SignalStore:
             ):
                 if name not in fields:
                     db.execute('ALTER TABLE events ADD COLUMN %s %s' % (name, definition))
-            # An existing v0.4 DB may contain more than five pending events.
-            # Preserve all as audit, retain only five active by ranking.
+            # An existing v0.4 DB may contain more than ten pending events.
+            # Preserve all as audit, retain only ten active by ranking.
             now = int(time.time()*1000)
             live = db.execute('''SELECT id FROM events WHERE status='PENDING'
                      AND started_at>=? ORDER BY last_score DESC,started_at DESC''',
                      (now-PENDING_MS,)).fetchall()
             for old in live[ACTIVE_LIMIT:]:
                 db.execute('''UPDATE events SET status='EXPIRED', ended_at=?,
-                            end_reason='MIGRATION_TOP5' WHERE id=?''',
+                            end_reason='MIGRATION_TOP10' WHERE id=?''',
                            (now,old['id']))
 
     @contextmanager
@@ -147,7 +147,7 @@ class SignalStore:
                (now-PENDING_MS, now-REACHED_MS))}
 
     def watch_symbols(self, max_symbols=20, now_ms=None):
-        """Prioritize active (max 5) plus recently reached for light quote monitoring."""
+        """Prioritize active (max 10) plus recently reached for light quote monitoring."""
         now = int(time.time()*1000) if now_ms is None else now_ms
         with self.lock, self._conn() as db:
             self._expire_unobserved(db, now)

@@ -42,6 +42,23 @@ class LiteTests(unittest.TestCase):
                 m=json.loads(z.read('manifest.json'))
                 self.assertEqual(m['coinDiagnostics']['symbol'],'AAA')
                 self.assertIn('coin_r112_events',m['omittedDetails'])
+    def test_daily_counts_include_coin_without_candles_and_skip_old_totals(self):
+        with tempfile.TemporaryDirectory() as d:
+            src=Path(d)/'test.sqlite3';dest=Path(d)/'daily.zip'
+            with closing(sqlite3.connect(src)) as db:
+                db.executescript("""CREATE TABLE market_observations(kind TEXT,symbol TEXT,source_ts INTEGER,received_at INTEGER,payload TEXT);
+                INSERT INTO market_observations VALUES('kline_1m','AAA',59999,60001,'[]');
+                CREATE TABLE r111_cycles(cutoff INTEGER PRIMARY KEY,eligible_symbols TEXT,reasons TEXT,universe INTEGER,eligible INTEGER);""")
+                db.execute("INSERT INTO r111_cycles VALUES(59999,?,?,2,1)",('["AAA"]','{"NO_SETUP":["AAA"],"NO_WS_CLOSE":["BBB"]}'))
+                db.commit()
+            export(src,dest,now=120000,complete=True,daily_only=True)
+            with zipfile.ZipFile(dest) as z:
+                s=json.loads(z.read('summary.json'))
+                self.assertEqual(s['mode'],'daily');self.assertNotIn('r111_coverage_all',s['sections'])
+                self.assertEqual({(x['symbol'],x['reason'],x['n']) for x in s['sections']['daily_coin_r111_reasons']},{('AAA','NO_SETUP',1),('BBB','NO_WS_CLOSE',1)})
+                rows=list(csv.DictReader(io.StringIO(z.read('coin_continuity.csv').decode())))
+                b=next(x for x in rows if x['symbol']=='BBB' and x['kind']=='kline_1m')
+                self.assertEqual(b['recent'],'0');self.assertEqual(b['missingRecentAssumingActive'],'1440')
     def test_ready_outcome_aggregate(self):
         with tempfile.TemporaryDirectory() as d:
             src=Path(d)/'test.sqlite3';dest=Path(d)/'lite.zip'

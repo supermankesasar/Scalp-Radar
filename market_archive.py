@@ -65,6 +65,19 @@ class MarketArchive:
                 db.rollback()
                 raise
             finally: db.close()
+    @contextmanager
+    def read_db(self):
+        db=sqlite3.connect(Path(self.path).resolve().as_uri()+'?mode=ro',uri=True,timeout=5)
+        db.row_factory=sqlite3.Row
+        try:yield db
+        finally:db.close()
+    def cached_rows(self,symbol,tf,limit,now):
+        step={'1m':60000,'5m':300000,'15m':900000,'1h':3600000,'4h':14400000}[tf]
+        end=now//step*step-1
+        with self.read_db() as db:
+            rows=db.execute("SELECT payload FROM market_observations WHERE kind=? AND symbol=? AND source_ts BETWEEN ? AND ? AND received_at<=? ORDER BY source_ts",
+                ('kline_'+tf,symbol,end-(limit-1)*step,end,now)).fetchall()
+        return [json.loads(r[0]) for r in rows]
     def fetch(self,endpoint,params=None):
         # Shared pacing across workers. A restricted endpoint is not bypassed.
         while True:
@@ -127,7 +140,7 @@ class MarketArchive:
     def research_context(self,symbol,cutoff,decision,universe_size):
         # Strict point-in-time receipt and source bounds; stale context is absent.
         d={}
-        with self.db() as db:
+        with self.read_db() as db:
             for kind,key,field in [('oi','oiDelta15','sumOpenInterest'),
               ('global_ls','globalDeltaPP','longAccount'),('top_accounts','topAccountDeltaPP','longAccount'),
               ('top_positions','topPositionDeltaPP','longAccount')]:
@@ -162,7 +175,7 @@ class MarketArchive:
         with self.breadth_lock:
             cached=self.breadth_cache.get(bucket)
             if cached is None or not 0<=decision-cached[0]<=30000:
-                with self.db() as db:
+                with self.read_db() as db:
                     rows=db.execute("SELECT symbol,source_ts,payload FROM market_observations WHERE kind='kline_5m' AND source_ts IN (?,?) AND received_at<=?",(cutoff,cutoff-900000,decision)).fetchall()
                 prices={}
                 for row in rows:
