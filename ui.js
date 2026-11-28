@@ -54,7 +54,7 @@ function render(st){
  $('progress').style.width=pctDone+'%';
  const activeMode=modeLabel(st.mode);
  $('message').textContent=st.configPending?`Scan ${activeMode} berjalan. Mode pilihan akan dimulai sesudahnya.`:st.message;
- $('scanDetails').textContent=`Top ${st.activeSignals||0}/${st.activeLimit||10} aktif · ${done}/${total||'…'} pair · ${st.successful||0} sukses · ${st.failed||0} gagal · ${st.cacheSkipped||0} menunggu cache · ${st.startedAt?Math.max(0,Math.round(((st.completedAt||Date.now())-st.startedAt)/1000))+'s':'—'} · candle 5m, quote watch ±30 detik`;
+ $('scanDetails').textContent=`Top ${st.activeSignals||0}/${st.activeLimit||10} aktif · ${done}/${total||'…'} pair · ${st.computed??st.successful??0} dihitung · ${st.successful||0} tersimpan · ${st.failed||0} gagal · ${st.cacheSkipped||0} menunggu cache · ${st.startedAt?Math.max(0,Math.round(((st.completedAt||Date.now())-st.startedAt)/1000))+'s':'—'} · ${st.phase||'—'} · candle 5m, quote watch ±30 detik`;
  $('scanStats').replaceChildren();
  for(const [name,value] of [['Pair aktif',st.universe||'…'],['Sesuai mode',st.eligible||'…'],['Dalam antrean',total||'…'],['Tanpa ticker',st.missingTicker||0]]){
    const b=el('span',undefined,'stat-item');b.append(el('b',String(value)),el('span',name));$('scanStats').append(b);
