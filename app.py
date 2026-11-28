@@ -53,6 +53,7 @@ else:
 RUNTIME = None
 # Research cohort is a historical experiment only; live shadow rules apply to all scanned crypto pairs.
 BASE = "https://fapi.binance.com"
+MAJOR_SYMBOLS=('BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT','DOGEUSDT','ADAUSDT','AVAXUSDT','LINKUSDT','XAUUSDT','XAGUSDT','PAXGUSDT','XAUTUSDT')
 SCAN_MODES = ('all', 'liquid', 'top80')
 DEFAULT_MODE = 'all'
 DEFAULT_TURNOVER = 30000000
@@ -508,6 +509,8 @@ def scan_cached_universe(generation,tickers,tracked,scan_now):
             with SCAN_LOCK:SCAN_STATE['rows']=list(published)
         except Exception as exc:
             metrics['publicationErrors']=metrics.get('publicationErrors',0)+1
+            for r,_ in batch:
+                r['promotionReasons']={d:'PUBLICATION_ERROR' for d in ('UP','DOWN') if r.get('potentialUp' if d=='UP' else 'potentialDown')}
             with SCAN_LOCK:SCAN_STATE['errors'].append('Publication failed: '+str(exc)[:200])
         with SCAN_LOCK:
             SCAN_STATE.update(phase='COMPUTE',phaseMetrics=dict(metrics),progressAt=int(time.time()*1000))
@@ -546,6 +549,8 @@ def scan_cached_universe(generation,tickers,tracked,scan_now):
         with SCAN_LOCK:SCAN_STATE['errors'].append('Research queue: '+str(exc)[:150])
     metrics['researchStageMs']=1000*(time.perf_counter()-stage_started)
     metrics['contextSumMs']=sum(r.get('contextMs',0) for r,_ in results)
+    coin_reasons={r['symbol']:{d:v for d,v in r.get('promotionReasons',{}).items() if v!='NO_SETUP'} for r,_ in results if r.get('potentialUp') or r.get('potentialDown')}
+    with SCAN_LOCK:SCAN_STATE['promotionCoinReasons']=coin_reasons
     with SCAN_LOCK:SCAN_STATE['phaseMetrics']=metrics
     print('[SCAN] Computed',len(results),'/',len(tickers),'cache skipped',len(cold),'in %.2fs'%(metrics['computeWallMs']/1000),flush=True)
     print('[SCAN] Promotion:',metrics['promotion'],'DB wait %.2fs; publish %.2fs'%(metrics['dbLockWaitMs']/1000,metrics['dbBatchMs']/1000),flush=True)
@@ -683,6 +688,8 @@ def scan_job(generation, mode, min_turnover):
                 audit['successful']=len(SCAN_STATE['rows'])
                 audit['computed']=SCAN_STATE.get('computed',audit['successful']) if STREAM is not None else audit['successful']
                 audit['phaseMetrics']=dict(SCAN_STATE.get('phaseMetrics',{}))
+                audit['promotionCoinReasons']=SCAN_STATE.get('promotionCoinReasons',{})
+                audit['universeVersion']='USDT_PERP_ALL_V2'
                 SCAN_STATE['phase']='DONE'
                 audit['cpuWorkers']=SCAN_CPU_WORKERS if CPU_POOL is not None else 0
                 audit['cpuCalcMs']=sum(r.get('cpuCalcMs',0) for r in SCAN_STATE['rows'])
@@ -729,7 +736,7 @@ def schedule_scan(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False)
             SCAN_STATE.update({
                 'running': True, 'rows': [], 'processed': 0, 'total': 0, 'eligible': 0,
                 'universe': 0, 'missingTicker': 0, 'trackedExtra': 0,
-                'errors': [], 'cacheSkipped':0,'cacheSkippedSymbols':[], 'computed':0,'phase':'UNIVERSE','phaseMetrics':{}, 'startedAt': now_ms, 'progressAt':now_ms, 'completedAt': None,
+                'errors': [], 'cacheSkipped':0,'cacheSkippedSymbols':[], 'computed':0,'phase':'UNIVERSE','phaseMetrics':{},'promotionCoinReasons':{}, 'startedAt': now_ms, 'progressAt':now_ms, 'completedAt': None,
                 'mode': mode, 'minTurnover': min_turnover,
                 'generation': SCAN_STATE['generation']+1,
                 'message': 'Mengambil daftar USDT perpetual Binance',
@@ -827,6 +834,9 @@ class Handler(BaseHTTPRequestHandler):
             self._reply(200,json.dumps(REST_GUARD.status()).encode(),'application/json')
         elif route.path == '/api/research/r10':
             self._reply(200,json.dumps(R10.status() if R10 else {'enabled':False}).encode(),'application/json')
+        elif route.path == '/api/majors':
+            result=STREAM.major_status(MAJOR_SYMBOLS) if STREAM is not None else {'enabled':False,'rows':[]}
+            self._reply(200,json.dumps(result,allow_nan=False).encode(),'application/json')
         elif route.path == '/api/movement':
             result=STREAM.movement_status() if STREAM is not None else {'enabled':False}
             self._reply(200,json.dumps(result,allow_nan=False).encode(),'application/json')
@@ -1075,7 +1085,7 @@ def serve():
         if RUNTIME:ARCHIVE.heartbeat=lambda **kw:RUNTIME.beat('all-pair-archive',**kw)
         worker('all-pair-archive',ARCHIVE.collect_forever)
         print('OVERNIGHT ALL USDT perpetual pairs enabled; status /api/overnight',flush=True)
-    print('Scalp Radar v0.5 / Full Universe P12: host %s port %d' % (host,port),flush=True)
+    print('Scalp Radar v0.5 / Full Universe P13: host %s port %d' % (host,port),flush=True)
     print('DB:',STORE.path,'| background scanner:',os.getenv('SCANNER_BACKGROUND','1'),flush=True)
     def drain():
         with SCAN_LOCK:
