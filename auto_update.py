@@ -99,10 +99,20 @@ def main():
             return 1
         try:
             update()
-            # Run the newly updated normal launcher, with its existing DB selection.
-            env=dict(os.environ,SCANNER_LIVE_UPDATE='1')
+            # No tracked batch script remains executing during the source merge.
+            # Same runtime flags as START-WINDOWS, database selection in local_runner.
+            env=dict(os.environ,SCANNER_LIVE_UPDATE='1',SCANNER_OVERNIGHT='1',
+                     SCANNER_BACKGROUND='1',SCANNER_WEBSOCKET='1',SCANNER_R10='1',
+                     SCANNER_R11='1',SCANNER_R111='1',SCANNER_R112='1',
+                     HOST='127.0.0.1',PORT='8765',SCANNER_OPEN_BROWSER='1')
+            env.setdefault('SCANNER_LIVE_FILTER','R08_MULTI_CORE')
             while True:
-                code=subprocess.call(['cmd.exe','/d','/c','START-WINDOWS.bat'],cwd=ROOT,env=env)
+                check=subprocess.run([sys.executable,'-c',
+                    "import websockets; assert websockets.__version__ == '15.0.1'"],capture_output=True)
+                if check.returncode and subprocess.call([sys.executable,'-m','pip','install','-r',str(ROOT/'requirements.txt')]):
+                    raise RuntimeError('WebSocket dependency installation failed.')
+                if scanner_running():raise RuntimeError('Port 8765 already occupied.')
+                code=subprocess.call([sys.executable,'-u',str(ROOT/'local_runner.py')],cwd=ROOT,env=env)
                 if code!=86:return code
                 env['SCANNER_OPEN_BROWSER']='0'
                 print('Restarting updated scanner...',flush=True)
