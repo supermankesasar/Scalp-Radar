@@ -13,24 +13,25 @@ const modeLabel=m=>({all:'ALL PAIRS',liquid:'LIQUID',top80:'TOP 80'}[m]||m);
 const visibleRows=rows=>rows.filter(r=>(r.turnover24h||0)>=Number($('minDisplay').value));
 // View selection only. Do not change scanner mode, filters, or polling.
 function selectProfile(profile,focus=false){
- const swing=profile==='swing';
- $('scalpingPanel').hidden=swing;
- $('swingPanel').hidden=!swing;
- $('refresh').hidden=swing;
- for(const [id,selected] of [['profileScalping',!swing],['profileSwing',swing]]){
-  const tab=$(id);tab.setAttribute('aria-selected',String(selected));tab.tabIndex=selected?0:-1;
+ const tabs=[['profileScalping','scalpingPanel','scalping'],['profileSwing','swingPanel','swing'],['profileMajors','majorsPanel','majors']];
+ $('refresh').hidden=profile!=='scalping';
+ for(const [id,panel,value] of tabs){
+  const tab=$(id),box=$(panel);if(!tab||!box)continue;
+  const selected=value===profile;box.hidden=!selected;
+  tab.setAttribute('aria-selected',String(selected));tab.tabIndex=selected?0:-1;
   if(selected&&focus)tab.focus();
  }
+ if(profile==='majors'&&typeof pollMajors==='function')pollMajors();
 }
 function initProfiles(){
- if(!$('profileScalping')||!$('profileSwing')||!$('scalpingPanel')||!$('swingPanel'))return;
- const tabs=[['profileScalping','scalping'],['profileSwing','swing']];
- for(const [id,profile] of tabs){
+ const tabs=[['profileScalping','scalping'],['profileSwing','swing'],['profileMajors','majors']].filter(([id])=>$(id));
+ if(!tabs.length)return;
+ for(const [i,[id,profile]] of tabs.entries()){
   $(id).addEventListener('click',()=>selectProfile(profile));
   $(id).addEventListener('keydown',e=>{
    if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
-   e.preventDefault();
-   selectProfile(e.key==='Home'?'scalping':e.key==='End'?'swing':profile==='scalping'?'swing':'scalping',true);
+   e.preventDefault();const next=e.key==='Home'?0:e.key==='End'?tabs.length-1:(i+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length;
+   selectProfile(tabs[next][1],true);
   });
  }
  selectProfile('scalping');
@@ -61,6 +62,30 @@ async function pollMovement(){
   }
  }catch(e){node.replaceChildren(el('span','Data ticker live tidak tersedia','tiny'))}finally{clearTimeout(timer);moveBusy=false}
 }
+let majorBusy=false;
+async function pollMajors(){
+ const box=$('majorRows'),status=$('majorStatus');if(!box||!status||$('majorsPanel').hidden||majorBusy)return;
+ majorBusy=true;const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),4500);
+ try{
+  const res=await fetch('/api/majors',{cache:'no-store',signal:ctl.signal});if(!res.ok)throw Error('majors');
+  const d=await res.json();box.replaceChildren();
+  status.textContent=d.enabled?'Quote live · '+tm(d.at)+' WIB':'WebSocket tidak aktif';
+  for(const r of d.rows||[]){
+   const card=el('article',undefined,'major-card'),head=el('div',undefined,'major-head');
+   head.append(el('strong',r.symbol),el('span',!r.listed?'Belum terdaftar':r.price==null?'Quote tidak segar':'Live','tiny'));
+   const price=el('div',r.price==null?'—':px(r.price)+' USDT','major-price');card.append(head,price);
+   const grid=el('div',undefined,'major-metrics');
+   for(const tf of ['1m','5m','15m','1h','4h']){
+    const tile=el('div',undefined,'major-metric'),v=r.returns?.[tf];tile.append(el('span',tf.toUpperCase()),el('strong',pc(v),dir(v)));
+    if(r.cutoffs?.[tf])tile.title='Candle tutup '+tm(r.cutoffs[tf])+' WIB';
+    grid.append(tile);
+   }
+   const cached=(state?.rows||[]).find(x=>x.symbol===r.symbol);
+   const trends=el('div',undefined,'major-metric');trends.append(el('span','Tren 1H/4H'),el('strong',cached&&!cached.stale&&Date.now()-(cached.lastClosed5m||0)<8*60000?cached.trend1h+'/'+cached.trend4h:'—'));grid.append(trends);
+   card.append(grid);box.append(card);
+  }
+ }catch(e){status.textContent='Data major tidak tersedia';box.replaceChildren()}finally{clearTimeout(timer);majorBusy=false}
+}
 function hotMovers(rows){const hot=[...rows].filter(r=>!r.stale&&Date.now()-(r.lastClosed5m||0)<15*60000&&Number.isFinite(r.pct60m)&&Math.abs(r.pct60m)>=2).sort((a,b)=>Math.abs(b.pct60m)-Math.abs(a.pct60m)).slice(0,6);const node=$('movers');node.replaceChildren();if(!hot.length){node.append(el('span','Tidak ada pair dengan perubahan ≥ 2% dalam 1H','tiny'));return}for(const c of hot){const chip=el('div',c.symbol.replace('USDT',''),'mover');chip.append(el('span',pc(c.pct60m),dir(c.pct60m)));chip.title='Pergerakan 1H (tidak otomatis masuk kategori Sudah)';chip.role='button';chip.tabIndex=0;chip.addEventListener('click',()=>openDetail(c.symbol));chip.addEventListener('keydown',e=>{if(e.key==='Enter')openDetail(c.symbol)});node.append(chip)}}
 function renderRows(){const rows=visibleRows(state?.rows||[]);const term=$('search').value.trim().toUpperCase();let filtered=rows.filter(r=>((active==='ALL'?((r.categories||[]).length||r.rsiReversalWatch):r.categories?.includes(active)))&&r.symbol.includes(term));const metric=r=>{if($('sort').value==='newest')return selectedEvent(r)?.startedAt||0;if($('sort').value==='score')return selectedEvent(r)?.lastScore??r.score??0;if($('sort').value==='change')return Math.abs(selectedEvent(r)?.currentPct||0);return Math.abs(r[$('sort').value]||0)};filtered.sort((a,b)=>metric(b)-metric(a));const body=$('rows');body.replaceChildren();if(!filtered.length){const r=el('tr');const td=addCell(r,'','Belum ada hasil di kategori ini. Scanner perlu mencatat sinyal dan menunggu candle berikutnya.','empty');td.colSpan=12;body.append(r)}for(const r of filtered){const tr=el('tr');tr.tabIndex=0;tr.title='Lihat analisis '+r.symbol;const first=addCell(tr,'Coin',r.symbol.replace('USDT',''),'ticker');first.append(el('div',r.stale?'Data tersimpan · '+relTime(r.updatedAt):'$ USDT · '+relTime(r.lastClosed5m),'subline'));const td=addCell(tr,'Sinyal');const badges=el('div',undefined,'cats');for(const c of r.categories||[])badges.append(el('span',LABEL[c],`chip ${c}`));if(r.rsiReversalWatch)badges.append(el('span','RSI 70–80 ↘ · Watch','chip RSIWATCH'));if(!r.categories?.length&&!r.rsiReversalWatch)badges.append(el('span','Netral','chip NETRAL'));td.append(badges);
  const ev=selectedEvent(r);const ch=ev?(ev.currentMarketPct??(ev.direction==='DOWN'?-ev.currentPct:ev.currentPct)):null;
@@ -79,6 +104,7 @@ function render(st){
  const activeMode=modeLabel(st.mode);
  $('message').textContent=st.configPending?`Scan ${activeMode} berjalan. Mode pilihan akan dimulai sesudahnya.`:st.message;
  $('scanDetails').textContent=`Top ${st.activeSignals||0}/${st.activeLimit||10} aktif · ${done}/${total||'…'} pair · ${st.computed??st.successful??0} dihitung · ${st.successful||0} tersimpan · ${st.failed||0} gagal · ${st.cacheSkipped||0} menunggu cache · ${st.startedAt?Math.max(0,Math.round(((st.completedAt||Date.now())-st.startedAt)/1000))+'s':'—'} · ${st.updatePending?'UPDATE PENDING':st.phase||'—'} · candle 5m, quote watch ±30 detik`;
+ const p=st.phaseMetrics?.promotion;const ps=$('promotionStats');if(ps)ps.textContent=p?'Promosi: '+(p.PROMOTED||0)+' diterima / '+(p.ELIGIBLE||0)+' lolos gate · '+(p.NO_SETUP||0)+' arah tanpa setup · '+(p.NO_FRESH_QUOTE||0)+' quote kosong · '+(p.STALE_CANDLE||0)+' candle tua · '+(p.CHASE||0)+' terlambat · '+(p.LOW_TURNOVER||0)+' volume rendah · '+(p.ADVERSE||0)+' adverse · '+(p.COOLDOWN||0)+' cooldown · '+(p.RANK_LIMIT||0)+' ranking · '+(st.phaseMetrics.publicationErrors||0)+' error publikasi':'';
  $('scanStats').replaceChildren();
  for(const [name,value] of [['Pair aktif',st.universe||'…'],['Sesuai mode',st.eligible||'…'],['Dalam antrean',total||'…'],['Tanpa ticker',st.missingTicker||0]]){
    const b=el('span',undefined,'stat-item');b.append(el('b',String(value)),el('span',name));$('scanStats').append(b);
@@ -98,5 +124,5 @@ async function openDetail(symbol){detailId=symbol;const token=++detailToken;$('d
 async function loadHistory(){const box=$('historyRows');if(!box)return;box.textContent='Mengambil riwayat…';try{const resp=await fetch('/api/events',{cache:'no-store'});if(!resp.ok)throw Error('API error');const data=await resp.json();const events=(data.events||[]).slice(0,30);box.replaceChildren();if(!events.length){box.textContent='Belum ada event tersimpan.';return}for(const e of events){const reason=e.status==='REACHED'?'Target tercapai':e.endReason==='STOP_HIT'?'Stop indikatif tersentuh':e.endReason==='RANK_REPLACED'?'Tergeser skor lain':e.endReason?.startsWith('TIMEOUT')?'Waktu habis':e.status==='PENDING'?'Sedang dipantau':e.endReason||'Selesai';const d=el('div',undefined,'history-item');d.append(el('strong',e.symbol+' · '+(e.direction==='UP'?'NAIK':'TURUN')),el('span',e.status+' · '+reason+' · '+relTime(e.startedAt)));box.append(d)}}catch(e){box.textContent='Gagal memuat riwayat: '+e.message}}
 $('historyToggle')?.addEventListener('click',()=>{const box=$('historyRows');const open=box.hidden;box.hidden=!open;if(open)loadHistory()});
 document.querySelectorAll('[data-category]').forEach(b=>b.addEventListener('click',()=>categorySwitch(b.dataset.category)));
-$('allBtn').addEventListener('click',()=>categorySwitch('ALL'));$('search').addEventListener('input',renderRows);$('sort').addEventListener('change',renderRows);$('refresh').addEventListener('click',()=>poll(true));$('mode').addEventListener('change',()=>{updateModeUI();poll()});$('turnover').addEventListener('change',()=>poll());$('minDisplay').addEventListener('change',()=>{if(state){const rows=visibleRows(state.rows||[]);countPanels(rows);hotMovers(rows);renderRows()}});initProfiles();updateModeUI();$('closeDetail').addEventListener('click',()=>{$('detail').classList.remove('open');detailToken++;detailId=null});poll();setInterval(()=>poll(),5000);pollMovement();setInterval(pollMovement,5000);
+$('allBtn').addEventListener('click',()=>categorySwitch('ALL'));$('search').addEventListener('input',renderRows);$('sort').addEventListener('change',renderRows);$('refresh').addEventListener('click',()=>poll(true));$('mode').addEventListener('change',()=>{updateModeUI();poll()});$('turnover').addEventListener('change',()=>poll());$('minDisplay').addEventListener('change',()=>{if(state){const rows=visibleRows(state.rows||[]);countPanels(rows);hotMovers(rows);renderRows()}});initProfiles();updateModeUI();$('closeDetail').addEventListener('click',()=>{$('detail').classList.remove('open');detailToken++;detailId=null});poll();setInterval(()=>poll(),5000);pollMovement();setInterval(pollMovement,5000);setInterval(pollMajors,5000);
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('/sw.js').catch(()=>{});
