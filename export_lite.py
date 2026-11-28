@@ -172,6 +172,22 @@ def export(source,dest,coin=None,hours=24,now=None,complete=False,notify=lambda 
                     data=optional(table,lambda:csv_query(db,f'SELECT * FROM {table} ORDER BY {order} LIMIT ?',(limit,)))
                     if data is not None:
                         z.writestr(table+'.csv',data);manifest['detailLimits'][table]=limit
+                # Explicit coin diagnostics: don't let global newest-event sampling hide the requested symbol.
+                if coin:
+                    start=now-hours*3600000
+                    targets=[('research_snapshots','candle_time'),('research_candidates','candle_time'),
+                             ('events','started_at'),('ws_minute_snapshots','candle_time'),
+                             ('r11_events','cutoff'),('r111_events','cutoff'),('r112_events','cutoff')]
+                    for table,clock in targets:
+                        name='coin_'+table
+                        if table not in tables:
+                            optional_errors[name]='table unavailable'
+                            continue
+                        # Keep targeted records across ZIP scales; explicit omission on query error.
+                        sql=f'SELECT * FROM {table} WHERE symbol=? AND {clock} BETWEEN ? AND ? ORDER BY {clock}'
+                        data=optional(name,lambda:csv_query(db,sql,(coin,start,now)))
+                        if data is not None:z.writestr(name+'.csv',data)
+                    manifest['coinDiagnostics']={'symbol':coin,'fromMs':start,'toMs':now,'note':'Targeted recorded rows only, not proof of all promotion rejections; missing tables/errors in omittedDetails.'}
                 # Joined settled feature/outcome records, not independently capped newest events.
                 for pre in ('r11','r111'):
                     if scale and {pre+'_ready',pre+'_events',pre+'_outcomes'}<=tables:
