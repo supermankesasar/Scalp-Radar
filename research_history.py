@@ -30,6 +30,14 @@ class ResearchHistory:
               state TEXT NOT NULL, target_time INTEGER, stop_time INTEGER,
               endpoint_pct REAL, mfe REAL, mae REAL, evaluated_at INTEGER NOT NULL,
               PRIMARY KEY(candidate_id,horizon,confirm));
+            CREATE TABLE IF NOT EXISTS scan_research_queue(
+              symbol TEXT NOT NULL,candle_time INTEGER NOT NULL,observed_at INTEGER NOT NULL,
+              payload TEXT NOT NULL,candles TEXT NOT NULL,
+              PRIMARY KEY(symbol,candle_time));
+            CREATE INDEX IF NOT EXISTS scan_research_queue_age ON scan_research_queue(observed_at);
+            CREATE TABLE IF NOT EXISTS scan_live_cycles(
+              started_at INTEGER PRIMARY KEY,finished_at INTEGER NOT NULL,universe INTEGER,
+              processed INTEGER,successful INTEGER,cache_skipped INTEGER,failed INTEGER,payload TEXT);
             CREATE TABLE IF NOT EXISTS research_archive (
               run_id TEXT NOT NULL, batch TEXT NOT NULL, symbol TEXT NOT NULL,
               candle_time INTEGER NOT NULL, direction TEXT NOT NULL, payload TEXT NOT NULL,
@@ -56,6 +64,31 @@ class ResearchHistory:
             finally:
                 db.close()
 
+    def stage_scan(self, records):
+        """Durable queue of frozen scan rows; no market calls or outcome work."""
+        packed=[]
+        for row,observed in records:
+            candles=row['_recent5m']
+            payload={k:v for k,v in row.items() if not k.startswith('_')}
+            packed.append((row['symbol'],int(row['lastClosed5m']),observed,
+                           json.dumps(payload,allow_nan=False,separators=(',',':')),
+                           json.dumps(candles,allow_nan=False,separators=(',',':'))))
+        if packed:
+            with self.connection() as db:
+                db.executemany("INSERT OR IGNORE INTO scan_research_queue VALUES(?,?,?,?,?)",packed)
+    def queued_scan(self,limit=16):
+        with self.connection() as db:
+            rows=db.execute("SELECT * FROM scan_research_queue ORDER BY observed_at,symbol LIMIT ?",(limit,)).fetchall()
+        return [dict(r) for r in rows]
+    def ack_scan(self,symbol,candle_time):
+        with self.connection() as db:
+            db.execute("DELETE FROM scan_research_queue WHERE symbol=? AND candle_time=?",(symbol,candle_time))
+    def record_scan_cycle(self,started,finished,info):
+        with self.connection() as db:
+            db.execute("INSERT OR IGNORE INTO scan_live_cycles VALUES(?,?,?,?,?,?,?,?)",
+                       (started,finished,info.get('universe',0),info.get('processed',0),
+                        info.get('successful',0),info.get('cacheSkipped',0),info.get('failed',0),
+                        json.dumps(info,allow_nan=False,separators=(',',':'))))
     def pending_symbols(self, now):
         with self.connection() as db:
             # Finalize aged missing evaluations explicitly; never count them as stop.
