@@ -1,6 +1,6 @@
 """Integrated cache-only impulse challenger. Reuses R11.1 evaluated features and book.
 Separate prospective paired control and confirmed-entry cohorts; no orders."""
-import json
+import json,threading
 from filters import r112
 from research_r10 import entry_time,simulate
 STEP=60000
@@ -10,6 +10,7 @@ def pack(x):return json.dumps(x,separators=(',',':'),allow_nan=False)
 class ImpulseRadar:
     def __init__(self,db):
         self.states={};self.prior={};self.results={};self.last_impulse={};self.cut=None
+        self.lock=threading.RLock();self.live={}
         db.executescript("""
         CREATE TABLE IF NOT EXISTS r112_events(symbol TEXT,cutoff INTEGER,decision INTEGER,state TEXT,direction TEXT,
           impulse_cutoff INTEGER,payload TEXT,version TEXT,PRIMARY KEY(symbol,cutoff));
@@ -30,11 +31,29 @@ class ImpulseRadar:
         if not self.pending(s):return
         p=self.prior.get(s)
         if p is None and cut-self.last_impulse.get(s,-10**15)<r112.COOLDOWN:
-            self.results[s]=None;return
+            self.results[s]=None
+            with self.lock:self.live.pop(s,None)
+            return
         di=p['direction'] if p else r112.impulse(f)
         quote,spread,_=market(s,decision,di) if di else (None,None,None)
         result=r112.assess(p,f,rows,cut,decision,quote,spread)
         self.results[s]=result
+        with self.lock:
+            if result:self.live[s]=result
+            else:self.live.pop(s,None)
+    def status(self,now,market):
+        with self.lock:rows=[dict(r,symbol=s) for s,r in self.live.items() if 0<=now-r['decisionAt']<=20*STEP]
+        for r in rows:
+            r['displayState']=r['state'];r['ageMs']=now-r['decisionAt']
+            if r['ageMs']>70000:r['displayState']='STALE'
+            elif r['state']=='READY':
+                quote,spread,_=market(r['symbol'],now,r['direction'])
+                sign=1 if r['direction']=='UP' else -1
+                if quote is None or spread is None or spread>.10:r['displayState']='WAIT'
+                elif sign*100*(quote/r['features']['price']-1)>.30 or sign*100*(quote/r['anchor']-1)>max(.30,1.5*r['readyAtr']):r['displayState']='LATE'
+                elif sign*100*(quote/r['features']['price']-1)<-.15:r['displayState']='WAIT'
+        rows.sort(key=lambda r:({'READY':0,'PREPARE':1,'MONITOR':2}.get(r['displayState'],3),-r['decisionAt'],r['symbol']))
+        return {'enabled':True,'version':r112.VERSION,'preview':True,'states':rows}
     def persist(self,db,engine,cut,universe):
         for s,r in self.results.items():
             if r is None:
@@ -52,6 +71,7 @@ class ImpulseRadar:
             if r['state']=='READY':self.insert(db,s,cut,'CONFIRMED',r['direction'],r['decisionAt'],r['readyAtr'],r)
         self.states={s:r for s,r in self.states.items() if cut-r['cutoff']<=STEP and cut-r['impulseCutoff']<=20*STEP}
         self.last_impulse={s:t for s,t in self.last_impulse.items() if cut-t<r112.COOLDOWN}
+        with self.lock:self.live={s:r for s,r in self.live.items() if cut-r['cutoff']<=20*STEP}
         db.execute("INSERT OR IGNORE INTO r112_cycles VALUES(?,?,?)",(cut,len(self.results),universe))
         self.settle(db,engine,cut)
     def insert(self,db,s,cut,cohort,di,decision,atr,payload):

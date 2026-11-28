@@ -273,6 +273,8 @@ class RadarR111:
                     elif chase<-.15 or spread>r11.SPREAD_CAP:row['displayState']='WAIT'
         rows.sort(key=lambda r:({'READY':0,'MONITOR':1,'PREPARE':2,'LATE':3}.get(r['displayState'],4),-r['decisionAt'],r['symbol']))
         return {'enabled':True,'version':r111.VERSION,'preview':True,'latestCycle':latest,'states':rows,'lastError':self.last_error}
+    def impulse_status(self):
+        return self.impulse.status(ms(),self.market) if self.impulse else {'enabled':False}
     def impulse_report(self):
         if not self.impulse:return {'enabled':False}
         with self.db() as db:return dict(self.impulse.report(db),enabled=True)

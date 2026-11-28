@@ -826,6 +826,8 @@ class Handler(BaseHTTPRequestHandler):
             self._reply(200,json.dumps(R111.status() if R111 else {'enabled':False},allow_nan=False).encode(),'application/json')
         elif route.path == '/api/research/r111':
             self._reply(200,json.dumps(R111.report() if R111 else {'enabled':False},allow_nan=False).encode(),'application/json')
+        elif route.path == '/api/radar/r112':
+            self._reply(200,json.dumps(R111.impulse_status() if R111 else {'enabled':False},allow_nan=False).encode(),'application/json')
         elif route.path == '/api/research/r112':
             self._reply(200,json.dumps(R111.impulse_report() if R111 else {'enabled':False},allow_nan=False).encode(),'application/json')
         elif route.path == '/api/rest-budget':

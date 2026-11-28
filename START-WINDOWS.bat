@@ -34,6 +34,7 @@ echo R10: http://127.0.0.1:8765/api/research/r10
 echo R11 preview: http://127.0.0.1:8765/api/radar/r11
 echo R11.1 radar: http://127.0.0.1:8765/api/radar/r111
 echo R11.1 report: http://127.0.0.1:8765/api/research/r111
+echo R11.2 live preview: http://127.0.0.1:8765/api/radar/r112
 echo R11.2 Impulse Exhaustion: http://127.0.0.1:8765/api/research/r112
 echo REST budget: http://127.0.0.1:8765/api/rest-budget
 echo Runtime: http://127.0.0.1:8765/api/runtime

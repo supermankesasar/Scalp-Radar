@@ -21,9 +21,9 @@ def assess(previous,f,rows,cut,decision,quote,spread):
             state='INVALIDATED' if p['state']=='INVALIDATED' or change<=-max(.4,p['readyAtr']) else 'MONITOR'
             return dict(p,state=state,cutoff=cut,decisionAt=decision,movePct=change,reason='ADVERSE_MOVE' if state=='INVALIDATED' else 'TRACKING')
         return None
+    if p and p['state'] in ('EXPIRED','LATE','CANCELLED'):return None
     if p and cut-p['impulseCutoff']>WAIT:
         return dict(p,state='EXPIRED',cutoff=cut,decisionAt=decision,reason='RECOVERY_TIMEOUT')
-    if p and p['state'] in ('EXPIRED','LATE','CANCELLED'):return None
     if p is None:
         di=impulse(f)
         if not di:return None

@@ -18,6 +18,11 @@ class ImpulseTests(unittest.TestCase):
         self.assertEqual(r112.assess(p,f2,rows,cut+60000,cut+62000,100.11,.2)['reason'],'WIDE_SPREAD')
         self.assertEqual(r112.assess(p,f2,rows,cut+120000,cut+122000,100.11,.01)['reason'],'LIVE_GAP')
         self.assertIsNone(r112.assess(p,f2,rows,cut+60000,cut+76000,100.11,.01))
+    def test_expired_episode_ends(self):
+        cut=59999;f=features();p=r112.assess(None,f,[],cut,cut+2000,100,.01)
+        expired=r112.assess(p,f,[],cut+6*60000,cut+6*60000+2000,100,.01)
+        self.assertEqual(expired['state'],'EXPIRED')
+        self.assertIsNone(r112.assess(expired,f,[],cut+7*60000,cut+7*60000+2000,100,.01))
     def test_short_is_separate(self):
         self.assertEqual(r112.impulse(features(ret5=.5,flow5=.3)),'DOWN')
         self.assertIsNone(r112.impulse(features(ret5=.5,flow5=-.3)))
