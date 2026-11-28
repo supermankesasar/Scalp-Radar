@@ -64,10 +64,10 @@ SCAN_MAX_WORKERS = 4  # retain bounded legacy REST concurrency
 
 def cpu_workers(value=None,cores=None):
     cores=max(1,cores if cores is not None else (os.cpu_count() or 1))
-    default=max(1,min(8,cores-2))
+    default=min(32,cores)
     try:requested=int(value) if value is not None else default
     except (ValueError,TypeError):requested=default
-    return max(1,min(requested,16,cores))
+    return max(1,min(requested,48,cores))
 
 SCAN_CPU_WORKERS=cpu_workers(os.getenv('SCANNER_CPU_WORKERS'))
 CPU_POOL=None
@@ -343,7 +343,7 @@ def scan_symbol(ticker, is_tracked=False, cache_only=False, scan_now=None):
     vratio=result['vratio'];rsi15=result['rsi15'];dist_ema=result['dist_ema']
     previous_rsi15=result['previous_rsi15'];reversal_rsi70=result['reversal_rsi70'];minute_error=result['minute_error']
     features['derivatives'],features['breadth']={},{}
-    context_error=None
+    context_error=None;context_started=time.perf_counter()
     if ARCHIVE is not None:
         try:
             features['derivatives'],features['breadth']=ARCHIVE.research_context(symbol,i5['time'],int(time.time()*1000),ticker.get('_universe_size',0))
@@ -404,7 +404,9 @@ def scan_symbol(ticker, is_tracked=False, cache_only=False, scan_now=None):
         'r08Breakdown':evaluation['r08'], 'r09Breakdown':hybrid,
         'candleSource':'websocket' if STREAM is not None and STREAM.receipt(symbol,'5m',i5['time']) is not None else 'rest',
         'volumePhase':evaluation['volumePhase'], 'vwapDistanceATR':evaluation['vwapDistanceATR'],
+        'computedAt':int(time.time()*1000),
         'cpuCalcMs':result['calcMs'],'cpuElapsedMs':cpu_elapsed,'cpuFallback':cpu_fallback,
+        'contextMs':1000*(time.perf_counter()-context_started),
         '_recent5m':result['recent5m'],
     }
 
@@ -471,9 +473,67 @@ def _same_generation(generation):
         return generation == SCAN_STATE['generation']
 
 
+def scan_cached_universe(generation,tickers,tracked,scan_now):
+    """Submit ALL ready coins without a 20-pair barrier or per-coin DB writes.
+    Results are frozen at their actual completion time; publication is atomic.
+    """
+    started=time.perf_counter()
+    cold=[t['symbol'] for t in tickers if not all(STREAM.candles(t['symbol'],tf,WS_LIMIT[tf]-1,scan_now) is not None for tf in ('5m','15m','1h','4h'))]
+    cold_set=set(cold)
+    ready=[t for t in tickers if t['symbol'] not in cold_set]
+    with SCAN_LOCK:
+        SCAN_STATE.update(cacheSkipped=len(cold),cacheSkippedSymbols=cold,processed=len(cold),
+            computed=0,phase='COMPUTE',message='Analisis paralel seluruh cache siap',progressAt=int(time.time()*1000))
+    cache_ms=1000*(time.perf_counter()-started)
+    results=[]
+    compute_started=time.perf_counter()
+    with ThreadPoolExecutor(max_workers=min(64,max(8,SCAN_CPU_WORKERS*2))) as executor:
+        futures={executor.submit(scan_symbol,t,t['symbol'] in tracked,True,scan_now):t['symbol'] for t in ready}
+        for future in as_completed(futures):
+            if not _same_generation(generation):return
+            errors=[]
+            try:
+                row=future.result()
+                results.append((row,row.get('computedAt') or int(time.time()*1000)))
+                for field,label in (('minuteError','1m'),('contextError','context'),('cpuFallback','CPU fallback')):
+                    if row.get(field):errors.append(row['symbol']+': '+label+' '+str(row[field]))
+            except Exception as exc:
+                errors.append(futures[future]+': '+str(exc))
+            with SCAN_LOCK:
+                SCAN_STATE['processed']+=1
+                SCAN_STATE['computed']=len(results)
+                SCAN_STATE['progressAt']=int(time.time()*1000)
+                SCAN_STATE['errors'].extend(errors)
+    compute_ms=1000*(time.perf_counter()-compute_started)
+    with SCAN_LOCK:
+        SCAN_STATE.update(phase='PUBLISH',message='Ranking Top 10 dan simpan hasil',progressAt=int(time.time()*1000))
+    if RUNTIME:RUNTIME.beat('scan-pipeline',phase='PUBLISH',computed=len(results),cacheMs=cache_ms,computeMs=compute_ms)
+    metrics={'cacheCheckMs':cache_ms,'computeWallMs':compute_ms,'dbLockWaitMs':0.,'dbBatchMs':0.}
+    if results:
+        try:
+            rows,db_metrics=STORE.refresh_ranked_batch([r for r,_ in results],promotion_candidates,STREAM.prices)
+            metrics.update(db_metrics)
+            with SCAN_LOCK:
+                SCAN_STATE['rows']=rows
+        except Exception as exc:
+            with SCAN_LOCK:SCAN_STATE['errors'].append('Publication failed: '+str(exc)[:200])
+    # Record independent research even if dashboard publication failed.
+    with SCAN_LOCK:
+        SCAN_STATE.update(phase='STAGE_RESEARCH',message='Simpan antrean penelitian',progressAt=int(time.time()*1000))
+    if RUNTIME:RUNTIME.beat('scan-pipeline',phase='STAGE_RESEARCH',**metrics)
+    stage_started=time.perf_counter()
+    try:HISTORY.stage_scan(results)
+    except Exception as exc:
+        with SCAN_LOCK:SCAN_STATE['errors'].append('Research queue: '+str(exc)[:150])
+    metrics['researchStageMs']=1000*(time.perf_counter()-stage_started)
+    metrics['contextSumMs']=sum(r.get('contextMs',0) for r,_ in results)
+    with SCAN_LOCK:SCAN_STATE['phaseMetrics']=metrics
+    if RUNTIME:RUNTIME.beat('scan-pipeline',phase='DONE',**metrics)
+
+
 def scan_job(generation, mode, min_turnover):
     try:
-        tracked = STORE.active_symbols()
+        tracked = set() if STREAM is not None and mode=='all' else STORE.active_symbols()
         research_pending = set() if STREAM is not None and mode=='all' else HISTORY.pending_symbols(int(time.time()*1000))
         tickers, info = active_tickers(mode, min_turnover, tracked | research_pending)
         with SCAN_LOCK:
@@ -489,11 +549,8 @@ def scan_job(generation, mode, min_turnover):
         cache_only=STREAM is not None
         scan_now=int(time.time()*1000)
         if cache_only:
-            cold=[t['symbol'] for t in tickers if not all(STREAM.candles(t['symbol'],tf,WS_LIMIT[tf]-1,scan_now) is not None for tf in ('5m','15m','1h','4h'))]
-            cold_set=set(cold)
-            tickers=[t for t in tickers if t['symbol'] not in cold_set]
-            with SCAN_LOCK:
-                SCAN_STATE.update(cacheSkipped=len(cold),cacheSkippedSymbols=cold,processed=len(cold),message='Scan cache live; histori dipulihkan terpisah')
+            scan_cached_universe(generation,tickers,tracked,scan_now)
+            return
         # Limited batches avoid flooding futures kline endpoints when ALL is
         # selected. Rate-limit errors interrupt the remaining cycle for safety.
         stop_for_limit = False
@@ -603,6 +660,9 @@ def scan_job(generation, mode, min_turnover):
                     'Scan selesai' if SCAN_STATE['rows'] else 'Tidak ada data berhasil dianalisis')
                 audit={k:SCAN_STATE.get(k) for k in ('startedAt','completedAt','universe','total','processed','cacheSkipped','cacheSkippedSymbols','mode','errors')}
                 audit['successful']=len(SCAN_STATE['rows'])
+                audit['computed']=SCAN_STATE.get('computed',audit['successful'])
+                audit['phaseMetrics']=dict(SCAN_STATE.get('phaseMetrics',{}))
+                SCAN_STATE['phase']='DONE'
                 audit['cpuWorkers']=SCAN_CPU_WORKERS if CPU_POOL is not None else 0
                 audit['cpuCalcMs']=sum(r.get('cpuCalcMs',0) for r in SCAN_STATE['rows'])
                 audit['cpuElapsedMs']=sum(r.get('cpuElapsedMs',0) for r in SCAN_STATE['rows'])
@@ -647,7 +707,7 @@ def schedule_scan(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False)
             SCAN_STATE.update({
                 'running': True, 'rows': [], 'processed': 0, 'total': 0, 'eligible': 0,
                 'universe': 0, 'missingTicker': 0, 'trackedExtra': 0,
-                'errors': [], 'cacheSkipped':0,'cacheSkippedSymbols':[], 'startedAt': now_ms, 'progressAt':now_ms, 'completedAt': None,
+                'errors': [], 'cacheSkipped':0,'cacheSkippedSymbols':[], 'computed':0,'phase':'UNIVERSE','phaseMetrics':{}, 'startedAt': now_ms, 'progressAt':now_ms, 'completedAt': None,
                 'mode': mode, 'minTurnover': min_turnover,
                 'generation': SCAN_STATE['generation']+1,
                 'message': 'Mengambil daftar USDT perpetual Binance',
@@ -662,7 +722,7 @@ def schedule_scan(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False)
 def read_scanner(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
     state,new_filters,mode,now_ms=schedule_scan(mode,min_turnover,force)
     fresh = state['rows']
-    from_disk = STORE.latest_rows()
+    from_disk,active = STORE.dashboard_snapshot(now_ms)
     # While the scan progresses, snapshots may be up to 36h old: explicitly
     # mark them stale, never mistake them for fresh candle data.
     visible_disk = _saved_visible(from_disk, mode, min_turnover)
@@ -678,14 +738,14 @@ def read_scanner(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
             combined.append(x)
     combined.extend(dict(x, stale=True) for x in persisted.values())
     pending = state['running'] and new_filters
-    active = STORE.active_pending(now_ms)
     return {
         'running': state['running'], 'rows': combined,
         'activeSignals': len(active), 'activeLimit': ACTIVE_LIMIT,
         'signals': active,
         'processed': state['processed'], 'total': state['total'],
-        'successful': len(fresh),
-        'failed': max(0,state['processed'] - len(fresh)-state.get('cacheSkipped',0)),
+        'successful': len(fresh), 'computed':state.get('computed',len(fresh)),
+        'phase':state.get('phase'),'phaseMetrics':state.get('phaseMetrics',{}),
+        'failed': max(0,state['processed'] - (state.get('computed',len(fresh)) if STREAM is not None and state['running'] else len(fresh))-state.get('cacheSkipped',0)),
         'cacheSkipped':state.get('cacheSkipped',0),'cacheSkippedSymbols':state.get('cacheSkippedSymbols',[]),
         'eligible': state['eligible'], 'universe': state['universe'],
         'missingTicker': state['missingTicker'], 'trackedExtra': state['trackedExtra'],
@@ -726,7 +786,7 @@ class Handler(BaseHTTPRequestHandler):
         elif route.path == '/api/health':
             self._reply(200, json.dumps({'ok':True,'version':'0.5','storage':'SQLite','activeTracked':len(STORE.active_symbols())}).encode(), 'application/json')
         elif route.path == '/api/runtime':
-            self._reply(200,json.dumps(dict(RUNTIME.status(),scan={k:SCAN_STATE.get(k) for k in ('running','progressAt','processed','total','startedAt','cacheSkipped','cacheSkippedSymbols')},restCooldownSeconds=REST_GUARD.remaining(),stream=STREAM.status() if STREAM else None) if RUNTIME else {'enabled':False}).encode(),'application/json')
+            self._reply(200,json.dumps(dict(RUNTIME.status(),scan={k:SCAN_STATE.get(k) for k in ('running','progressAt','processed','total','startedAt','cacheSkipped','cacheSkippedSymbols','computed','phase','phaseMetrics')},restCooldownSeconds=REST_GUARD.remaining(),stream=STREAM.status() if STREAM else None) if RUNTIME else {'enabled':False}).encode(),'application/json')
         elif route.path == '/api/radar/r11':
             self._reply(200,json.dumps(R11.status() if R11 else {'enabled':False},allow_nan=False).encode(),'application/json')
         elif route.path == '/api/radar/r111':
@@ -932,7 +992,7 @@ def serve():
         else:threading.Thread(target=fn,daemon=True,name=name).start()
     def scan_status():
         # Read only primitive values without acquiring a potentially stalled lock.
-        return {k:SCAN_STATE.get(k) for k in ('running','progressAt','processed','total','startedAt','cacheSkipped','cacheSkippedSymbols')}
+        return {k:SCAN_STATE.get(k) for k in ('running','progressAt','processed','total','startedAt','cacheSkipped','cacheSkippedSymbols','computed','phase','phaseMetrics')}
     if RUNTIME:
         threading.Thread(target=RUNTIME.watch,args=(scan_status,),daemon=True,name='r10-watchdog').start()
     if STREAM is not None:
