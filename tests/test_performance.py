@@ -89,7 +89,7 @@ class PerformanceTests(unittest.TestCase):
                 self.assertEqual(len(seen),41)
                 self.assertEqual(len(records),41)
                 return original(records,*args)
-            with patch.object(app,'STREAM',stream),patch.object(app,'STORE',store),patch.object(app,'HISTORY',hist),patch.object(app,'RUNTIME',None),patch.object(app,'scan_symbol',side_effect=math),patch.object(store,'refresh_ranked_batch',side_effect=publish) as batch,patch.dict(app.SCAN_STATE,{'generation':909,'rows':[],'errors':[],'processed':0}):
+            with patch.object(app,'STREAM',stream),patch.object(app,'STORE',store),patch.object(app,'HISTORY',hist),patch.object(app,'RUNTIME',None),patch.object(app,'scan_symbol',side_effect=math),patch.object(app,'PUBLISH_WINDOW_SECONDS',60),patch.object(store,'refresh_ranked_batch',side_effect=publish) as batch,patch.dict(app.SCAN_STATE,{'generation':909,'rows':[],'errors':[],'processed':0}):
                 app.scan_cached_universe(909,tickers,set(),now)
                 self.assertEqual(batch.call_count,1)
                 self.assertEqual(app.SCAN_STATE['computed'],41)

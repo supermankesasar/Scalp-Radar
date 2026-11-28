@@ -8,7 +8,7 @@ import os
 import statistics
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed, wait, FIRST_COMPLETED
 from concurrent.futures.process import BrokenProcessPool
 import multiprocessing
 from scan_math import (ema,rsi,atr,macd_hist,parse_klines,indicators,extra_indicators,regime,utc_vwap,price_return,rsi_reversal_watch,compute_scan_math)
@@ -20,7 +20,8 @@ from signals import SignalStore, ACTIVE_LIMIT
 from filters.registry import evaluate as evaluate_filters
 from filters import scalp_v2, multifactor, microstructure
 from research_history import ResearchHistory
-from market_archive import MarketArchive, crypto_universe
+from market_archive import MarketArchive, crypto_universe, usdt_perpetual_metadata
+from scan_worker import compute_full_scan,evaluate_scan_features
 from stream_engine import StreamEngine, LIMIT as WS_LIMIT, TF as WS_TF, close_at
 from stream_research import StreamResearch
 from research_r10 import ResearchR10
@@ -52,6 +53,7 @@ else:
 RUNTIME = None
 # Research cohort is a historical experiment only; live shadow rules apply to all scanned crypto pairs.
 BASE = "https://fapi.binance.com"
+MAJOR_SYMBOLS=('BTCUSDT','ETHUSDT','BNBUSDT','SOLUSDT','XRPUSDT','DOGEUSDT','ADAUSDT','AVAXUSDT','LINKUSDT','XAUUSDT','XAGUSDT','PAXGUSDT','XAUTUSDT')
 SCAN_MODES = ('all', 'liquid', 'top80')
 DEFAULT_MODE = 'all'
 DEFAULT_TURNOVER = 30000000
@@ -75,6 +77,7 @@ LOCAL_CACHE_READY=threading.Event()
 DRAIN_REQUEST=threading.Event()
 APP_STOP=threading.Event()
 SCAN_THREAD=None
+PUBLISH_WINDOW_SECONDS=3
 SCAN_REFRESH_MS = 180000
 ACTIVE_FAST_POLL_SECONDS = 30
 FRESH_CANDLE_MS = 8 * 60_000
@@ -258,7 +261,8 @@ def active_tickers(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, tracked=Non
     outside the LIQUID/TOP80 cut, so potential->reached history is not lost.
     """
     validate_scan_options(mode, min_turnover)
-    available = active_symbols()
+    metadata=usdt_perpetual_metadata(request_market('/fapi/v1/exchangeInfo',{},ttl=3600))
+    available=set(metadata)
     if STREAM is not None:STREAM.set_symbols(available)
     tickers = request_market('/fapi/v1/ticker/24hr', {}, ttl=120)
     by_symbol = {}
@@ -288,6 +292,9 @@ def active_tickers(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, tracked=Non
     }) for sym in available]
     for row in all_tickers:
         row['_universe_size']=len(available)
+        row['contractType']=metadata[row['symbol']]['contractType']
+        row['underlyingType']=metadata[row['symbol']]['underlyingType']
+        row['universeVersion']='USDT_PERP_ALL_V2'
     all_tickers.sort(key=lambda r:(-r['turnover24h'], r['symbol']))
     if mode == 'all':
         selected = list(all_tickers)
@@ -335,43 +342,46 @@ def scan_symbol(ticker, is_tracked=False, cache_only=False, scan_now=None):
     args=(raw_sets,raw,now,want_minute,minute_error)
     cpu_fallback=None;cpu_started=time.perf_counter()
     if cache_only and CPU_POOL is not None:
-        try:result=CPU_POOL.submit(compute_scan_math,*args).result()
+        cut=close_at(now,300000)
+        micro_at=int(time.time()*1000)
+        receipt=STREAM.receipt(symbol,'1m',cut)
+        micro=STREAM.minute(symbol,cut,micro_at) if receipt is not None and receipt<=micro_at and 0<=micro_at-cut<=15000 else {}
+        db_path=str(ARCHIVE.path) if ARCHIVE is not None else None
+        breadth=None
+        if ARCHIVE is not None:
+            try:
+                breadth=ARCHIVE.breadth_for(symbol,cut,ticker.get('_universe_size',0),ARCHIVE.breadth_returns(cut,micro_at,ticker.get('_universe_size',0)))
+            except Exception:
+                breadth={'sampleCount':0,'universeSize':ticker.get('_universe_size',0),'cutoff':cut}
+        worker_args=(*args,symbol,ticker.get('_universe_size',0),db_path,micro,micro_at,LIVE_FILTER,breadth)
+        try:result,evaluation,hybrid,selected,context_error,context_ms,worker_ms=CPU_POOL.submit(compute_full_scan,*worker_args).result()
         except BrokenProcessPool as exc:
             cpu_fallback=str(exc)[:140]
-            result=compute_scan_math(*args)
-    else:result=compute_scan_math(*args)
+            result,evaluation,hybrid,selected,context_error,context_ms,worker_ms=compute_full_scan(*worker_args)
+    else:
+        result=compute_scan_math(*args)
+        features=result['features'];i5=result['i5']
+        features['derivatives'],features['breadth']={},{}
+        context_error=None;context_started=time.perf_counter()
+        if ARCHIVE is not None:
+            try:
+                features['derivatives'],features['breadth']=ARCHIVE.research_context(symbol,i5['time'],int(time.time()*1000),ticker.get('_universe_size',0))
+            except Exception as exc:
+                context_error=str(exc)[:140]
+        if STREAM is not None:
+            decision=int(time.time()*1000)
+            receipt=STREAM.receipt(symbol,'1m',i5['time'])
+            features['micro']=STREAM.minute(symbol,i5['time'],decision) if receipt is not None and receipt<=decision and 0<=decision-i5['time']<=15000 else {}
+        else:features['micro']={}
+        context_ms=1000*(time.perf_counter()-context_started)
+        evaluation,hybrid,selected=evaluate_scan_features(features,LIVE_FILTER)
+        worker_ms=result['calcMs']+context_ms
     cpu_elapsed=1000*(time.perf_counter()-cpu_started)
     features=result['features'];i5=result['i5'];t1=result['t1'];t4=result['t4']
     ret5=result['ret5'];ret15=result['ret15'];ret60=result['ret60'];atr_pct=result['atr_pct']
     threshold15=result['threshold15'];threshold60=result['threshold60'];vwap=result['vwap'];px=result['px']
     vratio=result['vratio'];rsi15=result['rsi15'];dist_ema=result['dist_ema']
     previous_rsi15=result['previous_rsi15'];reversal_rsi70=result['reversal_rsi70'];minute_error=result['minute_error']
-    features['derivatives'],features['breadth']={},{}
-    context_error=None;context_started=time.perf_counter()
-    if ARCHIVE is not None:
-        try:
-            features['derivatives'],features['breadth']=ARCHIVE.research_context(symbol,i5['time'],int(time.time()*1000),ticker.get('_universe_size',0))
-        except Exception as exc:
-            context_error=str(exc)[:140]
-    if STREAM is not None:
-        decision=int(time.time()*1000)
-        receipt=STREAM.receipt(symbol,'1m',i5['time'])
-        features['micro']=STREAM.minute(symbol,i5['time'],decision) if receipt is not None and receipt<=decision and 0<=decision-i5['time']<=15000 else {}
-    else:features['micro']={}
-    evaluation = evaluate_filters(features, shadow=True)
-    hybrid={}
-    for sign,key in ((1,'UP'),(-1,'DOWN')):
-        base=evaluation['r08'][key]
-        hybrid[key]=microstructure.hybrid(features['micro'],base['core'],sign,base.get('setup',False) and base.get('fresh',False) and not base.get('trap',True))
-        if hybrid[key]['potential']:
-            evaluation['candidates'].append({'id':'R09_HYBRID','version':microstructure.VERSION,'direction':key,'score':hybrid[key]['score']})
-    selected=evaluation['v2' if LIVE_FILTER=='SCALP_V2' else 'baseline']
-    if LIVE_FILTER.startswith('R08_'):
-        full=LIVE_FILTER=='R08_MULTI_FULL'
-        selected={k:{'score':int(v['full'] or 0) if full else v['core'],
-                     'potential':v['fullPotential'] if full else v['potential']} for k,v in evaluation['r08'].items()}
-    if LIVE_FILTER=='R09_HYBRID':
-        selected={k:{'score':int(v['score'] or 0),'potential':v['potential']} for k,v in hybrid.items()}
     long_score = selected['UP']['score']
     short_score = selected['DOWN']['score']
     potential_up = selected['UP']['potential']
@@ -388,7 +398,8 @@ def scan_symbol(ticker, is_tracked=False, cache_only=False, scan_now=None):
         except Exception as e:
             oi = {'available': False, 'reason': str(e)[:140]}
     return {
-        'symbol': symbol, 'potentialUp': bool(potential_up), 'potentialDown': bool(potential_down),
+        'symbol': symbol, 'contractType':ticker.get('contractType'), 'underlyingType':ticker.get('underlyingType'),
+        'universeVersion':ticker.get('universeVersion'), 'potentialUp': bool(potential_up), 'potentialDown': bool(potential_down),
         'longScore': long_score, 'shortScore': short_score,
         'price': px, 'pct5m': ret5, 'pct15m': ret15, 'pct60m': ret60,
         'pct24h': ticker['change24h'], 'turnover24h': ticker['turnover24h'],
@@ -410,42 +421,37 @@ def scan_symbol(ticker, is_tracked=False, cache_only=False, scan_now=None):
         'volumePhase':evaluation['volumePhase'], 'vwapDistanceATR':evaluation['vwapDistanceATR'],
         'computedAt':int(time.time()*1000),
         'cpuCalcMs':result['calcMs'],'cpuElapsedMs':cpu_elapsed,'cpuFallback':cpu_fallback,
-        'contextMs':1000*(time.perf_counter()-context_started),
+        'contextMs':context_ms,'workerMs':worker_ms,
         '_recent5m':result['recent5m'],
     }
 
 
-def promotion_candidates(rows, now_ms=None, quote_prices=None):
-    """Rank fresh, liquid potential candidates for up to five watch slots.
-
-    Candidate must still be near the baseline at the latest quote. Does not
-    assert any probability or attempt to place orders.
-    """
-    now_ms = int(time.time()*1000) if now_ms is None else now_ms
-    quote_prices = quote_prices or {}
-    candidates = []
+def promotion_candidates(rows, now_ms=None, quote_prices=None, diagnostics=None):
+    """Rank eligible fresh candidates; record one mutually exclusive reason per direction."""
+    now_ms=int(time.time()*1000) if now_ms is None else now_ms
+    quote_prices=quote_prices or {}
+    counts={} if diagnostics is None else diagnostics
+    candidates=[]
     for r in rows:
-        if (r.get('turnover24h') or 0) < PROMOTION_MIN_TURNOVER:
-            continue
-        closed = r.get('lastClosed5m') or 0
-        if closed > now_ms or now_ms - closed > FRESH_CANDLE_MS:
-            continue
-        px = r.get('price')
-        quote = quote_prices.get(r['symbol'])
-        if not px or not quote or quote <= 0:
-            continue
-        for direction, flag, score in (
-            ('UP', r.get('potentialUp'), r.get('longScore',0)),
-            ('DOWN', r.get('potentialDown'), r.get('shortScore',0)),
-        ):
-            if not flag:
-                continue
-            chase_pct = 100 * (quote / px - 1) * (1 if direction == 'UP' else -1)
-            # Avoid chasing and also avoid an adverse move that has already hit
-            # the paper-stop, to avoid advertising an invalidated baseline.
-            if chase_pct > MAX_CHASE_PCT or chase_pct < -max(.40, r['atr5mPct']):
-                continue
-            candidates.append((int(score), r.get('turnover24h') or 0, direction, r))
+        reasons={}
+        for direction,flag,score in (('UP',r.get('potentialUp'),r.get('longScore',0)),
+                                     ('DOWN',r.get('potentialDown'),r.get('shortScore',0))):
+            closed=r.get('lastClosed5m') or 0
+            px=r.get('price');quote=quote_prices.get(r['symbol'])
+            if not flag:reason='NO_SETUP'
+            elif (r.get('turnover24h') or 0)<PROMOTION_MIN_TURNOVER:reason='LOW_TURNOVER'
+            elif closed>now_ms or now_ms-closed>FRESH_CANDLE_MS:reason='STALE_CANDLE'
+            elif not px or not quote or quote<=0:reason='NO_FRESH_QUOTE'
+            else:
+                chase=100*(quote/px-1)*(1 if direction=='UP' else -1)
+                if chase>MAX_CHASE_PCT:reason='CHASE'
+                elif chase < -max(.40,r['atr5mPct']):reason='ADVERSE'
+                else:
+                    reason='ELIGIBLE'
+                    candidates.append((int(score),r.get('turnover24h') or 0,direction,r))
+            reasons[direction]=reason
+            counts[reason]=counts.get(reason,0)+1
+        if diagnostics is not None:r['promotionReasons']=reasons
     candidates.sort(key=lambda e:(-e[0],-e[1],e[3]['symbol'],e[2]))
     return candidates
 
@@ -478,52 +484,68 @@ def _same_generation(generation):
 
 
 def scan_cached_universe(generation,tickers,tracked,scan_now):
-    """Submit ALL ready coins without a 20-pair barrier or per-coin DB writes.
-    Results are frozen at their actual completion time; publication is atomic.
-    """
+    """Submit all ready coins; publish completed groups without a whole-market barrier."""
     started=time.perf_counter()
-    cold=[t['symbol'] for t in tickers if not all(STREAM.candles(t['symbol'],tf,WS_LIMIT[tf]-1,scan_now) is not None for tf in ('5m','15m','1h','4h'))]
+    cold=[];cache_miss={}
+    for t in tickers:
+        for tf in ('5m','15m','1h','4h'):
+            if STREAM.candles(t['symbol'],tf,WS_LIMIT[tf]-1,scan_now) is None:
+                cold.append(t['symbol']);cache_miss[tf]=cache_miss.get(tf,0)+1
+                break
     cold_set=set(cold)
     ready=[t for t in tickers if t['symbol'] not in cold_set]
     with SCAN_LOCK:
         SCAN_STATE.update(cacheSkipped=len(cold),cacheSkippedSymbols=cold,processed=len(cold),
-            computed=0,phase='COMPUTE',message='Analisis paralel seluruh cache siap',progressAt=int(time.time()*1000))
+            computed=0,phase='COMPUTE',phaseMetrics={'cacheFirstMissingTf':cache_miss},message='Analisis paralel seluruh cache siap',progressAt=int(time.time()*1000))
     cache_ms=1000*(time.perf_counter()-started)
-    results=[]
-    compute_started=time.perf_counter()
+    results=[];pending_rows=[];published=[]
+    metrics={'cacheCheckMs':cache_ms,'computeWallMs':0.,'dbLockWaitMs':0.,'dbBatchMs':0.,'researchStageMs':0.,'promotion':{},'publishBatches':0,'cacheFirstMissingTf':cache_miss}
+    compute_started=time.perf_counter();batch_started=None
+    def publish():
+        nonlocal batch_started
+        if not pending_rows:return
+        batch=list(pending_rows);pending_rows.clear();batch_started=None
+        with SCAN_LOCK:SCAN_STATE.update(phase='PUBLISH',message='Ranking Top 10 dan simpan hasil',progressAt=int(time.time()*1000))
+        try:
+            rows,db_metrics=STORE.refresh_ranked_batch([r for r,_ in batch],promotion_candidates,STREAM.prices)
+            for key in ('dbLockWaitMs','dbBatchMs'):metrics[key]+=db_metrics[key]
+            for key,n in db_metrics['promotion'].items():metrics['promotion'][key]=metrics['promotion'].get(key,0)+n
+            metrics['publishBatches']+=1
+            published.extend(rows)
+            with SCAN_LOCK:SCAN_STATE['rows']=list(published)
+        except Exception as exc:
+            metrics['publicationErrors']=metrics.get('publicationErrors',0)+1
+            for r,_ in batch:
+                r['promotionReasons']={d:'PUBLICATION_ERROR' for d in ('UP','DOWN') if r.get('potentialUp' if d=='UP' else 'potentialDown')}
+            with SCAN_LOCK:SCAN_STATE['errors'].append('Publication failed: '+str(exc)[:200])
+        with SCAN_LOCK:
+            SCAN_STATE.update(phase='COMPUTE',phaseMetrics=dict(metrics),progressAt=int(time.time()*1000))
+    # Submit everything first, but publish completed groups promptly. A slow
+    # symbol must not hold every valid candidate until its candle expires.
     with ThreadPoolExecutor(max_workers=min(64,max(8,SCAN_CPU_WORKERS*2))) as executor:
         futures={executor.submit(scan_symbol,t,t['symbol'] in tracked,True,scan_now):t['symbol'] for t in ready}
-        for future in as_completed(futures):
-            if not _same_generation(generation):return
-            errors=[]
-            try:
-                row=future.result()
-                results.append((row,row.get('computedAt') or int(time.time()*1000)))
-                for field,label in (('minuteError','1m'),('contextError','context'),('cpuFallback','CPU fallback')):
-                    if row.get(field):errors.append(row['symbol']+': '+label+' '+str(row[field]))
-            except Exception as exc:
-                errors.append(futures[future]+': '+str(exc))
-            with SCAN_LOCK:
-                SCAN_STATE['processed']+=1
-                SCAN_STATE['computed']=len(results)
-                SCAN_STATE['progressAt']=int(time.time()*1000)
-                SCAN_STATE['errors'].extend(errors)
-    compute_ms=1000*(time.perf_counter()-compute_started)
-    with SCAN_LOCK:
-        SCAN_STATE.update(phase='PUBLISH',message='Ranking Top 10 dan simpan hasil',progressAt=int(time.time()*1000))
-    with SCAN_LOCK:SCAN_STATE['phaseMetrics']={'cacheCheckMs':cache_ms,'computeWallMs':compute_ms}
-    print('[SCAN] Computed',len(results),'/',len(tickers),'cache skipped',len(cold),'in %.2fs; publishing'%(compute_ms/1000),flush=True)
-    if RUNTIME:RUNTIME.beat('scan-pipeline',phase='PUBLISH',computed=len(results),cacheMs=cache_ms,computeMs=compute_ms)
-    metrics={'cacheCheckMs':cache_ms,'computeWallMs':compute_ms,'dbLockWaitMs':0.,'dbBatchMs':0.}
-    if results:
-        try:
-            rows,db_metrics=STORE.refresh_ranked_batch([r for r,_ in results],promotion_candidates,STREAM.prices)
-            metrics.update(db_metrics)
-            with SCAN_LOCK:
-                SCAN_STATE['rows']=rows
-        except Exception as exc:
-            with SCAN_LOCK:SCAN_STATE['errors'].append('Publication failed: '+str(exc)[:200])
-    # Record independent research even if dashboard publication failed.
+        outstanding=set(futures)
+        while outstanding:
+            done,outstanding=wait(outstanding,timeout=.5,return_when=FIRST_COMPLETED)
+            for future in done:
+                if not _same_generation(generation):return
+                errors=[]
+                try:
+                    row=future.result();record=(row,row.get('computedAt') or int(time.time()*1000))
+                    results.append(record);pending_rows.append(record)
+                    if batch_started is None:batch_started=time.monotonic()
+                    for field,label in (('minuteError','1m'),('contextError','context'),('cpuFallback','CPU fallback')):
+                        if row.get(field):errors.append(row['symbol']+': '+label+' '+str(row[field]))
+                except Exception as exc:errors.append(futures[future]+': '+str(exc))
+                with SCAN_LOCK:
+                    SCAN_STATE['processed']+=1
+                    SCAN_STATE['computed']=len(results)
+                    SCAN_STATE['progressAt']=int(time.time()*1000)
+                    SCAN_STATE['errors'].extend(errors)
+            if batch_started is not None and (not outstanding or time.monotonic()-batch_started>=PUBLISH_WINDOW_SECONDS):publish()
+        publish()
+    metrics['computeWallMs']=1000*(time.perf_counter()-compute_started)
+    # Durable research queue uses actual feature completion, not publication time.
     with SCAN_LOCK:
         SCAN_STATE.update(phase='STAGE_RESEARCH',message='Simpan antrean penelitian',progressAt=int(time.time()*1000))
     if RUNTIME:RUNTIME.beat('scan-pipeline',phase='STAGE_RESEARCH',**metrics)
@@ -533,8 +555,11 @@ def scan_cached_universe(generation,tickers,tracked,scan_now):
         with SCAN_LOCK:SCAN_STATE['errors'].append('Research queue: '+str(exc)[:150])
     metrics['researchStageMs']=1000*(time.perf_counter()-stage_started)
     metrics['contextSumMs']=sum(r.get('contextMs',0) for r,_ in results)
+    coin_reasons={r['symbol']:{d:v for d,v in r.get('promotionReasons',{}).items() if v!='NO_SETUP'} for r,_ in results if r.get('potentialUp') or r.get('potentialDown')}
+    with SCAN_LOCK:SCAN_STATE['promotionCoinReasons']=coin_reasons
     with SCAN_LOCK:SCAN_STATE['phaseMetrics']=metrics
-    print('[SCAN] DB wait %.2fs; DB publish %.2fs; research stage %.2fs'%(metrics['dbLockWaitMs']/1000,metrics['dbBatchMs']/1000,metrics['researchStageMs']/1000),flush=True)
+    print('[SCAN] Computed',len(results),'/',len(tickers),'cache skipped',len(cold),'in %.2fs'%(metrics['computeWallMs']/1000),flush=True)
+    print('[SCAN] Promotion:',metrics['promotion'],'DB wait %.2fs; publish %.2fs'%(metrics['dbLockWaitMs']/1000,metrics['dbBatchMs']/1000),flush=True)
     if RUNTIME:RUNTIME.beat('scan-pipeline',phase='DONE',**metrics)
 
 
@@ -669,6 +694,8 @@ def scan_job(generation, mode, min_turnover):
                 audit['successful']=len(SCAN_STATE['rows'])
                 audit['computed']=SCAN_STATE.get('computed',audit['successful']) if STREAM is not None else audit['successful']
                 audit['phaseMetrics']=dict(SCAN_STATE.get('phaseMetrics',{}))
+                audit['promotionCoinReasons']=SCAN_STATE.get('promotionCoinReasons',{})
+                audit['universeVersion']='USDT_PERP_ALL_V2'
                 SCAN_STATE['phase']='DONE'
                 audit['cpuWorkers']=SCAN_CPU_WORKERS if CPU_POOL is not None else 0
                 audit['cpuCalcMs']=sum(r.get('cpuCalcMs',0) for r in SCAN_STATE['rows'])
@@ -715,7 +742,7 @@ def schedule_scan(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False)
             SCAN_STATE.update({
                 'running': True, 'rows': [], 'processed': 0, 'total': 0, 'eligible': 0,
                 'universe': 0, 'missingTicker': 0, 'trackedExtra': 0,
-                'errors': [], 'cacheSkipped':0,'cacheSkippedSymbols':[], 'computed':0,'phase':'UNIVERSE','phaseMetrics':{}, 'startedAt': now_ms, 'progressAt':now_ms, 'completedAt': None,
+                'errors': [], 'cacheSkipped':0,'cacheSkippedSymbols':[], 'computed':0,'phase':'UNIVERSE','phaseMetrics':{},'promotionCoinReasons':{}, 'startedAt': now_ms, 'progressAt':now_ms, 'completedAt': None,
                 'mode': mode, 'minTurnover': min_turnover,
                 'generation': SCAN_STATE['generation']+1,
                 'message': 'Mengambil daftar USDT perpetual Binance',
@@ -743,6 +770,8 @@ def read_scanner(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
         cached = persisted.pop(x['symbol'], None)
         if cached and (cached.get('quoteAt') or 0) > (x.get('quoteAt') or 0):
             combined.append(cached)
+        elif cached:
+            combined.append(dict(x,journeys=cached['journeys'],categories=cached['categories'],category=cached['category']))
         else:
             combined.append(x)
     combined.extend(dict(x, stale=True) for x in persisted.values())
@@ -811,6 +840,9 @@ class Handler(BaseHTTPRequestHandler):
             self._reply(200,json.dumps(REST_GUARD.status()).encode(),'application/json')
         elif route.path == '/api/research/r10':
             self._reply(200,json.dumps(R10.status() if R10 else {'enabled':False}).encode(),'application/json')
+        elif route.path == '/api/majors':
+            result=STREAM.major_status(MAJOR_SYMBOLS) if STREAM is not None else {'enabled':False,'rows':[]}
+            self._reply(200,json.dumps(result,allow_nan=False).encode(),'application/json')
         elif route.path == '/api/movement':
             result=STREAM.movement_status() if STREAM is not None else {'enabled':False}
             self._reply(200,json.dumps(result,allow_nan=False).encode(),'application/json')
@@ -1058,8 +1090,8 @@ def serve():
         if STREAM is not None:ARCHIVE.stream=STREAM
         if RUNTIME:ARCHIVE.heartbeat=lambda **kw:RUNTIME.beat('all-pair-archive',**kw)
         worker('all-pair-archive',ARCHIVE.collect_forever)
-        print('OVERNIGHT ALL crypto pairs enabled; status /api/overnight',flush=True)
-    print('Scalp Radar v0.5 / Full Universe P12: host %s port %d' % (host,port),flush=True)
+        print('OVERNIGHT ALL USDT perpetual pairs enabled; status /api/overnight',flush=True)
+    print('Scalp Radar v0.5 / Full Universe P13: host %s port %d' % (host,port),flush=True)
     print('DB:',STORE.path,'| background scanner:',os.getenv('SCANNER_BACKGROUND','1'),flush=True)
     def drain():
         with SCAN_LOCK:

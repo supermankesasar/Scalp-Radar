@@ -86,3 +86,7 @@ USER-CHAT: 36m04s ALL scan unacceptable for scalping. Prioritize speed and cover
 
 ## 28 Nov 2026 — Swing UI shell only
 USER-CHAT: top buttons Scalping / Swing, selectable separate pages; do not implement Swing calculations yet. Developer chooses default Scalping, isolated empty Swing preview, no shared scalp signals displayed as Swing, no backend profile switching, continue existing scalp collection/polling in either view. Prior timeframe and research decisions remain design for future work; do not activate historical feature branch formulas.
+
+
+## 28 Nov 2026 — expanded USDT perpetual scope and P13 priorities
+USER-CHAT: include XAU and other tradable USDT, separate major coin tab, approve process separation; zero Potensi since morning is highest operational concern. Developer interprets scope as all active quote+margin USDT PERPETUAL and TRADIFI_PERPETUAL, not expiring quarterly contracts, preserves scores/entry gates, tags new cohorts, no false stability claim for BTC. Major watchlist selection developer-defined (9 crypto plus 4 gold/silver contracts), live observation only. Prior whole-pass ranking P12 traded off latency against global snapshot; replace with time-bounded rolling publication using same global Top10/cooldown/rotation (actual ROTATION_MARGIN=1 in current source). Investigate via explicit promotion reason data, not loosening rules. First stage moves full per-coin scoring/read-only context into CPU processes; other service process separation remains approved roadmap, not completed. No automated trading or weekly archival deletion.

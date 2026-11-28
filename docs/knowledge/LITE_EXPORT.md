@@ -26,3 +26,7 @@ Daily scan cycles include configured CPU worker count, sum of per-coin pure calc
 
 ## P12 scan pipeline timing (28 Nov)
 Daily scan aggregates now include computed count, cache check, compute wall, DB lock wait, DB batch and research stage durations, summed per-coin context duration. A completed scan's publication may fail separately from feature calculation; inspect errors and computed vs successful. Runtime heartbeat contains current scan phase; incomplete cycles may not appear in completed cycle rows. Local cache seed telemetry reports restored TFs and errors. No live performance measurement yet.
+
+
+## P13 promotion and market cohort audit (28 Nov)
+Daily sections daily_promotion_reasons (all recorded directional promotion gate counts across completed cycles, ELIGIBLE overlaps later outcome counts), daily_coin_promotion (per-symbol direction final reason for technical potentials only, includes PUBLICATION_ERROR), daily_cache_first_missing (first missing TF per skipped symbol), daily_market_cohort (5m snapshots grouped by universeVersion, contractType, underlyingType; legacy unknown explicit). Prior cycles lack these fields; zero rows not evidence of zero historical rejections. Cycle audit retains per-coin potential reason map; snapshot dedup still first observation per closed candle. P13 uses rolling publication; computeWallMs includes publishing during calculation; db durations summed. New 769-symbol universe versus 516 historical scope, separate research cohorts; no assumption of TradFi formula validity or continuous data. No DB rotation/deletion.

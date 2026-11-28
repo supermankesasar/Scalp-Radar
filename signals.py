@@ -258,17 +258,24 @@ class SignalStore:
                 self._expire_unobserved(db,now)
                 wanted={r['symbol'] for r in rows if r.get('potentialUp') or r.get('potentialDown')}
                 decision=int(time.time()*1000)
-                candidates=rank(rows,now_ms=decision,quote_prices=quotes(wanted,decision))
+                diagnostics={}
+                candidates=rank(rows,now_ms=decision,quote_prices=quotes(wanted,decision),diagnostics=diagnostics)
                 # One query to learn cooldown and active ranking state.
                 recent={(r[0],r[1]) for r in db.execute(
                     'SELECT symbol,direction FROM events WHERE started_at>=?',(decision-RECENT_COOLDOWN_MS,))}
                 active=[dict(r) for r in db.execute("SELECT id,last_score,started_at FROM events WHERE status='PENDING' ORDER BY last_score,started_at,id")]
                 for score,turnover,direction,row in candidates:
                     key=(row['symbol'],direction)
-                    if key in recent:continue
+                    if key in recent:
+                        diagnostics['COOLDOWN']=diagnostics.get('COOLDOWN',0)+1
+                        row['promotionReasons'][direction]='COOLDOWN'
+                        continue
                     if len(active)>=ACTIVE_LIMIT:
                         weakest=min(active,key=lambda e:(e['last_score'],e['started_at'],e['id']))
-                        if score<weakest['last_score']+ROTATION_MARGIN:continue
+                        if score<weakest['last_score']+ROTATION_MARGIN:
+                            diagnostics['RANK_LIMIT']=diagnostics.get('RANK_LIMIT',0)+1
+                            row['promotionReasons'][direction]='RANK_LIMIT'
+                            continue
                         db.execute("UPDATE events SET status='EXPIRED',ended_at=?,end_reason='RANK_REPLACED' WHERE id=? AND status='PENDING'",(decision,weakest['id']))
                         active.remove(weakest)
                     a=row['atr5mPct']
@@ -279,10 +286,12 @@ class SignalStore:
                          score,row['price'],decision,score,row.get('liveFilter','BASELINE')))
                     active.append({'id':cur.lastrowid,'last_score':score,'started_at':decision})
                     recent.add(key)
+                    diagnostics['PROMOTED']=diagnostics.get('PROMOTED',0)+1
+                    row['promotionReasons'][direction]='PROMOTED'
                 payload=[self._refresh_payload(db,r,decision) for r in rows]
                 db.execute('DELETE FROM events WHERE started_at<?',(decision-MAX_ARCHIVE_MS,))
                 db.execute('DELETE FROM last_rows WHERE updated_at<?',(decision-MAX_ROWS_AGE_MS,))
-            return payload,{'dbLockWaitMs':1000*(locked-start),'dbBatchMs':1000*(time.perf_counter()-locked)}
+            return payload,{'dbLockWaitMs':1000*(locked-start),'dbBatchMs':1000*(time.perf_counter()-locked),'promotion':diagnostics}
     def dashboard_snapshot(self, now_ms=None, include_rows=True):
         """One WAL read snapshot; no writer lock, expiry UPDATE or per-symbol SELECT."""
         now=int(time.time()*1000) if now_ms is None else now_ms
