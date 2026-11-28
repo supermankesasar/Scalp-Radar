@@ -14,7 +14,7 @@ const visibleRows=rows=>rows.filter(r=>(r.turnover24h||0)>=Number($('minDisplay'
 function updateModeUI(){$('turnover').hidden=$('mode').value!=='liquid'}
 function el(tag,txt,cls){const z=document.createElement(tag);if(txt!==undefined)z.textContent=txt;if(cls)z.className=cls;return z}
 function err(id,msg){const x=$(id);x.style.display=msg?'block':'none';x.textContent=msg||''}
-function selectedEvent(row){const e=row.journeys||[];if(keys.includes(active))return e.find(j=>j.direction===(active.includes('NAIK')?'UP':'DOWN')&&j.status===(active.startsWith('SUDAH')?'REACHED':'PENDING'))||null;return e.find(j=>j.status==='REACHED')||e[0]||null}
+function selectedEvent(row){const e=row.journeys||[];if(keys.includes(active))return e.find(j=>j.direction===(active.includes('NAIK')?'UP':'DOWN')&&j.status===(active.startsWith('SUDAH')?'REACHED':'PENDING'))||null;return e.find(j=>j.status==='PENDING')||e.find(j=>j.status==='REACHED')||e[0]||null}
 function categorySwitch(c){active=c;document.querySelectorAll('[data-category]').forEach(z=>z.classList.toggle('active',z.dataset.category===c));$('allBtn').classList.toggle('active',c==='ALL');renderRows()}
 function addCell(tr,label,value,cls){const td=el('td',value,cls);td.dataset.label=label;tr.append(td);return td}
 function countPanels(rows){for(const [k,n,t] of [['POTENSI_NAIK','countPN','topPN'],['SUDAH_NAIK','countSN','topSN'],['POTENSI_TURUN','countPT','topPT'],['SUDAH_TURUN','countST','topST']]){const list=rows.filter(r=>r.categories?.includes(k));$(n).textContent=list.length;$(t).textContent=list.length?list.slice(0,3).map(r=>r.symbol.replace('USDT','')).join(' · '):k.startsWith('SUDAH')?'Belum ada yang mencapai target':'Belum ada sinyal'}}
@@ -54,7 +54,7 @@ function render(st){
  $('progress').style.width=pctDone+'%';
  const activeMode=modeLabel(st.mode);
  $('message').textContent=st.configPending?`Scan ${activeMode} berjalan. Mode pilihan akan dimulai sesudahnya.`:st.message;
- $('scanDetails').textContent=`Top ${st.activeSignals||0}/${st.activeLimit||10} aktif · ${done}/${total||'…'} pair · ${st.successful||0} sukses · ${st.failed||0} gagal · ${st.cacheSkipped||0} menunggu cache · candle 5m, quote watch ±30 detik`;
+ $('scanDetails').textContent=`Top ${st.activeSignals||0}/${st.activeLimit||10} aktif · ${done}/${total||'…'} pair · ${st.successful||0} sukses · ${st.failed||0} gagal · ${st.cacheSkipped||0} menunggu cache · ${st.startedAt?Math.max(0,Math.round(((st.completedAt||Date.now())-st.startedAt)/1000))+'s':'—'} · candle 5m, quote watch ±30 detik`;
  $('scanStats').replaceChildren();
  for(const [name,value] of [['Pair aktif',st.universe||'…'],['Sesuai mode',st.eligible||'…'],['Dalam antrean',total||'…'],['Tanpa ticker',st.missingTicker||0]]){
    const b=el('span',undefined,'stat-item');b.append(el('b',String(value)),el('span',name));$('scanStats').append(b);
