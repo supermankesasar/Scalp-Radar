@@ -75,3 +75,6 @@ User approves **Detect Early → Identify Direction → Validate Entry → Monit
 
 ## R11.1 P1–P6 authorization (26 Nov 2026)
 User: “ok lakukan p1-p6 gas”. Implement coverage and diagnostic improvements, native 15m context, missed movement tracker and independent entry challenger as specified in [R111](R111.md). Keep original R11 as comparator, no unsupported improvement claims or auto-trading. Developer chose provisional thresholds, depth bid/ask and parallel preview rather than replacing active dashboard.
+
+## 28 Nov 2026 — R11.2
+User approves Impulse Exhaustion Radar. Developer chooses cache-only integrated prospective paired controls and confirmed recovery cohort, preserves dashboard and existing formulas, fixes joined export sample mismatch. [R112](R112.md).
