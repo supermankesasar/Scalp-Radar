@@ -94,14 +94,31 @@
   tbody tr:hover{background:#eef4fa}
   td::before{color:var(--dim)}
 }
+/* Trading profile navigation is independent from scalp signal category tabs. */
+.profile-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;max-width:440px;padding:5px;margin:0 0 18px;background:var(--soft);border:1px solid var(--stroke);border-radius:12px}
+.profile-tab{display:flex;align-items:center;justify-content:center;gap:9px;padding:12px 16px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--dim);font-size:14px;font-weight:750;min-height:44px}
+.profile-tab[aria-selected="true"]{color:var(--text);background:var(--surface);border-color:var(--cyan)}
+.profile-tab:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.profile-tab small{font-size:10px;font-weight:600;color:var(--dim)}
+.profile-panel[hidden],#refresh[hidden]{display:none!important}
+.swing-empty{border:1px solid var(--stroke);background:var(--surface);border-radius:14px;padding:48px 24px;text-align:center;min-height:245px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+.swing-empty h2{font-size:23px;letter-spacing:-.035em}
+.swing-empty p{color:var(--dim);max-width:520px}
+.swing-status{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:700}
+@media(max-width:700px){.profile-tabs{max-width:none}.profile-tab{padding:10px 8px}}
 </style>
 </head>
 <body>
 <main>
 <header>
-  <div class="brand"><div class="logo">↗</div><div><h1>Scalp Radar <span style="color:#8498ad;font-size:12px;font-weight:500">v0.5 · P12</span></h1><p class="tagline">10 peluang teratas · cek cepat sebelum entry.</p></div></div>
+  <div class="brand"><div class="logo">↗</div><div><h1>Scalp Radar <span style="color:#8498ad;font-size:12px;font-weight:500">v0.5 · P12</span></h1><p class="tagline">Futures market radar · Scalping &amp; Swing</p></div></div>
   <div class="live-line"><span class="dot busy" id="dot"></span><span class="tiny" id="live">Menghubungkan…</span><button class="pill-btn" id="refresh">↻ Scan</button></div>
 </header>
+<nav class="profile-tabs" role="tablist" aria-label="Profil trading">
+  <button type="button" class="profile-tab" id="profileScalping" role="tab" aria-selected="true" aria-controls="scalpingPanel" tabindex="0">Scalping</button>
+  <button type="button" class="profile-tab" id="profileSwing" role="tab" aria-selected="false" aria-controls="swingPanel" tabindex="-1">Swing <small>Preview</small></button>
+</nav>
+<div id="scalpingPanel" class="profile-panel" role="tabpanel" aria-labelledby="profileScalping">
 <section class="status"><div><strong id="message">Mengambil daftar market</strong><p class="status-note" id="scanDetails">Sinyal disimpan di server — tab Sudah berasal dari Potensi</p></div><div style="display:flex;align-items:center;gap:10px"><div class="track"><span id="progress"></span></div><span class="tiny" id="time">—</span></div></section>
 <div class="scan-stats" id="scanStats" aria-label="Ringkasan cakupan scanner"></div>
 <div class="error" id="error" role="alert"></div>
@@ -121,6 +138,16 @@
 </section>
 <section id="detail" class="detail"><div class="detail-head"><div><div class="section-title" style="margin-bottom:3px">Coin deep dive</div><h2 id="detailSymbol">—</h2><p class="tiny" id="detailTime">—</p></div><button class="pill-btn" id="closeDetail">Tutup ×</button></div><div id="detailError" class="error"></div><div class="detail-grid"><div class="panel"><div class="headline" style="margin-bottom:12px"><div><div class="section-title" style="margin:0">Chart 5m</div><strong id="priceDetail">—</strong></div><span class="tiny">80 candle terakhir</span></div><svg id="chart" class="chart" viewBox="0 0 740 255" role="img" aria-label="Grafik harga penutupan 5 menit"></svg><div class="analysis"><h3 id="statusDetail">—</h3><ul id="reasons"></ul><p id="levels" class="risk"></p><p id="issues" class="risk"></p></div></div><div class="panel"><div class="section-title">Indicators & Futures flow</div><div class="detail-data" id="detailData"></div></div></div></section>
 <div class="footer"><b>Fase 1 · Read-only Binance USDⓈ-M.</b> Kategori <b>Sudah Naik/Turun</b> muncul setelah sinyal Potensi tercatat dan penutupan candle 5m berikutnya mencapai target. Maksimal 10 Potensi aktif gabungan naik/turun. Status Sudah tampil 6 jam lalu tersimpan di arsip 30 hari. Koin dapat muncul di beberapa kategori. Kolom sejak sinyal menunjukkan perubahan harga bertanda (+ naik / − turun). Highlight pergerakan tinggi menggunakan data harga, bukan prediksi keberhasilan. Skor masih heuristik, belum backtest, bukan rekomendasi membuka posisi. Riwayat disimpan di server; akses HP publik membutuhkan deployment HTTPS dan penyimpanan persisten. Open Interest tidak membuktikan arah posisi individu.</div>
+</div>
+<section id="swingPanel" class="profile-panel" role="tabpanel" aria-labelledby="profileSwing" hidden>
+  <div class="headline"><h2 class="section-title" style="margin:0">Swing watchlist</h2><span class="tiny">Profil terpisah · belum aktif</span></div>
+  <div class="swing-empty" style="margin-top:12px">
+    <span class="swing-status">Dalam pengembangan</span>
+    <h2>Swing Trading</h2>
+    <p>Halaman sudah tersedia. Formula, indikator, ranking dan sinyal Swing belum diaktifkan.</p>
+    <p class="tiny">Scanner Scalping dan pengumpulan data tetap berjalan di background.</p>
+  </div>
+</section>
 </main>
 <script src="/ui.js" defer></script>
 </body>
