@@ -1,4 +1,4 @@
-"""All-crypto USDT perpetual market archive. Public read-only API, standard library.
+"""All active USDT perpetual market archive. Public read-only API, standard library.
 Historical samples are timestamped separately from the time actually received.
 """
 import json, sqlite3, threading, time
@@ -18,12 +18,19 @@ KINDS = {
     'top_positions':'/futures/data/topLongShortPositionRatio',
 }
 def now_ms(): return int(time.time()*1000)
+PERPETUAL_TYPES=frozenset(('PERPETUAL','TRADIFI_PERPETUAL'))
+def usdt_perpetual_metadata(info):
+    """All active USDT perpetuals, including traditional assets and indices."""
+    return {s['symbol']:{'contractType':s['contractType'],'underlyingType':s.get('underlyingType'),
+                        'underlyingSubType':s.get('underlyingSubType') or []}
+        for s in info.get('symbols',[]) if s.get('symbol') and s.get('status')=='TRADING'
+        and s.get('contractType') in PERPETUAL_TYPES
+        and s.get('quoteAsset')=='USDT' and s.get('marginAsset')=='USDT'}
+
 def crypto_universe(info):
-    return {s['symbol'] for s in info.get('symbols',[])
-        if s.get('status')=='TRADING' and s.get('contractType')=='PERPETUAL'
-        and s.get('quoteAsset')=='USDT' and s.get('marginAsset')=='USDT'
-        and s.get('underlyingType')=='COIN' and 'Crypto' in (s.get('underlyingSubType') or [])
-        and s['symbol'] not in ('PAXGUSDT','XAUTUSDT','XAUUSDT','XAGUSDT')}
+    # Historical function name retained for compatibility; scope expanded P13.
+    return set(usdt_perpetual_metadata(info))
+
 
 class MarketArchive:
     def __init__(self,path,lock):
@@ -227,9 +234,9 @@ class MarketArchive:
             try:
                 info,_=self.fetch('/fapi/v1/exchangeInfo')
                 universe=crypto_universe(info)
-                if not universe: raise RuntimeError('No eligible active crypto perpetual symbols')
+                if not universe: raise RuntimeError('No eligible active USDT perpetual symbols')
                 with self.db() as db: db.execute('UPDATE market_collection_runs SET universe=? WHERE id=?',(len(universe),run))
-                print('[ARCHIVE] Run',run,'ALL',len(universe),'crypto pairs',flush=True)
+                print('[ARCHIVE] Run',run,'ALL',len(universe),'USDT perpetual pairs',flush=True)
                 # Bulk snapshots, including estimated/last funding fields as returned by Binance.
                 for kind,endpoint in [('mark_funding','/fapi/v1/premiumIndex'),('ticker24h','/fapi/v1/ticker/24hr')]:
                     try:
@@ -275,4 +282,4 @@ class MarketArchive:
             recent=db.execute('SELECT symbol,kind,at,message FROM market_collection_errors ORDER BY id DESC LIMIT 10').fetchall()
             with self.metrics_lock:metrics=dict(self.metrics)
             return {'run':dict(row) if row else None,'data':[dict(r) for r in counts],'recentErrors':[dict(r) for r in recent],'transport':metrics,
-                    'note':'ALL active crypto USDT perpetuals; archived historical sample time and actual receipt time differ. No trades.'}
+                    'note':'ALL active regular and TradFi USDT perpetuals; archived historical sample time and actual receipt time differ. No trades.'}
