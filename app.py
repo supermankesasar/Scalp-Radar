@@ -20,7 +20,8 @@ from signals import SignalStore, ACTIVE_LIMIT
 from filters.registry import evaluate as evaluate_filters
 from filters import scalp_v2, multifactor, microstructure
 from research_history import ResearchHistory
-from market_archive import MarketArchive, crypto_universe
+from market_archive import MarketArchive, crypto_universe, usdt_perpetual_metadata
+from scan_worker import compute_full_scan,evaluate_scan_features
 from stream_engine import StreamEngine, LIMIT as WS_LIMIT, TF as WS_TF, close_at
 from stream_research import StreamResearch
 from research_r10 import ResearchR10
@@ -258,7 +259,8 @@ def active_tickers(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, tracked=Non
     outside the LIQUID/TOP80 cut, so potential->reached history is not lost.
     """
     validate_scan_options(mode, min_turnover)
-    available = active_symbols()
+    metadata=usdt_perpetual_metadata(request_market('/fapi/v1/exchangeInfo',{},ttl=3600))
+    available=set(metadata)
     if STREAM is not None:STREAM.set_symbols(available)
     tickers = request_market('/fapi/v1/ticker/24hr', {}, ttl=120)
     by_symbol = {}
@@ -288,6 +290,9 @@ def active_tickers(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, tracked=Non
     }) for sym in available]
     for row in all_tickers:
         row['_universe_size']=len(available)
+        row['contractType']=metadata[row['symbol']]['contractType']
+        row['underlyingType']=metadata[row['symbol']]['underlyingType']
+        row['universeVersion']='USDT_PERP_ALL_V2'
     all_tickers.sort(key=lambda r:(-r['turnover24h'], r['symbol']))
     if mode == 'all':
         selected = list(all_tickers)
@@ -335,43 +340,46 @@ def scan_symbol(ticker, is_tracked=False, cache_only=False, scan_now=None):
     args=(raw_sets,raw,now,want_minute,minute_error)
     cpu_fallback=None;cpu_started=time.perf_counter()
     if cache_only and CPU_POOL is not None:
-        try:result=CPU_POOL.submit(compute_scan_math,*args).result()
+        cut=close_at(now,300000)
+        micro_at=int(time.time()*1000)
+        receipt=STREAM.receipt(symbol,'1m',cut)
+        micro=STREAM.minute(symbol,cut,micro_at) if receipt is not None and receipt<=micro_at and 0<=micro_at-cut<=15000 else {}
+        db_path=str(ARCHIVE.path) if ARCHIVE is not None else None
+        breadth=None
+        if ARCHIVE is not None:
+            try:
+                breadth=ARCHIVE.breadth_for(symbol,cut,ticker.get('_universe_size',0),ARCHIVE.breadth_returns(cut,micro_at,ticker.get('_universe_size',0)))
+            except Exception:
+                breadth={'sampleCount':0,'universeSize':ticker.get('_universe_size',0),'cutoff':cut}
+        worker_args=(*args,symbol,ticker.get('_universe_size',0),db_path,micro,micro_at,LIVE_FILTER,breadth)
+        try:result,evaluation,hybrid,selected,context_error,context_ms,worker_ms=CPU_POOL.submit(compute_full_scan,*worker_args).result()
         except BrokenProcessPool as exc:
             cpu_fallback=str(exc)[:140]
-            result=compute_scan_math(*args)
-    else:result=compute_scan_math(*args)
+            result,evaluation,hybrid,selected,context_error,context_ms,worker_ms=compute_full_scan(*worker_args)
+    else:
+        result=compute_scan_math(*args)
+        features=result['features'];i5=result['i5']
+        features['derivatives'],features['breadth']={},{}
+        context_error=None;context_started=time.perf_counter()
+        if ARCHIVE is not None:
+            try:
+                features['derivatives'],features['breadth']=ARCHIVE.research_context(symbol,i5['time'],int(time.time()*1000),ticker.get('_universe_size',0))
+            except Exception as exc:
+                context_error=str(exc)[:140]
+        if STREAM is not None:
+            decision=int(time.time()*1000)
+            receipt=STREAM.receipt(symbol,'1m',i5['time'])
+            features['micro']=STREAM.minute(symbol,i5['time'],decision) if receipt is not None and receipt<=decision and 0<=decision-i5['time']<=15000 else {}
+        else:features['micro']={}
+        context_ms=1000*(time.perf_counter()-context_started)
+        evaluation,hybrid,selected=evaluate_scan_features(features,LIVE_FILTER)
+        worker_ms=result['calcMs']+context_ms
     cpu_elapsed=1000*(time.perf_counter()-cpu_started)
     features=result['features'];i5=result['i5'];t1=result['t1'];t4=result['t4']
     ret5=result['ret5'];ret15=result['ret15'];ret60=result['ret60'];atr_pct=result['atr_pct']
     threshold15=result['threshold15'];threshold60=result['threshold60'];vwap=result['vwap'];px=result['px']
     vratio=result['vratio'];rsi15=result['rsi15'];dist_ema=result['dist_ema']
     previous_rsi15=result['previous_rsi15'];reversal_rsi70=result['reversal_rsi70'];minute_error=result['minute_error']
-    features['derivatives'],features['breadth']={},{}
-    context_error=None;context_started=time.perf_counter()
-    if ARCHIVE is not None:
-        try:
-            features['derivatives'],features['breadth']=ARCHIVE.research_context(symbol,i5['time'],int(time.time()*1000),ticker.get('_universe_size',0))
-        except Exception as exc:
-            context_error=str(exc)[:140]
-    if STREAM is not None:
-        decision=int(time.time()*1000)
-        receipt=STREAM.receipt(symbol,'1m',i5['time'])
-        features['micro']=STREAM.minute(symbol,i5['time'],decision) if receipt is not None and receipt<=decision and 0<=decision-i5['time']<=15000 else {}
-    else:features['micro']={}
-    evaluation = evaluate_filters(features, shadow=True)
-    hybrid={}
-    for sign,key in ((1,'UP'),(-1,'DOWN')):
-        base=evaluation['r08'][key]
-        hybrid[key]=microstructure.hybrid(features['micro'],base['core'],sign,base.get('setup',False) and base.get('fresh',False) and not base.get('trap',True))
-        if hybrid[key]['potential']:
-            evaluation['candidates'].append({'id':'R09_HYBRID','version':microstructure.VERSION,'direction':key,'score':hybrid[key]['score']})
-    selected=evaluation['v2' if LIVE_FILTER=='SCALP_V2' else 'baseline']
-    if LIVE_FILTER.startswith('R08_'):
-        full=LIVE_FILTER=='R08_MULTI_FULL'
-        selected={k:{'score':int(v['full'] or 0) if full else v['core'],
-                     'potential':v['fullPotential'] if full else v['potential']} for k,v in evaluation['r08'].items()}
-    if LIVE_FILTER=='R09_HYBRID':
-        selected={k:{'score':int(v['score'] or 0),'potential':v['potential']} for k,v in hybrid.items()}
     long_score = selected['UP']['score']
     short_score = selected['DOWN']['score']
     potential_up = selected['UP']['potential']
@@ -388,7 +396,8 @@ def scan_symbol(ticker, is_tracked=False, cache_only=False, scan_now=None):
         except Exception as e:
             oi = {'available': False, 'reason': str(e)[:140]}
     return {
-        'symbol': symbol, 'potentialUp': bool(potential_up), 'potentialDown': bool(potential_down),
+        'symbol': symbol, 'contractType':ticker.get('contractType'), 'underlyingType':ticker.get('underlyingType'),
+        'universeVersion':ticker.get('universeVersion'), 'potentialUp': bool(potential_up), 'potentialDown': bool(potential_down),
         'longScore': long_score, 'shortScore': short_score,
         'price': px, 'pct5m': ret5, 'pct15m': ret15, 'pct60m': ret60,
         'pct24h': ticker['change24h'], 'turnover24h': ticker['turnover24h'],
@@ -410,7 +419,7 @@ def scan_symbol(ticker, is_tracked=False, cache_only=False, scan_now=None):
         'volumePhase':evaluation['volumePhase'], 'vwapDistanceATR':evaluation['vwapDistanceATR'],
         'computedAt':int(time.time()*1000),
         'cpuCalcMs':result['calcMs'],'cpuElapsedMs':cpu_elapsed,'cpuFallback':cpu_fallback,
-        'contextMs':1000*(time.perf_counter()-context_started),
+        'contextMs':context_ms,'workerMs':worker_ms,
         '_recent5m':result['recent5m'],
     }
 
@@ -1058,7 +1067,7 @@ def serve():
         if STREAM is not None:ARCHIVE.stream=STREAM
         if RUNTIME:ARCHIVE.heartbeat=lambda **kw:RUNTIME.beat('all-pair-archive',**kw)
         worker('all-pair-archive',ARCHIVE.collect_forever)
-        print('OVERNIGHT ALL crypto pairs enabled; status /api/overnight',flush=True)
+        print('OVERNIGHT ALL USDT perpetual pairs enabled; status /api/overnight',flush=True)
     print('Scalp Radar v0.5 / Full Universe P12: host %s port %d' % (host,port),flush=True)
     print('DB:',STORE.path,'| background scanner:',os.getenv('SCANNER_BACKGROUND','1'),flush=True)
     def drain():
