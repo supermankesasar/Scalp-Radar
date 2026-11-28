@@ -97,10 +97,18 @@ def collect(db,now,deadline=None,notify=lambda message:None):
     for label,where,args in [('all','',()),('24h',' WHERE e.decision>=?',(day,))]:
         q('r112_outcomes_'+label,['r112_entries','r112_outcomes'],"SELECT e.cohort,e.direction,o.horizon,o.policy,COUNT(*) n,COUNT(o.gross_pct) observed,SUM(o.state='UNOBSERVED') unobserved,AVG(o.gross_pct) gross,AVG(o.gross_pct)-.10 net010,AVG(o.gross_pct)-.20 net020,AVG(o.gross_pct)-.35 net035,AVG(o.mfe) mfe,AVG(o.mae) mae FROM r112_entries e JOIN r112_outcomes o USING(symbol,cutoff,cohort)"+where+" GROUP BY 1,2,3,4",args)
     q('ws_coin_24h',['ws_minute_snapshots'],"SELECT symbol,COUNT(*) n,MIN(candle_time) first,MAX(candle_time) latest,AVG(observed_at-candle_time) lagMs,SUM(json_extract(payload,'$.micro.coverage.trades')=1) tradeCovered,SUM(json_extract(payload,'$.micro.coverage.depth')=1) depthCovered FROM ws_minute_snapshots WHERE candle_time>=? GROUP BY symbol",(day,))
+    # Daily all-coin denominators, not capped event samples.
+    q('daily_coin_r111_reasons',['r111_cycles'],"SELECT s.value symbol,j.key reason,COUNT(*) n FROM r111_cycles c,json_each(c.reasons) j,json_each(j.value) s WHERE c.cutoff>=? AND c.cutoff<=? GROUP BY 1,2",(day,now))
+    q('daily_coin_r111_eligible',['r111_cycles'],"SELECT s.value symbol,COUNT(*) n FROM r111_cycles c,json_each(c.eligible_symbols) s WHERE c.cutoff>=? AND c.cutoff<=? GROUP BY 1",(day,now))
+    q('daily_coin_movement',['r111_moves'],"SELECT symbol,direction,v1_class,v2_class,COUNT(*) n,MAX(ABS(ret15)) maxAbsRet15,AVG(v2_lead_ms) leadMs FROM r111_moves WHERE cutoff>=? AND cutoff<=? GROUP BY 1,2,3,4",(day,now))
+    q('daily_coin_r08',['research_snapshots'],"SELECT symbol,COUNT(*) n,MAX(recorded_at-candle_time) maxLagMs,AVG(recorded_at-candle_time) avgLagMs,SUM(json_extract(payload,'$.potentialUp')=1) up,SUM(json_extract(payload,'$.potentialDown')=1) down,MAX(json_extract(payload,'$.longScore')) maxLong,MAX(json_extract(payload,'$.shortScore')) maxShort,COUNT(json_extract(payload,'$.researchFeatures.extraIndicators.5m.adx14')) extraCovered FROM research_snapshots WHERE candle_time>=? AND candle_time<=? GROUP BY 1",(day,now))
+    q('daily_coin_dashboard',['events'],"SELECT symbol,direction,status,end_reason,COUNT(*) n FROM events WHERE started_at>=? AND started_at<=? GROUP BY 1,2,3,4",(day,now))
+    q('daily_coin_r112',['r112_entries','r112_outcomes'],"SELECT e.symbol,e.cohort,e.direction,COUNT(*) n,COUNT(o.gross_pct) observed,AVG(o.gross_pct) gross,AVG(o.gross_pct)-.20 net020 FROM r112_entries e JOIN r112_outcomes o USING(symbol,cutoff,cohort) WHERE e.decision>=? AND e.decision<=? AND o.horizon=15 AND o.policy='FIXED' GROUP BY 1,2,3",(day,now))
     # Recent R11.1/R11 sections first, then operational coverage and other recent
     # results; expensive historical rule expansion is lower priority.
     def priority(item):
         name=item[0]
+        if name.startswith('daily_coin_') or name=='ws_coin_24h':return -1
         if name.startswith(('r112_','r111_')) and name.endswith('_24h'):return 0
         if name.startswith('r11_') and name.endswith('_24h'):return 1
         if name.startswith(('archive_runs','archive_errors','r10_meta','dashboard_status')):return 2
@@ -119,6 +127,7 @@ def collect(db,now,deadline=None,notify=lambda message:None):
                 with query_budget(db,deadline):
                     out['counts'][t]=db.execute('SELECT COUNT(*) FROM "'+t.replace('"','""')+'"').fetchone()[0]
             except sqlite3.OperationalError as e:out['unavailable']['count:'+t]=str(e)
+    out['dailyWindow']={'fromMs':day,'toMs':now,'kind':'rolling_24h','completeSections':[k for k in out['sections'] if k.startswith('daily_coin_')],'missingSections':{k:v for k,v in out['unavailable'].items() if k.startswith('daily_coin_')}}
     return out,tables
 
 def json_write(z,name,value):
