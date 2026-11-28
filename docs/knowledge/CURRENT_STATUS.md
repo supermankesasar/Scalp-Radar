@@ -80,3 +80,7 @@ User approved implementation; [R112](R112.md) describes shadow module and Lite j
 
 ## R11.2 release (28 Nov 2026)
 PR #8 merged at `8eeee56e5b103f1a332f649973ff57970518f81d`; Windows and Linux CI [46100114950](https://github.com/supermankesasar/Scalp-Radar/actions/runs/46100114950) both passed on 7199c6e. R11.2 enabled via launcher, live preview and research endpoints, joined Lite samples. No runtime or predictive improvement verified; provisional thresholds and paired controls, dashboard R08 unchanged. No automatic orders. See R112.md.
+
+
+## PORTAL pump coverage repair (28 Nov 2026)
+User clarified dump gap was intentional shutdown. Pump audit confirms 23/24 PORTAL missing close in active 08:45–09:08 period and whole 60-coin shards missing at several cutoffs. [Case evidence and implementation](COIN_CASE_STUDIES.md#user-clarification-and-pump-transport-pattern-28-nov). Repair branch fix/portal-live-coverage: independent 1m/ticker receive loops, large missing-shard reconnect and diagnostic snapshots, separate live ticker movement display, targeted Lite diagnostics; R08 ranking, all signal rules, manual-only boundary and persistent data unchanged. CI/release pending at creation; no claim of live improvement or exact transport root cause.
