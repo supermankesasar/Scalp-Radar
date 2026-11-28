@@ -11,6 +11,29 @@ const dir=v=>!Number.isFinite(v)?'flat':v>0?'up':v<0?'down':'flat';
 let active='ALL', state=null, busy=false, detailToken=0, detailId=null;
 const modeLabel=m=>({all:'ALL PAIRS',liquid:'LIQUID',top80:'TOP 80'}[m]||m);
 const visibleRows=rows=>rows.filter(r=>(r.turnover24h||0)>=Number($('minDisplay').value));
+// View selection only. Do not change scanner mode, filters, or polling.
+function selectProfile(profile,focus=false){
+ const swing=profile==='swing';
+ $('scalpingPanel').hidden=swing;
+ $('swingPanel').hidden=!swing;
+ $('refresh').hidden=swing;
+ for(const [id,selected] of [['profileScalping',!swing],['profileSwing',swing]]){
+  const tab=$(id);tab.setAttribute('aria-selected',String(selected));tab.tabIndex=selected?0:-1;
+  if(selected&&focus)tab.focus();
+ }
+}
+function initProfiles(){
+ const tabs=[['profileScalping','scalping'],['profileSwing','swing']];
+ for(const [id,profile] of tabs){
+  $(id).addEventListener('click',()=>selectProfile(profile));
+  $(id).addEventListener('keydown',e=>{
+   if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
+   e.preventDefault();
+   selectProfile(e.key==='Home'?'scalping':e.key==='End'?'swing':profile==='scalping'?'swing':'scalping',true);
+  });
+ }
+ selectProfile('scalping');
+}
 function updateModeUI(){$('turnover').hidden=$('mode').value!=='liquid'}
 function el(tag,txt,cls){const z=document.createElement(tag);if(txt!==undefined)z.textContent=txt;if(cls)z.className=cls;return z}
 function err(id,msg){const x=$(id);x.style.display=msg?'block':'none';x.textContent=msg||''}
@@ -74,5 +97,5 @@ async function openDetail(symbol){detailId=symbol;const token=++detailToken;$('d
 async function loadHistory(){const box=$('historyRows');if(!box)return;box.textContent='Mengambil riwayat…';try{const resp=await fetch('/api/events',{cache:'no-store'});if(!resp.ok)throw Error('API error');const data=await resp.json();const events=(data.events||[]).slice(0,30);box.replaceChildren();if(!events.length){box.textContent='Belum ada event tersimpan.';return}for(const e of events){const reason=e.status==='REACHED'?'Target tercapai':e.endReason==='STOP_HIT'?'Stop indikatif tersentuh':e.endReason==='RANK_REPLACED'?'Tergeser skor lain':e.endReason?.startsWith('TIMEOUT')?'Waktu habis':e.status==='PENDING'?'Sedang dipantau':e.endReason||'Selesai';const d=el('div',undefined,'history-item');d.append(el('strong',e.symbol+' · '+(e.direction==='UP'?'NAIK':'TURUN')),el('span',e.status+' · '+reason+' · '+relTime(e.startedAt)));box.append(d)}}catch(e){box.textContent='Gagal memuat riwayat: '+e.message}}
 $('historyToggle')?.addEventListener('click',()=>{const box=$('historyRows');const open=box.hidden;box.hidden=!open;if(open)loadHistory()});
 document.querySelectorAll('[data-category]').forEach(b=>b.addEventListener('click',()=>categorySwitch(b.dataset.category)));
-$('allBtn').addEventListener('click',()=>categorySwitch('ALL'));$('search').addEventListener('input',renderRows);$('sort').addEventListener('change',renderRows);$('refresh').addEventListener('click',()=>poll(true));$('mode').addEventListener('change',()=>{updateModeUI();poll()});$('turnover').addEventListener('change',()=>poll());$('minDisplay').addEventListener('change',()=>{if(state){const rows=visibleRows(state.rows||[]);countPanels(rows);hotMovers(rows);renderRows()}});updateModeUI();$('closeDetail').addEventListener('click',()=>{$('detail').classList.remove('open');detailToken++;detailId=null});poll();setInterval(()=>poll(),5000);pollMovement();setInterval(pollMovement,5000);
+$('allBtn').addEventListener('click',()=>categorySwitch('ALL'));$('search').addEventListener('input',renderRows);$('sort').addEventListener('change',renderRows);$('refresh').addEventListener('click',()=>poll(true));$('mode').addEventListener('change',()=>{updateModeUI();poll()});$('turnover').addEventListener('change',()=>poll());$('minDisplay').addEventListener('change',()=>{if(state){const rows=visibleRows(state.rows||[]);countPanels(rows);hotMovers(rows);renderRows()}});initProfiles();updateModeUI();$('closeDetail').addEventListener('click',()=>{$('detail').classList.remove('open');detailToken++;detailId=null});poll();setInterval(()=>poll(),5000);pollMovement();setInterval(pollMovement,5000);
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('/sw.js').catch(()=>{});
