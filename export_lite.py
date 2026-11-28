@@ -165,13 +165,6 @@ def export(source,dest,coin=None,hours=24,now=None,complete=False,notify=lambda 
             manifest['omittedDetails']={}
             with zipfile.ZipFile(tmp,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=6) as z:
                 json_write(z,'summary.json',summary);z.writestr('coin_continuity.csv',csv_dict(cont))
-                for table,n in specs:
-                    if table not in tables or int(n*scale)<=0:continue
-                    limit=int(n*scale)
-                    order='cutoff DESC' if table.endswith('_cycles') else 'cutoff DESC,symbol'
-                    data=optional(table,lambda:csv_query(db,f'SELECT * FROM {table} ORDER BY {order} LIMIT ?',(limit,)))
-                    if data is not None:
-                        z.writestr(table+'.csv',data);manifest['detailLimits'][table]=limit
                 # Explicit coin diagnostics: don't let global newest-event sampling hide the requested symbol.
                 if coin:
                     start=now-hours*3600000
@@ -185,9 +178,20 @@ def export(source,dest,coin=None,hours=24,now=None,complete=False,notify=lambda 
                             continue
                         # Keep targeted records across ZIP scales; explicit omission on query error.
                         sql=f'SELECT * FROM {table} WHERE symbol=? AND {clock} BETWEEN ? AND ? ORDER BY {clock}'
-                        data=optional(name,lambda:csv_query(db,sql,(coin,start,now)))
+                        try:
+                            with query_budget(db,None if complete else time.monotonic()+8):
+                                data=csv_query(db,sql,(coin,start,now))
+                        except (sqlite3.OperationalError,OSError,ValueError) as exc:
+                            optional_errors[name]=str(exc);data=None
                         if data is not None:z.writestr(name+'.csv',data)
                     manifest['coinDiagnostics']={'symbol':coin,'fromMs':start,'toMs':now,'note':'Targeted recorded rows only, not proof of all promotion rejections; missing tables/errors in omittedDetails.'}
+                for table,n in specs:
+                    if table not in tables or int(n*scale)<=0:continue
+                    limit=int(n*scale)
+                    order='cutoff DESC' if table.endswith('_cycles') else 'cutoff DESC,symbol'
+                    data=optional(table,lambda:csv_query(db,f'SELECT * FROM {table} ORDER BY {order} LIMIT ?',(limit,)))
+                    if data is not None:
+                        z.writestr(table+'.csv',data);manifest['detailLimits'][table]=limit
                 # Joined settled feature/outcome records, not independently capped newest events.
                 for pre in ('r11','r111'):
                     if scale and {pre+'_ready',pre+'_events',pre+'_outcomes'}<=tables:
