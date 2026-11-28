@@ -71,3 +71,5 @@ Latest reading priority: [CURRENT_STATUS](CURRENT_STATUS.md) and [DECISION_LOG](
 [R11.1 performance hotfix](PERFORMANCE_R111.md) — archive cache, pending-only ledgers and scheduler isolation.
 
 [R11.2 Impulse Exhaustion Radar](R112.md) — prospective paired momentum controls and recovery challenger.
+
+[P0 safety, backup and rollback](P0_SAFETY.md) — staged recovery implementation and outstanding release gates.
