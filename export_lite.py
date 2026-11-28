@@ -134,10 +134,41 @@ def collect(db,now,deadline=None,notify=lambda message:None,daily_only=False):
     q('daily_coin_r08',['research_snapshots'],"SELECT symbol,COUNT(*) n,MAX(recorded_at-candle_time) maxLagMs,AVG(recorded_at-candle_time) avgLagMs,SUM(json_extract(payload,'$.potentialUp')=1) up,SUM(json_extract(payload,'$.potentialDown')=1) down,MAX(json_extract(payload,'$.longScore')) maxLong,MAX(json_extract(payload,'$.shortScore')) maxShort,COUNT(json_extract(payload,'$.researchFeatures.extraIndicators.5m.adx14')) extraCovered FROM research_snapshots WHERE candle_time>=? AND candle_time<=? GROUP BY 1",(day,now))
     q('daily_coin_dashboard',['events'],"SELECT symbol,direction,status,end_reason,COUNT(*) n FROM events WHERE started_at>=? AND started_at<=? GROUP BY 1,2,3,4",(day,now))
     q('daily_coin_r112',['r112_entries','r112_outcomes'],"SELECT e.symbol,e.cohort,e.direction,COUNT(*) n,COUNT(o.gross_pct) observed,AVG(o.gross_pct) gross,AVG(o.gross_pct)-.20 net020 FROM r112_entries e JOIN r112_outcomes o USING(symbol,cutoff,cohort) WHERE e.decision>=? AND e.decision<=? AND o.horizon=15 AND o.policy='FIXED' GROUP BY 1,2,3",(day,now))
+    # Outcome labels are FUTURE observations relative to the actual frozen feature time.
+    # No historical backfill of features, no simulated live receipt, no ranking changes.
+    study="""WITH anchors AS (
+      SELECT symbol,candle_time,recorded_at,json_extract(payload,'$.researchFeatures.extraIndicators') features,
+        ((recorded_at+59999)/60000)*60000 AS entry
+      FROM research_snapshots WHERE recorded_at>=? AND recorded_at<=?
+    ), measured AS (
+      SELECT a.*,CAST(json_extract(b.payload,'$[1]') AS REAL) open_px,
+        CAST(json_extract(z.payload,'$[4]') AS REAL) close_px
+      FROM anchors a
+      LEFT JOIN market_observations b ON b.kind='kline_1m' AND b.symbol=a.symbol AND b.source_ts=a.entry+59999 AND b.received_at<=?
+      LEFT JOIN market_observations z ON z.kind='kline_1m' AND z.symbol=a.symbol AND z.source_ts=a.entry+899999 AND z.received_at<=?
+    ), labelled AS (
+      SELECT *,CASE WHEN features IS NULL THEN 'NO_FEATURE'
+        WHEN recorded_at<candle_time OR recorded_at-candle_time>60000 THEN 'LATE_FEATURE'
+        WHEN entry+899999>=? THEN 'PENDING'
+        WHEN open_px IS NULL OR close_px IS NULL OR open_px<=0 OR close_px<=0 THEN 'MISSING_FUTURE'
+        WHEN 100*(close_px/open_px-1)>=1 THEN 'UP'
+        WHEN 100*(close_px/open_px-1)<=-1 THEN 'DOWN'
+        WHEN ABS(100*(close_px/open_px-1))<=.3 THEN 'FLAT'
+        ELSE 'OTHER' END label FROM measured
+    ) """
+    q('daily_indicator_cohort',['research_snapshots','market_observations'],study+
+      "SELECT symbol,label,COUNT(*) n FROM labelled GROUP BY 1,2",(day,now,now,now,now))
+    q('daily_indicator_profile',['research_snapshots','market_observations'],study+
+      """SELECT label,tf.key timeframe,v.key indicator,COUNT(*) n,COUNT(DISTINCT symbol) coins,
+      AVG(v.value) mean,AVG(v.value*v.value) meanSquare,MIN(v.value) min,MAX(v.value) max
+      FROM labelled,json_each(features) tf,json_each(tf.value) v
+      WHERE label IN ('UP','DOWN','FLAT','OTHER') AND v.type IN ('real','integer')
+      GROUP BY 1,2,3""",(day,now,now,now,now))
     # Recent R11.1/R11 sections first, then operational coverage and other recent
     # results; expensive historical rule expansion is lower priority.
     def priority(item):
         name=item[0]
+        if name.startswith('daily_indicator_'):return 3
         if name.startswith('daily_') or name=='ws_coin_24h':return -1
         if name.startswith(('r112_','r111_')) and name.endswith('_24h'):return 0
         if name.startswith('r11_') and name.endswith('_24h'):return 1
@@ -157,6 +188,7 @@ def collect(db,now,deadline=None,notify=lambda message:None,daily_only=False):
                 with query_budget(db,deadline):
                     out['counts'][t]=db.execute('SELECT COUNT(*) FROM "'+t.replace('"','""')+'"').fetchone()[0]
             except sqlite3.OperationalError as e:out['unavailable']['count:'+t]=str(e)
+    out['indicatorStudy']={'version':'future15-endpoint-v1','entry':'next 1m open at or after recorded_at','horizonMinutes':15,'maxFeatureLagMs':60000,'upPct':1,'downPct':-1,'flatAbsPct':.3,'note':'Exploratory endpoint cohorts, not independent trades or matched controls; missing endpoints and late features excluded, no intra-window path claim.'}
     out['dailyWindow']={'fromMs':day,'toMs':now,'kind':'rolling_24h','completeSections':[k for k in out['sections'] if k.startswith('daily_')],'missingSections':{k:v for k,v in out['unavailable'].items() if k.startswith('daily_')}}
     return out,tables
 
