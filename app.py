@@ -193,6 +193,49 @@ def indicators(rows):
     }
 
 
+def extra_indicators(rows):
+    """Compact shadow-only features. No scoring gates or extra API calls."""
+    if len(rows)<35:return None
+    b=rows[-60:];cl=[x['close'] for x in b]
+    typ=[(x['high']+x['low']+x['close'])/3 for x in b]
+    volume=[x['volume'] for x in b]
+    pos=neg=0.
+    for i in range(len(b)-14,len(b)):
+        money=typ[i]*volume[i]
+        if typ[i]>typ[i-1]:pos+=money
+        elif typ[i]<typ[i-1]:neg+=money
+    mfi=100*pos/(pos+neg) if pos+neg else None
+    mean=statistics.mean(typ[-20:])
+    dev=statistics.mean(abs(v-mean) for v in typ[-20:])
+    cci=(typ[-1]-mean)/(.015*dev) if dev else None
+    total=sum(volume[-20:])
+    obv=sum(volume[i]*(1 if cl[i]>cl[i-1] else -1 if cl[i]<cl[i-1] else 0)
+            for i in range(len(b)-20,len(b)))/total if total else None
+    # Wilder directional movement and ADX (14).
+    trs=[];plus=[];minus=[]
+    for old,new in zip(b,b[1:]):
+        up=new['high']-old['high'];down=old['low']-new['low']
+        trs.append(max(new['high']-new['low'],abs(new['high']-old['close']),abs(new['low']-old['close'])))
+        plus.append(up if up>down and up>0 else 0.)
+        minus.append(down if down>up and down>0 else 0.)
+    tr=sum(trs[:14]);p=sum(plus[:14]);m=sum(minus[:14]);dx=[]
+    for i in range(13,len(trs)):
+        if i>13:tr=tr-tr/14+trs[i];p=p-p/14+plus[i];m=m-m/14+minus[i]
+        dx.append(100*abs(p-m)/(p+m) if p+m else 0.)
+    adx=statistics.mean(dx[:14])
+    for x in dx[14:]:adx=(13*adx+x)/14
+    rs=[rsi(cl[:i]) for i in range(len(cl)-15,len(cl)+1)]
+    stoch=[]
+    for i in range(13,len(rs)):
+        w=rs[i-13:i+1];lo=min(w);hi=max(w)
+        stoch.append(100*(w[-1]-lo)/(hi-lo) if hi>lo else 50.)
+    middle=statistics.mean(cl[-20:])
+    return {'version':'shadow-extra-v1','adx14':adx,'plusDI14':100*p/tr if tr else None,
+        'minusDI14':100*m/tr if tr else None,'mfi14':mfi,'cci20':cci,'obvFlow20':obv,
+        'stochRsi14K3':statistics.mean(stoch[-3:]),'roc5Pct':100*(cl[-1]/cl[-6]-1),
+        'bbWidth20Pct':400*statistics.pstdev(cl[-20:])/middle if middle else None}
+
+
 def regime(ind):
     slope = (ind['ema200'] - ind['ema200Prev6']) / ind['ema200Prev6'] * 100
     if ind['close'] > ind['ema200'] and slope > 0:
@@ -470,6 +513,11 @@ def scan_symbol(ticker, is_tracked=False, cache_only=False, scan_now=None):
                 raise
             minute_error=str(exc)[:140]
     features['multi']=multifactor.extract(c5,rsi,atr)
+    features['extraIndicators']={tf:extra_indicators(sets[tf]) for tf in ('5m','15m')}
+    if 'raw' in locals() and raw is not None:
+        minute_rows=[r for r in parse_klines(raw,now) if r['closeTime']<=i5['time']]
+        if len(minute_rows)>=35 and all(y['closeTime']-x['closeTime']==60000 for x,y in zip(minute_rows,minute_rows[1:])):
+            features['extraIndicators']['1m']=extra_indicators(minute_rows)
     features['derivatives'],features['breadth']={},{}
     context_error=None
     if ARCHIVE is not None:
@@ -623,7 +671,7 @@ def scan_job(generation, mode, min_turnover):
         cache_only=STREAM is not None
         scan_now=int(time.time()*1000)
         if cache_only:
-            cold=[t['symbol'] for t in tickers if not STREAM.ready(t['symbol'],scan_now)]
+            cold=[t['symbol'] for t in tickers if not all(STREAM.candles(t['symbol'],tf,WS_LIMIT[tf]-1,scan_now) is not None for tf in ('5m','15m','1h','4h'))]
             cold_set=set(cold)
             tickers=[t for t in tickers if t['symbol'] not in cold_set]
             with SCAN_LOCK:
