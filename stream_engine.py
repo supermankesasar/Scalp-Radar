@@ -6,7 +6,7 @@ import json
 import math
 import threading
 import time
-from collections import defaultdict
+from collections import defaultdict, deque
 from statistics import median
 
 BASE='wss://fstream.binance.com'
@@ -24,6 +24,12 @@ def stream_groups(symbols):
       ('market','trades',g,[s+'@aggTrade' for s in g]) for g in chunks(syms,50)]+[
       ('public','depth',g,[s+'@depth5@500ms' for s in g]) for g in chunks(syms,60)]+[
       ('market','liquidations',syms,['!forceOrder@arr']),('market','tickers',syms,['!ticker@arr'])]
+
+def stream_lane(group):
+    _,kind,_,streams=group
+    if kind=='tickers':return 'ticker'
+    if kind=='candles' and streams[0].endswith('@kline_1m'):return 'minute'
+    return 'other'
 
 class StreamEngine:
     def __init__(self):
@@ -48,9 +54,14 @@ class StreamEngine:
         self.messages=0
         self.last_message_at=None
         self.gaps=0
+        self.ticker_samples={}
+        self.shard_health={}
+        self.shard_reconnect_at={}
     def set_symbols(self,symbols):
         with self.lock:
             self.symbols=set(symbols)
+            for s in list(self.ticker_samples):
+                if s not in self.symbols:del self.ticker_samples[s]
             for mapping in (self.bars,self.buckets,self.connected,self.candle_received):
                 for k in list(mapping):
                     if k[0] not in self.symbols: del mapping[k]
@@ -121,6 +132,11 @@ class StreamEngine:
             p=float(e['c']); t=int(e['E'])
             if p>0 and finite(p) and 0<=received-t<=10000 and t>=self.quotes.get(s,(0,0))[1]:
                 self.quotes[s]=(p,t)
+            if p>0 and finite(p) and 0<=received-t<=10000:
+                history=self.ticker_samples.setdefault(s,deque(maxlen=75))
+                if not history or t>history[-1][0]:
+                    if history and t//5000==history[-1][0]//5000:history[-1]=(t,p)
+                    else:history.append((t,p))
             return
         t=int(e.get('T',e.get('E',received)))
         if kind=='forceOrder':t=int(e['o']['T'])
@@ -210,50 +226,117 @@ class StreamEngine:
         with self.lock:return self.candle_received.get((s,tf),{}).get(cutoff)
     def connected_since(self,s,kind):
         with self.lock:return self.connected.get((s,kind),ms()+1)
+    def movement_status(self,now=None):
+        """Observed ticker movement, not a candle receipt, signal or predicted entry."""
+        now=ms() if now is None else now
+        with self.lock:
+            universe=len(self.symbols)
+            histories={s:tuple(h) for s,h in self.ticker_samples.items() if s in self.symbols}
+        moves=[];fresh=0;covered1=0;covered5=0
+        for s,h in histories.items():
+            if not h or not 0<=now-h[-1][0]<=10000:continue
+            fresh+=1;t,p=h[-1];ret={}
+            for minutes in (1,5):
+                target=t-minutes*60000
+                anchor=next(((ts,px) for ts,px in reversed(h) if ts<=target),None)
+                if anchor and target-anchor[0]<=10000:
+                    ret[minutes]=100*(p/anchor[1]-1)
+            covered1+=1 in ret;covered5+=5 in ret
+            if abs(ret.get(1,0))>=1 or abs(ret.get(5,0))>=2:
+                moves.append({'symbol':s,'price':p,'at':t,'pct1m':ret.get(1),'pct5m':ret.get(5)})
+        moves.sort(key=lambda r:-max(abs(r['pct1m'] or 0),abs(r['pct5m'] or 0)))
+        return {'enabled':True,'source':'WS_TICKER_OBSERVATION','at':now,'universe':universe,
+                'fresh':fresh,'covered1m':covered1,'covered5m':covered5,'moves':moves}
+    def minute_shard_check(self,label,group,cut,now):
+        """Detect a large missing-close shard; never manufacture WS receipts."""
+        with self.lock:
+            if now-cut<15000:return False
+            old=self.shard_health.get(label,{})
+            if cut<=old.get('cutoff',-1):return False
+            symbols=[s.upper() for s in group if s.upper() in self.symbols]
+            if not symbols:return False
+            receipts={s:self.candle_received.get((s,'1m'),{}).get(cut) for s in symbols}
+            missing=[s for s,r in receipts.items() if r is None]
+            late=[s for s,r in receipts.items() if r is not None and not 0<=r-cut<=15000]
+            reconnect=len(missing)*5>=len(symbols)*4 and now-self.shard_reconnect_at.get(label,-120000)>=120000
+            self.shard_health[label]={'cutoff':cut,'symbols':len(symbols),'missing':missing,'late':late,
+                'reconnects':old.get('reconnects',0)+int(reconnect)}
+            if reconnect:self.shard_reconnect_at[label]=now
+            return reconnect
+    def coverage_status(self,now=None):
+        now=ms() if now is None else now
+        cut=close_at(now-15000,60000)
+        with self.lock:
+            missing=[];late=[];fresh=0
+            for s in sorted(self.symbols):
+                r=self.candle_received.get((s,'1m'),{}).get(cut)
+                if r is None:missing.append(s)
+                elif not 0<=r-cut<=15000:late.append(s)
+                else:fresh+=1
+            return {'cutoff':cut,'universe':len(self.symbols),'fresh':fresh,'missing':missing,'late':late,
+                    'shards':{k:dict(v) for k,v in self.shard_health.items()}}
     def status(self):
         with self.lock:
             return {'enabled':True,'symbols':len(self.symbols),'cachedSymbols':len({k[0] for k in self.bars}),
               'connections':dict(self.conn),'onlineConnections':sum(v=='connected' for v in self.conn.values()),'messages':self.messages,'lastMessageAt':self.last_message_at,'lateEvents':self.late,'tradeIdGaps':self.gaps,
-              'restKlineRequests':self.rest_hits,'wsCacheHits':self.cache_hits,'recentErrors':list(self.errors)}
+              'minuteCloseCoverage':self.coverage_status(),'restKlineRequests':self.rest_hits,'wsCacheHits':self.cache_hits,'recentErrors':list(self.errors)}
     async def session(self,route,kind,group,streams,delay):
         from websockets.asyncio.client import connect
         await asyncio.sleep(delay)
         label=kind+':'+group[0]+(':'+streams[0].split('@')[-1] if kind=='candles' else '')
         url=BASE+'/'+route+'/stream?streams='+'/'.join(streams)
+        is_minute=stream_lane((route,kind,group,streams))=='minute'
+        connection_kind='candles_1m' if is_minute else kind
         backoff=2
         while not self.stop.is_set():
             try:
                 async with connect(url,open_timeout=20,ping_interval=30,ping_timeout=20,max_queue=64,max_size=4*1024*1024) as ws:
-                    self.connection(kind,group,True,ms())
+                    connected_at=ms()
+                    self.connection(connection_kind,group,True,connected_at)
                     with self.lock:self.conn[label]='connected'
-                    started=time.monotonic()
+                    started=time.monotonic();last_message=started;frames=0
                     while not self.stop.is_set() and time.monotonic()-started<23*3600:
-                        message=await asyncio.wait_for(ws.recv(),timeout=90)
-                        self.ingest(json.loads(message))
-                        backoff=2
+                        if is_minute:
+                            now=ms();cut=close_at(now-15000,60000)
+                            if connected_at<=cut-59999 and self.minute_shard_check(label,group,cut,now):
+                                raise RuntimeError('missing 1m closes; reconnect shard')
+                        try:message=await asyncio.wait_for(ws.recv(),timeout=5 if is_minute else 90)
+                        except asyncio.TimeoutError:
+                            if time.monotonic()-last_message>=90:raise
+                            continue
+                        received=ms();last_message=time.monotonic()
+                        self.ingest(json.loads(message),received)
+                        backoff=2;frames+=1
+                        if frames%32==0:await asyncio.sleep(0)
             except asyncio.CancelledError:raise
             except Exception as exc:
                 with self.lock:self.errors=(self.errors+[label+': '+str(exc)[:160]])[-20:]
             finally:
-                self.connection(kind,group,False,ms())
+                self.connection(connection_kind,group,False,ms())
                 with self.lock:self.conn[label]='disconnected'
             await asyncio.sleep(backoff);backoff=min(120,backoff*2)
-    async def run(self):
-        tasks=[];current=set()
+    async def run(self,lane=None):
+        tasks=[];current=set();labels=set()
         try:
             while not self.stop.is_set():
                 with self.lock:desired=set(self.symbols)
                 if desired!=current:
                     for t in tasks:t.cancel()
                     await asyncio.gather(*tasks,return_exceptions=True)
-                    with self.lock:self.conn.clear()
+                    with self.lock:
+                        for label in labels:
+                            self.conn.pop(label,None)
+                            self.shard_health.pop(label,None)
+                            self.shard_reconnect_at.pop(label,None)
                     current=desired
-                    tasks=[asyncio.create_task(self.session(*g,i*.4)) for i,g in enumerate(stream_groups(current))] if current else []
+                    groups=[g for g in stream_groups(current) if lane is None or stream_lane(g)==lane]
+                    labels={g[1]+':'+g[2][0]+(':'+g[3][0].split('@')[-1] if g[1]=='candles' else '') for g in groups}
+                    tasks=[asyncio.create_task(self.session(*g,i*.4)) for i,g in enumerate(groups)]
                 await asyncio.sleep(3)
         finally:
             for t in tasks:t.cancel()
             await asyncio.gather(*tasks,return_exceptions=True)
-    def run_forever(self):
-        try:asyncio.run(self.run())
+    def run_forever(self,lane=None):
+        try:asyncio.run(self.run(lane))
         except Exception as exc:
             with self.lock:self.errors=(self.errors+[str(exc)[:200]])[-20:]
