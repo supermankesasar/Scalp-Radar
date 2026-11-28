@@ -116,6 +116,22 @@ class PerformanceTests(unittest.TestCase):
                 ok=done.wait(2)
             t.join(3)
             self.assertTrue(ok);self.assertEqual(len(result),1)
+    def test_parallel_local_warmup_all_timeframes(self):
+        from unittest.mock import Mock
+        from stream_engine import LIMIT,TF,close_at
+        import time
+        now=1800000000000+16000
+        e=StreamEngine();e.set_symbols({'AAA','BBB'})
+        a=Mock()
+        def local(s,tf,n,asof):
+            end=close_at(asof,TF[tf])
+            return [[0,100,101,99,100,0,end-(n-1-i)*TF[tf],0,0,0,0,0] for i in range(n)]
+        a.cached_rows.side_effect=local
+        with patch.object(app,'STREAM',e),patch.object(app,'ARCHIVE',a),patch.object(app,'request_market',side_effect=AssertionError('no REST')):
+            count,errors=app.local_seed_pass(['AAA','BBB'],now)
+        self.assertEqual(count,10);self.assertEqual(errors,[])
+        for s in ('AAA','BBB'):
+            for tf,n in LIMIT.items():self.assertIsNotNone(e.candles(s,tf,n-1,now-15000))
     def test_budget_is_shared_and_bounded(self):
         g=RestGuard();g.history_cap=2
         self.assertEqual(g.history_delay('/futures/data/openInterestHist'),0)
