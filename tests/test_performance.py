@@ -23,6 +23,29 @@ class PerformanceTests(unittest.TestCase):
             h.stream=None
             self.assertTrue(h.cached_5m(s,3,now))
             self.assertFalse(h.cached_5m(s,3,now+300000))
+    def test_cache_only_scanner_does_not_fetch_missing_history(self):
+        e=StreamEngine();e.set_symbols({'AAAUSDT'})
+        ticker={'symbol':'AAAUSDT','turnover24h':100000000,'change24h':0}
+        with patch.object(app,'STREAM',e),patch.object(app,'request_market',side_effect=AssertionError('no REST')):
+            with self.assertRaisesRegex(ValueError,'CACHE_GAP'):
+                app.scan_symbol(ticker,cache_only=True,scan_now=1800000000000)
+    def test_research_queue_survives_reopen_and_deduplicates(self):
+        with tempfile.TemporaryDirectory() as d:
+            path=Path(d)/'db.sqlite';lock=threading.RLock()
+            h=ResearchHistory(path,lock)
+            row={'symbol':'AAA','lastClosed5m':299999,'_recent5m':[{'closeTime':299999,'close':100}]}
+            h.stage_scan([(row,300123),(row,300999)])
+            q=ResearchHistory(path,lock).queued_scan()
+            self.assertEqual(len(q),1);self.assertEqual(q[0]['observed_at'],300123)
+            h.ack_scan('AAA',299999);self.assertEqual(h.queued_scan(),[])
+    def test_extra_indicators_bounded(self):
+        rows=[{'close':100+i,'high':101+i,'low':99+i,'volume':10} for i in range(60)]
+        e=app.extra_indicators(rows)
+        self.assertAlmostEqual(e['adx14'],100)
+        self.assertEqual(e['mfi14'],100)
+        self.assertEqual(e['obvFlow20'],1)
+        self.assertGreater(e['roc5Pct'],0)
+        self.assertTrue(0<=e['stochRsi14K3']<=100)
     def test_budget_is_shared_and_bounded(self):
         g=RestGuard();g.history_cap=2
         self.assertEqual(g.history_delay('/futures/data/openInterestHist'),0)
