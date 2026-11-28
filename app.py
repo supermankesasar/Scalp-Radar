@@ -72,6 +72,9 @@ def cpu_workers(value=None,cores=None):
 SCAN_CPU_WORKERS=cpu_workers(os.getenv('SCANNER_CPU_WORKERS'))
 CPU_POOL=None
 LOCAL_CACHE_READY=threading.Event()
+DRAIN_REQUEST=threading.Event()
+APP_STOP=threading.Event()
+SCAN_THREAD=None
 SCAN_REFRESH_MS = 180000
 ACTIVE_FAST_POLL_SECONDS = 30
 FRESH_CANDLE_MS = 8 * 60_000
@@ -692,6 +695,7 @@ def _saved_visible(rows, mode, min_turnover):
 
 
 def schedule_scan(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
+    global SCAN_THREAD
     if OVERNIGHT:
         mode = 'all'  # browser filters must not reduce the overnight scan universe
     validate_scan_options(mode, min_turnover)
@@ -707,7 +711,7 @@ def schedule_scan(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False)
         new_ws_bar=STREAM is not None and close_at(now_ms-7000,300000) > (SCAN_STATE['startedAt'] or 0)
         need_start = (not running and (SCAN_STATE['completedAt'] is None or new_filters or new_ws_bar
                                       or elapsed >= SCAN_REFRESH_MS or (STREAM is not None and SCAN_STATE.get('cacheSkipped',0)>0 and elapsed>=30000) or (force and started_age >= 60000)))
-        if need_start:
+        if need_start and not DRAIN_REQUEST.is_set():
             SCAN_STATE.update({
                 'running': True, 'rows': [], 'processed': 0, 'total': 0, 'eligible': 0,
                 'universe': 0, 'missingTicker': 0, 'trackedExtra': 0,
@@ -717,6 +721,7 @@ def schedule_scan(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False)
                 'message': 'Mengambil daftar USDT perpetual Binance',
             })
             job = threading.Thread(target=scan_job, args=(SCAN_STATE['generation'],mode,min_turnover), daemon=True)
+            SCAN_THREAD=job
             job.start()
         # Return a shallow immutable-by-convention snapshot without SQLite I/O.
         state=dict(SCAN_STATE,rows=list(SCAN_STATE['rows']),errors=list(SCAN_STATE['errors']))
@@ -749,6 +754,7 @@ def read_scanner(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
         'processed': state['processed'], 'total': state['total'],
         'successful': len(fresh), 'computed':state.get('computed',len(fresh)) if STREAM is not None else len(fresh),
         'phase':state.get('phase'),'phaseMetrics':state.get('phaseMetrics',{}),
+        'updatePending':DRAIN_REQUEST.is_set(),
         'failed': max(0,state['processed'] - (state.get('computed',len(fresh)) if STREAM is not None and state['running'] else len(fresh))-state.get('cacheSkipped',0)),
         'cacheSkipped':state.get('cacheSkipped',0),'cacheSkippedSymbols':state.get('cacheSkippedSymbols',[]),
         'eligible': state['eligible'], 'universe': state['universe'],
@@ -859,7 +865,7 @@ def fast_watch_loop():
     """Update ACTIVE signal price and 5m outcomes every 30s, independently
     of the slower full-market scanner. Closed candle determines outcome.
     """
-    while True:
+    while not APP_STOP.is_set():
         try:
             symbols = STORE.watch_symbols(max_symbols=20)
             if symbols:
@@ -879,12 +885,12 @@ def fast_watch_loop():
         except Exception as exc:
             print('Fast watch error:', str(exc)[:140],flush=True)
         if RUNTIME:RUNTIME.beat('fast-watch')
-        time.sleep(ACTIVE_FAST_POLL_SECONDS)
+        APP_STOP.wait(ACTIVE_FAST_POLL_SECONDS)
 
 
 def scheduler_loop():
     """Always-on server-side scanning independent from whether phone/browser is open."""
-    while True:
+    while not APP_STOP.is_set():
         try:
             with SCAN_LOCK:
                 mode, turnover = SCAN_STATE['requestedMode'], SCAN_STATE['requestedMinTurnover']
@@ -892,7 +898,7 @@ def scheduler_loop():
         except Exception as exc:
             print('Background scheduler:',str(exc),flush=True)
         if RUNTIME:RUNTIME.beat('scan-scheduler')
-        time.sleep(12)
+        APP_STOP.wait(12)
 
 
 def minute_research_loop():
@@ -1013,6 +1019,7 @@ def minute_seed_loop():
 
 def serve():
     global RUNTIME, CPU_POOL
+    DRAIN_REQUEST.clear();APP_STOP.clear()
     host = os.getenv('HOST', '0.0.0.0')
     port = int(os.getenv('PORT', '8765'))
     server = ThreadingHTTPServer((host, port), Handler)
@@ -1021,9 +1028,12 @@ def serve():
     if STREAM is not None and SCAN_CPU_WORKERS>1:
         CPU_POOL=ProcessPoolExecutor(max_workers=SCAN_CPU_WORKERS,mp_context=multiprocessing.get_context('spawn'))
     print('CPU logical cores:',os.cpu_count(),'| scan math processes:',SCAN_CPU_WORKERS if CPU_POOL is not None else 0,flush=True)
+    workers=[]
     def worker(name,fn):
-        if RUNTIME:RUNTIME.supervise(name,fn)
-        else:threading.Thread(target=fn,daemon=True,name=name).start()
+        if RUNTIME:t=RUNTIME.supervise(name,fn)
+        else:
+            t=threading.Thread(target=fn,daemon=True,name=name);t.start()
+        workers.append(t)
     def scan_status():
         # Read only primitive values without acquiring a potentially stalled lock.
         return {k:SCAN_STATE.get(k) for k in ('running','progressAt','processed','total','startedAt','cacheSkipped','cacheSkippedSymbols','computed','phase','phaseMetrics')}
@@ -1051,6 +1061,28 @@ def serve():
         print('OVERNIGHT ALL crypto pairs enabled; status /api/overnight',flush=True)
     print('Scalp Radar v0.5 / Full Universe P12: host %s port %d' % (host,port),flush=True)
     print('DB:',STORE.path,'| background scanner:',os.getenv('SCANNER_BACKGROUND','1'),flush=True)
+    def drain():
+        with SCAN_LOCK:
+            DRAIN_REQUEST.set()
+            job=SCAN_THREAD
+        if RUNTIME:
+            RUNTIME.event('update_drain_requested');RUNTIME.stop.set()
+        print('Graceful shutdown: waiting for active scan to finish...',flush=True)
+        if job is not None and job.is_alive():job.join()
+        APP_STOP.set()
+        if STREAM is not None:STREAM.stop.set()
+        if ARCHIVE is not None:ARCHIVE.stop.set()
+        for t in workers:t.join()
+        print('Graceful shutdown: workers stopped; closing server.',flush=True)
+        if RUNTIME:RUNTIME.event('update_drain_complete')
+        server.shutdown()
+    def shutdown_monitor(path):
+        while not APP_STOP.wait(.5):
+            if path.is_file():
+                drain();return
+    stop_file=os.getenv('SCANNER_SHUTDOWN_FILE')
+    if stop_file:
+        threading.Thread(target=shutdown_monitor,args=(Path(stop_file),),daemon=True,name='shutdown-monitor').start()
     try:
         if os.getenv('SCANNER_OPEN_BROWSER','0') == '1':
             import webbrowser
@@ -1065,11 +1097,12 @@ def serve():
     except KeyboardInterrupt:
         print('Server stopped')
     finally:
+        APP_STOP.set();DRAIN_REQUEST.set()
         if RUNTIME:RUNTIME.stop.set()
         if STREAM is not None:STREAM.stop.set()
         if ARCHIVE is not None:
             ARCHIVE.stop.set()
-        if CPU_POOL is not None:CPU_POOL.shutdown(wait=False,cancel_futures=True)
+        if CPU_POOL is not None:CPU_POOL.shutdown(wait=True,cancel_futures=True)
         server.server_close()
 
 if __name__ == '__main__':

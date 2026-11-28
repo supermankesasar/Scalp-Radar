@@ -40,6 +40,15 @@ class AutoUpdateTests(unittest.TestCase):
                 return result()
             raise AssertionError(args)
         patch.object(u,'git',side_effect=run).start()
+    def test_live_check_fetches_without_modifying_checkout(self):
+        u.scanner_running.return_value=True
+        self.assertEqual(u.check_update(),('old','new'))
+        self.assertFalse(any(x[0]=='merge' for x in self.calls))
+    def test_apply_refuses_running_scanner(self):
+        u.scanner_running.return_value=True
+        with self.assertRaisesRegex(RuntimeError,'Scanner started'):
+            u.apply_update('old','new')
+        self.assertEqual(self.calls,[])
     def test_fast_forward_only(self):
         self.assertEqual(u.update(),'new')
         self.assertIn(('merge','--ff-only','--no-overwrite-ignore','new'),self.calls)

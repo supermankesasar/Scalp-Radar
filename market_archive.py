@@ -213,7 +213,7 @@ class MarketArchive:
             except Exception as e:
                 failures+=1
                 self.error(run,symbol,kind,e)
-        return failures
+        return None if self.stop.is_set() else failures
     def collect_forever(self):
         first=True
         while not self.stop.is_set():
@@ -248,14 +248,16 @@ class MarketArchive:
                 with ThreadPoolExecutor(max_workers=6) as pool:
                     futures={pool.submit(self.collect_symbol,run,s,first):s for s in sorted(universe)}
                     for f in as_completed(futures):
-                        n=f.result(); processed+=1;errors+=n;complete+=int(n==0)
+                        n=f.result()
+                        if n is None:continue
+                        processed+=1;errors+=n;complete+=int(n==0)
                         if processed%25==0 or processed==len(universe):
                             self.heartbeat(state='collecting',processed=processed,total=len(universe),errors=errors)
                             with self.db() as db:
                                 db.execute('UPDATE market_collection_runs SET processed=?,complete=?,errors=? WHERE id=?',(processed,complete,errors,run))
                             with self.metrics_lock:metrics=dict(self.metrics)
                             print('[ARCHIVE]',processed,'/',len(universe),'complete:',complete,'errors:',errors,'REST:',metrics['restRequests'],'cached5m:',metrics['cached5m'],flush=True)
-                state='COMPLETE' if processed==len(universe) and not errors else 'PARTIAL'
+                state='INTERRUPTED' if self.stop.is_set() else 'COMPLETE' if processed==len(universe) and not errors else 'PARTIAL'
             except Exception as e:
                 errors+=1; self.error(run,'*','sweep',e);state='ERROR'
                 print('[ARCHIVE]',str(e),flush=True)

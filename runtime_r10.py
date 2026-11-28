@@ -27,7 +27,8 @@ class Runtime:
                 if self.stop.is_set():break
                 self.beat(name,state='restarting');self.event('worker_restart',worker=name)
                 self.stop.wait(10)
-        threading.Thread(target=loop,daemon=True,name=name).start()
+        t=threading.Thread(target=loop,daemon=True,name=name);t.start()
+        return t
     def status(self):
         with self.lock:return {'time':time.time(),'started':self.started,'workers':{k:dict(v) for k,v in self.workers.items()}}
     def watch(self,scan_status):
