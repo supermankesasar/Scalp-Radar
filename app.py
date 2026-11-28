@@ -77,6 +77,7 @@ LOCAL_CACHE_READY=threading.Event()
 DRAIN_REQUEST=threading.Event()
 APP_STOP=threading.Event()
 SCAN_THREAD=None
+PUBLISH_WINDOW_SECONDS=3
 SCAN_REFRESH_MS = 180000
 ACTIVE_FAST_POLL_SECONDS = 30
 FRESH_CANDLE_MS = 8 * 60_000
@@ -485,15 +486,20 @@ def _same_generation(generation):
 def scan_cached_universe(generation,tickers,tracked,scan_now):
     """Submit all ready coins; publish completed groups without a whole-market barrier."""
     started=time.perf_counter()
-    cold=[t['symbol'] for t in tickers if not all(STREAM.candles(t['symbol'],tf,WS_LIMIT[tf]-1,scan_now) is not None for tf in ('5m','15m','1h','4h'))]
+    cold=[];cache_miss={}
+    for t in tickers:
+        for tf in ('5m','15m','1h','4h'):
+            if STREAM.candles(t['symbol'],tf,WS_LIMIT[tf]-1,scan_now) is None:
+                cold.append(t['symbol']);cache_miss[tf]=cache_miss.get(tf,0)+1
+                break
     cold_set=set(cold)
     ready=[t for t in tickers if t['symbol'] not in cold_set]
     with SCAN_LOCK:
         SCAN_STATE.update(cacheSkipped=len(cold),cacheSkippedSymbols=cold,processed=len(cold),
-            computed=0,phase='COMPUTE',message='Analisis paralel seluruh cache siap',progressAt=int(time.time()*1000))
+            computed=0,phase='COMPUTE',phaseMetrics={'cacheFirstMissingTf':cache_miss},message='Analisis paralel seluruh cache siap',progressAt=int(time.time()*1000))
     cache_ms=1000*(time.perf_counter()-started)
     results=[];pending_rows=[];published=[]
-    metrics={'cacheCheckMs':cache_ms,'computeWallMs':0.,'dbLockWaitMs':0.,'dbBatchMs':0.,'researchStageMs':0.,'promotion':{},'publishBatches':0}
+    metrics={'cacheCheckMs':cache_ms,'computeWallMs':0.,'dbLockWaitMs':0.,'dbBatchMs':0.,'researchStageMs':0.,'promotion':{},'publishBatches':0,'cacheFirstMissingTf':cache_miss}
     compute_started=time.perf_counter();batch_started=None
     def publish():
         nonlocal batch_started
@@ -536,7 +542,7 @@ def scan_cached_universe(generation,tickers,tracked,scan_now):
                     SCAN_STATE['computed']=len(results)
                     SCAN_STATE['progressAt']=int(time.time()*1000)
                     SCAN_STATE['errors'].extend(errors)
-            if batch_started is not None and (not outstanding or time.monotonic()-batch_started>=3):publish()
+            if batch_started is not None and (not outstanding or time.monotonic()-batch_started>=PUBLISH_WINDOW_SECONDS):publish()
         publish()
     metrics['computeWallMs']=1000*(time.perf_counter()-compute_started)
     # Durable research queue uses actual feature completion, not publication time.
