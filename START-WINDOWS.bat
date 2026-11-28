@@ -12,7 +12,7 @@ set "SCANNER_R112=1"
 if not defined SCANNER_LIVE_FILTER set "SCANNER_LIVE_FILTER=R08_MULTI_CORE"
 set "HOST=127.0.0.1"
 set "PORT=8765"
-set "SCANNER_OPEN_BROWSER=1"
+if not defined SCANNER_OPEN_BROWSER set "SCANNER_OPEN_BROWSER=1"
 rem if not defined SCANNER_DB, local_runner.py selects persistent database
 rem Avoid starting a second collector against the same database if port is occupied.
 powershell -NoProfile -Command "if (Get-NetTCPConnection -LocalPort 8765 -State Listen -ErrorAction SilentlyContinue) { exit 1 } else { exit 0 }"
@@ -58,6 +58,7 @@ if errorlevel 1 (
 )
 %PY% -u local_runner.py
 set "RESULT=%errorlevel%"
+if "%RESULT%"=="86" exit /b 86
 echo Server stopped. Review the messages above.
 pause
 exit /b %RESULT%
