@@ -226,6 +226,30 @@ class StreamEngine:
         with self.lock:return self.candle_received.get((s,tf),{}).get(cutoff)
     def connected_since(self,s,kind):
         with self.lock:return self.connected.get((s,kind),ms()+1)
+    def major_status(self,symbols,now=None):
+        """Small independent watchlist from existing cache; no requests or entry rules."""
+        now=ms() if now is None else now
+        rows=[]
+        for s in symbols:
+            with self.lock:
+                listed=s in self.symbols
+                q=self.quotes.get(s)
+            fresh=bool(listed and q and 0<=now-q[1]<=10000)
+            returns={};cutoffs={}
+            if listed:
+                for tf in ('1m','5m','15m','1h','4h'):
+                    # Latest complete pair of closed bars only; 15s close grace.
+                    bars=self.candles(s,tf,2,now-15000)
+                    if bars:
+                        try:
+                            p0,p1=float(bars[0][4]),float(bars[1][4])
+                            if p0>0 and finite(p0) and finite(p1):
+                                returns[tf]=100*(p1/p0-1);cutoffs[tf]=int(bars[-1][6])
+                        except (ValueError,TypeError,IndexError,ZeroDivisionError):pass
+            rows.append({'symbol':s,'listed':listed,'price':q[0] if fresh else None,
+                         'quoteAt':q[1] if fresh else None,'returns':returns,'cutoffs':cutoffs})
+        return {'enabled':True,'at':now,'rows':rows,'source':'WS_CACHE'}
+
     def movement_status(self,now=None):
         """Observed ticker movement, not a candle receipt, signal or predicted entry."""
         now=ms() if now is None else now
