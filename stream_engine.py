@@ -329,7 +329,7 @@ class StreamEngine:
                             self.shard_health.pop(label,None)
                             self.shard_reconnect_at.pop(label,None)
                     current=desired
-                    groups=[g for g in stream_groups(current) if lane is None or stream_lane(g)==lane]
+                    groups=[g for g in stream_groups(current) if lane is None or stream_lane(g)==lane] if current else []
                     labels={g[1]+':'+g[2][0]+(':'+g[3][0].split('@')[-1] if g[1]=='candles' else '') for g in groups}
                     tasks=[asyncio.create_task(self.session(*g,i*.4)) for i,g in enumerate(groups)]
                 await asyncio.sleep(3)
