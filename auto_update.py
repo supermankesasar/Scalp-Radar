@@ -1,4 +1,4 @@
-"""Safe startup-only update of a Git clone. Never replace local data or reset changes."""
+"""Safe Git updates, with startup launcher and live supervisor helpers."""
 import os
 import socket
 import subprocess
@@ -28,9 +28,8 @@ def scanner_running():
         sock.settimeout(1)
         return sock.connect_ex(('127.0.0.1',8765))==0
 
-def update():
-    if scanner_running():
-        raise RuntimeError('Scanner is running. Stop the existing terminal before updating.')
+def check_update():
+    """Fetch metadata only; safe while scanner is running. Return old and target."""
     if not (ROOT/'.git').exists():
         raise RuntimeError('This is a ZIP folder, not a Git clone. Clone into a NEW folder first.')
     if output('rev-parse','--show-toplevel').casefold().replace('\\','/')!=str(ROOT).casefold().replace('\\','/'):
@@ -46,19 +45,27 @@ def update():
         result=git('fetch','--no-tags','origin','+refs/heads/main:refs/remotes/origin/main',timeout=90)
     except subprocess.TimeoutExpired:
         print('GitHub check timed out; starting existing version '+old[:12],flush=True)
-        return old
+        return old,old
     if result.returncode:
         print('GitHub update check failed; starting existing version '+old[:12],flush=True)
         print(result.stderr.strip(),flush=True)
-        return old
+        return old,old
     target=output('rev-parse','refs/remotes/origin/main')
     if old==target:
         print('Already up to date: '+old[:12],flush=True)
-        return old
+        return old,old
     if git('merge-base','--is-ancestor',old,target).returncode:
         raise RuntimeError('Local main is ahead or diverged; refusing reset or merge.')
+    return old,target
+
+def apply_update(old,target):
     if scanner_running():
         raise RuntimeError('Scanner started during update check. Stop it before updating.')
+    if output('rev-parse','HEAD')!=old or output('branch','--show-current')!='main' or output('status','--porcelain','--untracked-files=no'):
+        raise RuntimeError('Checkout changed during update; refusing merge.')
+    if old==target:return old
+    if git('merge-base','--is-ancestor',old,target).returncode:
+        raise RuntimeError('Target is not a fast-forward.')
     # Never overwrite untracked/ignored files, even if upstream starts tracking them.
     result=git('merge','--ff-only','--no-overwrite-ignore',target)
     if result.returncode:
@@ -68,6 +75,12 @@ def update():
         raise RuntimeError('Unexpected version after update.')
     print('Updated: '+old[:12]+' -> '+actual[:12],flush=True)
     return actual
+
+def update():
+    if scanner_running():
+        raise RuntimeError('Scanner is running. Stop the existing terminal before updating.')
+    old,target=check_update()
+    return apply_update(old,target) if old!=target else old
 
 def main():
     if os.name!='nt':
@@ -87,7 +100,12 @@ def main():
         try:
             update()
             # Run the newly updated normal launcher, with its existing DB selection.
-            return subprocess.call(['cmd.exe','/d','/c','START-WINDOWS.bat'],cwd=ROOT)
+            env=dict(os.environ,SCANNER_LIVE_UPDATE='1')
+            while True:
+                code=subprocess.call(['cmd.exe','/d','/c','START-WINDOWS.bat'],cwd=ROOT,env=env)
+                if code!=86:return code
+                env['SCANNER_OPEN_BROWSER']='0'
+                print('Restarting updated scanner...',flush=True)
         except (OSError,RuntimeError,subprocess.TimeoutExpired) as exc:
             print('Auto-update stopped: '+str(exc),flush=True)
             return 1
