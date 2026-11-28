@@ -8,7 +8,7 @@ import os
 import statistics
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed, wait, FIRST_COMPLETED
 from concurrent.futures.process import BrokenProcessPool
 import multiprocessing
 from scan_math import (ema,rsi,atr,macd_hist,parse_klines,indicators,extra_indicators,regime,utc_vwap,price_return,rsi_reversal_watch,compute_scan_math)
@@ -424,37 +424,32 @@ def scan_symbol(ticker, is_tracked=False, cache_only=False, scan_now=None):
     }
 
 
-def promotion_candidates(rows, now_ms=None, quote_prices=None):
-    """Rank fresh, liquid potential candidates for up to five watch slots.
-
-    Candidate must still be near the baseline at the latest quote. Does not
-    assert any probability or attempt to place orders.
-    """
-    now_ms = int(time.time()*1000) if now_ms is None else now_ms
-    quote_prices = quote_prices or {}
-    candidates = []
+def promotion_candidates(rows, now_ms=None, quote_prices=None, diagnostics=None):
+    """Rank eligible fresh candidates; record one mutually exclusive reason per direction."""
+    now_ms=int(time.time()*1000) if now_ms is None else now_ms
+    quote_prices=quote_prices or {}
+    counts={} if diagnostics is None else diagnostics
+    candidates=[]
     for r in rows:
-        if (r.get('turnover24h') or 0) < PROMOTION_MIN_TURNOVER:
-            continue
-        closed = r.get('lastClosed5m') or 0
-        if closed > now_ms or now_ms - closed > FRESH_CANDLE_MS:
-            continue
-        px = r.get('price')
-        quote = quote_prices.get(r['symbol'])
-        if not px or not quote or quote <= 0:
-            continue
-        for direction, flag, score in (
-            ('UP', r.get('potentialUp'), r.get('longScore',0)),
-            ('DOWN', r.get('potentialDown'), r.get('shortScore',0)),
-        ):
-            if not flag:
-                continue
-            chase_pct = 100 * (quote / px - 1) * (1 if direction == 'UP' else -1)
-            # Avoid chasing and also avoid an adverse move that has already hit
-            # the paper-stop, to avoid advertising an invalidated baseline.
-            if chase_pct > MAX_CHASE_PCT or chase_pct < -max(.40, r['atr5mPct']):
-                continue
-            candidates.append((int(score), r.get('turnover24h') or 0, direction, r))
+        reasons={}
+        for direction,flag,score in (('UP',r.get('potentialUp'),r.get('longScore',0)),
+                                     ('DOWN',r.get('potentialDown'),r.get('shortScore',0))):
+            closed=r.get('lastClosed5m') or 0
+            px=r.get('price');quote=quote_prices.get(r['symbol'])
+            if not flag:reason='NO_SETUP'
+            elif (r.get('turnover24h') or 0)<PROMOTION_MIN_TURNOVER:reason='LOW_TURNOVER'
+            elif closed>now_ms or now_ms-closed>FRESH_CANDLE_MS:reason='STALE_CANDLE'
+            elif not px or not quote or quote<=0:reason='NO_FRESH_QUOTE'
+            else:
+                chase=100*(quote/px-1)*(1 if direction=='UP' else -1)
+                if chase>MAX_CHASE_PCT:reason='CHASE'
+                elif chase < -max(.40,r['atr5mPct']):reason='ADVERSE'
+                else:
+                    reason='ELIGIBLE'
+                    candidates.append((int(score),r.get('turnover24h') or 0,direction,r))
+            reasons[direction]=reason
+            counts[reason]=counts.get(reason,0)+1
+        if diagnostics is not None:r['promotionReasons']=reasons
     candidates.sort(key=lambda e:(-e[0],-e[1],e[3]['symbol'],e[2]))
     return candidates
 
@@ -487,9 +482,7 @@ def _same_generation(generation):
 
 
 def scan_cached_universe(generation,tickers,tracked,scan_now):
-    """Submit ALL ready coins without a 20-pair barrier or per-coin DB writes.
-    Results are frozen at their actual completion time; publication is atomic.
-    """
+    """Submit all ready coins; publish completed groups without a whole-market barrier."""
     started=time.perf_counter()
     cold=[t['symbol'] for t in tickers if not all(STREAM.candles(t['symbol'],tf,WS_LIMIT[tf]-1,scan_now) is not None for tf in ('5m','15m','1h','4h'))]
     cold_set=set(cold)
@@ -498,41 +491,52 @@ def scan_cached_universe(generation,tickers,tracked,scan_now):
         SCAN_STATE.update(cacheSkipped=len(cold),cacheSkippedSymbols=cold,processed=len(cold),
             computed=0,phase='COMPUTE',message='Analisis paralel seluruh cache siap',progressAt=int(time.time()*1000))
     cache_ms=1000*(time.perf_counter()-started)
-    results=[]
-    compute_started=time.perf_counter()
+    results=[];pending_rows=[];published=[]
+    metrics={'cacheCheckMs':cache_ms,'computeWallMs':0.,'dbLockWaitMs':0.,'dbBatchMs':0.,'researchStageMs':0.,'promotion':{},'publishBatches':0}
+    compute_started=time.perf_counter();batch_started=None
+    def publish():
+        nonlocal batch_started
+        if not pending_rows:return
+        batch=list(pending_rows);pending_rows.clear();batch_started=None
+        with SCAN_LOCK:SCAN_STATE.update(phase='PUBLISH',message='Ranking Top 10 dan simpan hasil',progressAt=int(time.time()*1000))
+        try:
+            rows,db_metrics=STORE.refresh_ranked_batch([r for r,_ in batch],promotion_candidates,STREAM.prices)
+            for key in ('dbLockWaitMs','dbBatchMs'):metrics[key]+=db_metrics[key]
+            for key,n in db_metrics['promotion'].items():metrics['promotion'][key]=metrics['promotion'].get(key,0)+n
+            metrics['publishBatches']+=1
+            published.extend(rows)
+            with SCAN_LOCK:SCAN_STATE['rows']=list(published)
+        except Exception as exc:
+            metrics['publicationErrors']=metrics.get('publicationErrors',0)+1
+            with SCAN_LOCK:SCAN_STATE['errors'].append('Publication failed: '+str(exc)[:200])
+        with SCAN_LOCK:
+            SCAN_STATE.update(phase='COMPUTE',phaseMetrics=dict(metrics),progressAt=int(time.time()*1000))
+    # Submit everything first, but publish completed groups promptly. A slow
+    # symbol must not hold every valid candidate until its candle expires.
     with ThreadPoolExecutor(max_workers=min(64,max(8,SCAN_CPU_WORKERS*2))) as executor:
         futures={executor.submit(scan_symbol,t,t['symbol'] in tracked,True,scan_now):t['symbol'] for t in ready}
-        for future in as_completed(futures):
-            if not _same_generation(generation):return
-            errors=[]
-            try:
-                row=future.result()
-                results.append((row,row.get('computedAt') or int(time.time()*1000)))
-                for field,label in (('minuteError','1m'),('contextError','context'),('cpuFallback','CPU fallback')):
-                    if row.get(field):errors.append(row['symbol']+': '+label+' '+str(row[field]))
-            except Exception as exc:
-                errors.append(futures[future]+': '+str(exc))
-            with SCAN_LOCK:
-                SCAN_STATE['processed']+=1
-                SCAN_STATE['computed']=len(results)
-                SCAN_STATE['progressAt']=int(time.time()*1000)
-                SCAN_STATE['errors'].extend(errors)
-    compute_ms=1000*(time.perf_counter()-compute_started)
-    with SCAN_LOCK:
-        SCAN_STATE.update(phase='PUBLISH',message='Ranking Top 10 dan simpan hasil',progressAt=int(time.time()*1000))
-    with SCAN_LOCK:SCAN_STATE['phaseMetrics']={'cacheCheckMs':cache_ms,'computeWallMs':compute_ms}
-    print('[SCAN] Computed',len(results),'/',len(tickers),'cache skipped',len(cold),'in %.2fs; publishing'%(compute_ms/1000),flush=True)
-    if RUNTIME:RUNTIME.beat('scan-pipeline',phase='PUBLISH',computed=len(results),cacheMs=cache_ms,computeMs=compute_ms)
-    metrics={'cacheCheckMs':cache_ms,'computeWallMs':compute_ms,'dbLockWaitMs':0.,'dbBatchMs':0.}
-    if results:
-        try:
-            rows,db_metrics=STORE.refresh_ranked_batch([r for r,_ in results],promotion_candidates,STREAM.prices)
-            metrics.update(db_metrics)
-            with SCAN_LOCK:
-                SCAN_STATE['rows']=rows
-        except Exception as exc:
-            with SCAN_LOCK:SCAN_STATE['errors'].append('Publication failed: '+str(exc)[:200])
-    # Record independent research even if dashboard publication failed.
+        outstanding=set(futures)
+        while outstanding:
+            done,outstanding=wait(outstanding,timeout=.5,return_when=FIRST_COMPLETED)
+            for future in done:
+                if not _same_generation(generation):return
+                errors=[]
+                try:
+                    row=future.result();record=(row,row.get('computedAt') or int(time.time()*1000))
+                    results.append(record);pending_rows.append(record)
+                    if batch_started is None:batch_started=time.monotonic()
+                    for field,label in (('minuteError','1m'),('contextError','context'),('cpuFallback','CPU fallback')):
+                        if row.get(field):errors.append(row['symbol']+': '+label+' '+str(row[field]))
+                except Exception as exc:errors.append(futures[future]+': '+str(exc))
+                with SCAN_LOCK:
+                    SCAN_STATE['processed']+=1
+                    SCAN_STATE['computed']=len(results)
+                    SCAN_STATE['progressAt']=int(time.time()*1000)
+                    SCAN_STATE['errors'].extend(errors)
+            if batch_started is not None and (not outstanding or time.monotonic()-batch_started>=3):publish()
+        publish()
+    metrics['computeWallMs']=1000*(time.perf_counter()-compute_started)
+    # Durable research queue uses actual feature completion, not publication time.
     with SCAN_LOCK:
         SCAN_STATE.update(phase='STAGE_RESEARCH',message='Simpan antrean penelitian',progressAt=int(time.time()*1000))
     if RUNTIME:RUNTIME.beat('scan-pipeline',phase='STAGE_RESEARCH',**metrics)
@@ -543,7 +547,8 @@ def scan_cached_universe(generation,tickers,tracked,scan_now):
     metrics['researchStageMs']=1000*(time.perf_counter()-stage_started)
     metrics['contextSumMs']=sum(r.get('contextMs',0) for r,_ in results)
     with SCAN_LOCK:SCAN_STATE['phaseMetrics']=metrics
-    print('[SCAN] DB wait %.2fs; DB publish %.2fs; research stage %.2fs'%(metrics['dbLockWaitMs']/1000,metrics['dbBatchMs']/1000,metrics['researchStageMs']/1000),flush=True)
+    print('[SCAN] Computed',len(results),'/',len(tickers),'cache skipped',len(cold),'in %.2fs'%(metrics['computeWallMs']/1000),flush=True)
+    print('[SCAN] Promotion:',metrics['promotion'],'DB wait %.2fs; publish %.2fs'%(metrics['dbLockWaitMs']/1000,metrics['dbBatchMs']/1000),flush=True)
     if RUNTIME:RUNTIME.beat('scan-pipeline',phase='DONE',**metrics)
 
 
@@ -752,6 +757,8 @@ def read_scanner(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
         cached = persisted.pop(x['symbol'], None)
         if cached and (cached.get('quoteAt') or 0) > (x.get('quoteAt') or 0):
             combined.append(cached)
+        elif cached:
+            combined.append(dict(x,journeys=cached['journeys'],categories=cached['categories'],category=cached['category']))
         else:
             combined.append(x)
     combined.extend(dict(x, stale=True) for x in persisted.values())
