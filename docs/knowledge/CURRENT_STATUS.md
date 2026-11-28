@@ -77,3 +77,6 @@ PR #7 merged at `915c2e7d41325588b3010b7d3ac935fd23159882`; both Windows and Lin
 
 ## R11.2 Impulse Exhaustion (28 Nov 2026)
 User approved implementation; [R112](R112.md) describes shadow module and Lite joined samples. Branch pending CI/release at creation; no performance claims.
+
+## R11.2 release (28 Nov 2026)
+PR #8 merged at `8eeee56e5b103f1a332f649973ff57970518f81d`; Windows and Linux CI [46100114950](https://github.com/supermankesasar/Scalp-Radar/actions/runs/46100114950) both passed on 7199c6e. R11.2 enabled via launcher, live preview and research endpoints, joined Lite samples. No runtime or predictive improvement verified; provisional thresholds and paired controls, dashboard R08 unchanged. No automatic orders. See R112.md.
