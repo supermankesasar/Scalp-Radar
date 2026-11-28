@@ -56,12 +56,40 @@ def continuity(db,now,deadline=None,unavailable=None):
             result.append(r)
     return result
 
-def collect(db,now,deadline=None,notify=lambda message:None):
+def daily_continuity(db,now,deadline=None,unavailable=None):
+    """24h-only coverage; full-window expectation assumes coin active throughout."""
+    day=now-86400000;result=[];universe=set()
+    try:
+        with query_budget(db,deadline):
+            row=db.execute("SELECT reasons FROM r111_cycles WHERE cutoff<=? ORDER BY cutoff DESC LIMIT 1",(now,)).fetchone()
+        if row:universe={s for group in json.loads(row[0]).values() for s in group}
+    except (sqlite3.OperationalError,ValueError,TypeError) as exc:
+        if unavailable is not None:unavailable['daily_current_universe']=str(exc)
+    for kind,step in STEPS.items():
+        last=now//step*step-1;start=((day+1+step-1)//step)*step-1
+        try:
+            with query_budget(db,deadline):
+                data=rows(db,"SELECT symbol,COUNT(*) n,MIN(source_ts) first,MAX(source_ts) latest,SUM((source_ts+1)%?!=0) offGrid FROM market_observations WHERE kind=? AND source_ts BETWEEN ? AND ? AND received_at<=? GROUP BY symbol",(step,kind,start,last,now))
+        except sqlite3.OperationalError as exc:
+            if unavailable is None:raise
+            unavailable['continuity_'+kind]=str(exc);continue
+        seen={r['symbol']:r for r in data}
+        for symbol in sorted(universe|set(seen)):
+            r=seen.get(symbol,{'symbol':symbol,'n':0,'first':None,'latest':None,'offGrid':0})
+            expected=(last-start)//step+1 if not r['offGrid'] else None
+            r.update(kind=kind,intervalMs=step,recent=r['n'],expectedRecentAssumingActive=expected,
+                     missingRecentAssumingActive=expected-r['n'] if expected is not None else None,
+                     lagMs=last-r['latest'] if r['latest'] is not None else None)
+            result.append(r)
+    return result
+
+def collect(db,now,deadline=None,notify=lambda message:None,daily_only=False):
     tables={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     out={'schema':'scalp-radar-lite-v1','exportedAtMs':now,'counts':{},'sections':{},'unavailable':{},
          'note':'Cumulative and last 24h summaries; overlapping events, assumed costs in percentage points, no real fills. Missing returns are not zero.'}
     pending=[]
     def q(name,required,sql,args=()):
+        if daily_only and (name.endswith('_all') or name in ('archive_coverage','dashboard_status')):return
         if not set(required)<=tables:
             out['unavailable'][name]='missing tables: '+','.join(sorted(set(required)-tables));return
         pending.append((name,sql,args))
@@ -123,7 +151,7 @@ def collect(db,now,deadline=None,notify=lambda message:None):
         try:
             with query_budget(db,deadline):out['sections'][name]=rows(db,sql,args)
         except sqlite3.OperationalError as e:out['unavailable'][name]=str(e)
-    for t in sorted(tables):
+    for t in sorted(tables) if not daily_only else ():
         if t.startswith(('r10_','r11_','r111_','r112_','ws_','research_','market_')) or t in ('events','last_rows','scan_research_queue','scan_live_cycles'):
             try:
                 with query_budget(db,deadline):
@@ -143,7 +171,7 @@ def csv_dict(data):
     buf=io.StringIO(newline='');w=csv.DictWriter(buf,fieldnames=list(data[0]));w.writeheader();w.writerows(data)
     return buf.getvalue().encode('utf-8')
 
-def export(source,dest,coin=None,hours=24,now=None,complete=False,notify=lambda message:None):
+def export(source,dest,coin=None,hours=24,now=None,complete=False,notify=lambda message:None,daily_only=False):
     source=Path(source).resolve();dest=Path(dest).resolve()
     if source==dest or dest.exists():raise RuntimeError('Destination exists or equals database')
     now=int(time.time()*1000) if now is None else now
@@ -156,11 +184,14 @@ def export(source,dest,coin=None,hours=24,now=None,complete=False,notify=lambda 
         os.close(fd);tmp=Path(name)
         db.execute('PRAGMA query_only=ON');db.execute('BEGIN')
         # Reserve a separate continuity budget so heavy rule history cannot starve it.
-        summary,tables=collect(db,now,None if complete else time.monotonic()+SUMMARY_SECONDS,notify)
+        summary,tables=collect(db,now,None if complete else time.monotonic()+SUMMARY_SECONDS,notify,daily_only=daily_only)
         summary['databaseBytes']=source.stat().st_size
-        summary['mode']='complete' if complete else 'routine'
+        summary['mode']='daily' if daily_only else 'complete' if complete else 'routine'
+        summary['queryBudgetsEnabled']=not complete
         notify('Checking coin continuity...')
-        cont=continuity(db,now,None if complete else time.monotonic()+25,summary['unavailable']) if 'market_observations' in tables else []
+        coverage_fn=daily_continuity if daily_only else continuity
+        cont=coverage_fn(db,now,None if complete else time.monotonic()+25,summary['unavailable']) if 'market_observations' in tables else []
+        if 'market_observations' not in tables:summary['unavailable']['continuity']='missing market_observations'
         detail_deadline=None if complete else time.monotonic()+DETAIL_SECONDS
         optional_errors={}
         def optional(name,fn):
@@ -174,6 +205,7 @@ def export(source,dest,coin=None,hours=24,now=None,complete=False,notify=lambda 
             manifest={'schema':summary['schema'],'snapshotMs':now,'detailLimits':{},'coin':coin,'hours':hours if coin else None,
                 'note':'Not a restorable backup. Per-coin continuity is computed from all stored aligned candle timestamps, not the raw sample. Recent window ends at the last expected closed candle. Unknown listing dates/delisting can affect missing counts. Raw optional details are not representative.'}
             manifest['omittedDetails']={}
+            if daily_only:manifest['note']='Rolling 24h exact aggregate queries over recorded data, not full raw replay. Candle expectation assumes each coin active throughout; listing changes may alter denominator. Older cumulative queries intentionally omitted. Optional raw samples remain capped.'
             with zipfile.ZipFile(tmp,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=6) as z:
                 json_write(z,'summary.json',summary);z.writestr('coin_continuity.csv',csv_dict(cont))
                 # Explicit coin diagnostics: don't let global newest-event sampling hide the requested symbol.
@@ -260,7 +292,7 @@ def export(source,dest,coin=None,hours=24,now=None,complete=False,notify=lambda 
     return dest
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--database');p.add_argument('--output');p.add_argument('--coin');p.add_argument('--hours',type=int,default=24);p.add_argument('--complete',action='store_true',help='No SQL time budget; may take longer');p.add_argument('--open-folder',action='store_true');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--database');p.add_argument('--output');p.add_argument('--coin');p.add_argument('--hours',type=int,default=24);p.add_argument('--complete',action='store_true',help='No SQL time budget; may take longer');p.add_argument('--daily',action='store_true',help='Rolling 24h report; skip cumulative queries');p.add_argument('--open-folder',action='store_true');a=p.parse_args()
     source=Path(a.database).resolve() if a.database else existing_database(ROOT)
     out=source.parent.parent/'exports' if a.database or configured() is not None else ROOT/'exports'
     out.mkdir(parents=True,exist_ok=True)
@@ -268,7 +300,7 @@ def main():
     progress('Database: '+str(source))
     progress('Output: '+str(dest))
     progress('Creating compact analysis report...')
-    export(source,dest,a.coin.upper() if a.coin else None,a.hours,complete=a.complete,notify=progress)
+    export(source,dest,a.coin.upper() if a.coin else None,a.hours,complete=a.complete,notify=progress,daily_only=a.daily)
     with zipfile.ZipFile(dest) as z:
         summary=json.loads(z.read('summary.json'))
         manifest=json.loads(z.read('manifest.json'))
