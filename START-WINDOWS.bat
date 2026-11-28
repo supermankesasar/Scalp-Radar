@@ -8,6 +8,7 @@ set "SCANNER_WEBSOCKET=1"
 set "SCANNER_R10=1"
 set "SCANNER_R11=1"
 set "SCANNER_R111=1"
+set "SCANNER_R112=1"
 if not defined SCANNER_LIVE_FILTER set "SCANNER_LIVE_FILTER=R08_MULTI_CORE"
 set "HOST=127.0.0.1"
 set "PORT=8765"
@@ -33,6 +34,7 @@ echo R10: http://127.0.0.1:8765/api/research/r10
 echo R11 preview: http://127.0.0.1:8765/api/radar/r11
 echo R11.1 radar: http://127.0.0.1:8765/api/radar/r111
 echo R11.1 report: http://127.0.0.1:8765/api/research/r111
+echo R11.2 Impulse Exhaustion: http://127.0.0.1:8765/api/research/r112
 echo REST budget: http://127.0.0.1:8765/api/rest-budget
 echo Runtime: http://127.0.0.1:8765/api/runtime
 echo Keep this terminal and PC running. Browser may be closed.

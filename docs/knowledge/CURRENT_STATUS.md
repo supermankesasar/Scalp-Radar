@@ -74,3 +74,6 @@ User reports ZIP not saved. Source-based fixes and limitations documented in LIT
 
 ## Lite Export hotfix release (28 Nov 2026)
 PR #7 merged at `915c2e7d41325588b3010b7d3ac935fd23159882`; both Windows and Linux CI jobs [46096570392](https://github.com/supermankesasar/Scalp-Radar/actions/runs/46096570392) passed on fc8200a. Routine SQL budgets, explicit omitted sections, optional failure resilience, checked ZIP, displayed destination and Explorer opening now in main. Root cause and actual export on user's large database remain unverified. See LITE_EXPORT.md. No database or signal formula changes.
+
+## R11.2 Impulse Exhaustion (28 Nov 2026)
+User approved implementation; [R112](R112.md) describes shadow module and Lite joined samples. Branch pending CI/release at creation; no performance claims.

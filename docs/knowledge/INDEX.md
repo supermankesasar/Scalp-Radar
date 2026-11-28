@@ -69,3 +69,5 @@ Latest reading priority: [CURRENT_STATUS](CURRENT_STATUS.md) and [DECISION_LOG](
 [Lite export and per-coin continuity](LITE_EXPORT.md) — compact routine upload and targeted candle history.
 
 [R11.1 performance hotfix](PERFORMANCE_R111.md) — archive cache, pending-only ledgers and scheduler isolation.
+
+[R11.2 Impulse Exhaustion Radar](R112.md) — prospective paired momentum controls and recovery challenger.

@@ -5,6 +5,8 @@ import json,sqlite3,time,threading,math
 from contextlib import contextmanager
 from collections import Counter
 from filters import r11,r111,r10
+from impulse_radar import ImpulseRadar
+import os
 from research_r10 import entry_time,simulate
 from stream_engine import close_at
 STEP=60000
@@ -60,6 +62,7 @@ class RadarR111:
               v1_class TEXT,v2_class TEXT,v1_lead_ms INTEGER,v2_lead_ms INTEGER,v1_coverage INTEGER,v2_coverage INTEGER,
               PRIMARY KEY(symbol,cutoff,direction));
             """)
+            self.impulse=ImpulseRadar(db) if os.getenv("SCANNER_R112","0")=="1" else None
     @contextmanager
     def db(self):
         with self.db_lock:
@@ -108,6 +111,7 @@ class RadarR111:
         with self.engine.lock:self.universe=sorted(self.engine.symbols)
         with self.lock:self.prior=dict(self.states)
         self.results={};self.reasons={};self.frozen={};self.receipts={};self.finished=False
+        if self.impulse:self.impulse.begin(cut)
     def tick(self):
         now=ms();cut=close_at(now,STEP)
         if self.cut!=cut:
@@ -120,7 +124,8 @@ class RadarR111:
             with self.engine.lock:self.universe=sorted(self.engine.symbols)
         # Only pending symbols, allow late (but still fresh) close and book retries.
         for s in self.universe:
-            if s in self.results and self.reasons.get(s) not in ('BOOK_MISSING','BOOK_DISCONNECTED','BOOK_STALE','BOOK_INVALID','NATIVE15_UNKNOWN'):continue
+            r111_pending=s not in self.results or self.reasons.get(s) in ('BOOK_MISSING','BOOK_DISCONNECTED','BOOK_STALE','BOOK_INVALID','NATIVE15_UNKNOWN')
+            if not r111_pending and not (self.impulse and self.impulse.pending(s)):continue
             if ms()-cut>FRESH:break
             receipt=self.engine.receipt(s,'1m',cut)
             if receipt is None:self.reasons[s]='NO_WS_CLOSE';continue
@@ -138,6 +143,10 @@ class RadarR111:
                 f=r111.enrich(base,rows,ctx);self.frozen[s]=f
             decision=ms()
             if not 0<=decision-cut<=FRESH:self.reasons[s]='PROCESSING_DEADLINE';break
+            if self.impulse:self.impulse.process(s,f,rows,cut,decision,self.market)
+            if not r111_pending:continue
+            decision=ms()
+            if not 0<=decision-cut<=FRESH:break
             quote,spread,book_reason=self.market(s,decision,f['direction'])
             result=r111.advance(self.prior.get(s),f,cut,decision,quote,spread)
             # Keep the specific book reason, not a combined mystery state.
@@ -235,6 +244,7 @@ class RadarR111:
                 db.execute("UPDATE r111_cycles SET move_paths=? WHERE cutoff=?",(paths,old_cut))
                 last_audit={'cutoff':old_cut,'paths':paths,'universe':len(old_symbols)}
             self.settle(db,cut)
+            if self.impulse:self.impulse.persist(db,self.engine,cut,len(self.universe))
         with self.lock:
             self.states={s:v for s,v in self.states.items() if cut-v['cutoff']<=r11.WATCH_MS}
             self.latest={'cutoff':cut,'universe':len(self.universe),'eligible':len(eligible),
@@ -263,6 +273,9 @@ class RadarR111:
                     elif chase<-.15 or spread>r11.SPREAD_CAP:row['displayState']='WAIT'
         rows.sort(key=lambda r:({'READY':0,'MONITOR':1,'PREPARE':2,'LATE':3}.get(r['displayState'],4),-r['decisionAt'],r['symbol']))
         return {'enabled':True,'version':r111.VERSION,'preview':True,'latestCycle':latest,'states':rows,'lastError':self.last_error}
+    def impulse_report(self):
+        if not self.impulse:return {'enabled':False}
+        with self.db() as db:return dict(self.impulse.report(db),enabled=True)
     def report(self):
         with self.db() as db:
             outcomes=[dict(r) for r in db.execute("""SELECT r.setup,r.variant,COUNT(*) ready,

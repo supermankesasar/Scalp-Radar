@@ -94,16 +94,18 @@ def collect(db,now,deadline=None,notify=lambda message:None):
               f"SELECT json_extract(e.payload,'$.setup') setup,json_extract(e.payload,'$.features.entryVariant') variant,r.direction,COUNT(*) ready,COUNT(o.state) settled,SUM(o.state='UNOBSERVED') unobserved,SUM(o.state='TARGET') targets,SUM(o.state='STOP') stops,AVG(o.gross_pct) gross,AVG(o.gross_pct)-.10 net010,AVG(o.gross_pct)-.20 net020,AVG(o.gross_pct)-.35 net035,AVG(o.mfe) mfe,AVG(o.mae) mae,AVG(json_extract(e.payload,'$.prepareLeadMs')) leadMs,AVG((r.decision-r.cutoff)/1000.0) lagSec FROM {pre}_ready r LEFT JOIN {pre}_outcomes o USING(symbol,cutoff) LEFT JOIN {pre}_events e ON e.symbol=r.symbol AND e.cutoff=r.cutoff AND e.state='READY'"+where+" GROUP BY 1,2,3",args)
             q(pre+'_reasons_'+label,[pre+'_events'],f"SELECT state,json_extract(payload,'$.reason') reason,COUNT(*) n FROM {pre}_events"+(' WHERE decision>=?' if label=='24h' else '')+" GROUP BY 1,2",args)
             q(pre+'_coin_'+label,[pre+'_ready',pre+'_outcomes'],f"SELECT r.symbol,r.direction,COUNT(*) ready,COUNT(o.gross_pct) observed,AVG(o.gross_pct) gross,AVG(o.gross_pct)-.20 net020 FROM {pre}_ready r LEFT JOIN {pre}_outcomes o USING(symbol,cutoff)"+where+" GROUP BY 1,2",args)
+    for label,where,args in [('all','',()),('24h',' WHERE e.decision>=?',(day,))]:
+        q('r112_outcomes_'+label,['r112_entries','r112_outcomes'],"SELECT e.cohort,e.direction,o.horizon,o.policy,COUNT(*) n,COUNT(o.gross_pct) observed,SUM(o.state='UNOBSERVED') unobserved,AVG(o.gross_pct) gross,AVG(o.gross_pct)-.10 net010,AVG(o.gross_pct)-.20 net020,AVG(o.gross_pct)-.35 net035,AVG(o.mfe) mfe,AVG(o.mae) mae FROM r112_entries e JOIN r112_outcomes o USING(symbol,cutoff,cohort)"+where+" GROUP BY 1,2,3,4",args)
     q('ws_coin_24h',['ws_minute_snapshots'],"SELECT symbol,COUNT(*) n,MIN(candle_time) first,MAX(candle_time) latest,AVG(observed_at-candle_time) lagMs,SUM(json_extract(payload,'$.micro.coverage.trades')=1) tradeCovered,SUM(json_extract(payload,'$.micro.coverage.depth')=1) depthCovered FROM ws_minute_snapshots WHERE candle_time>=? GROUP BY symbol",(day,))
     # Recent R11.1/R11 sections first, then operational coverage and other recent
     # results; expensive historical rule expansion is lower priority.
     def priority(item):
         name=item[0]
-        if name.startswith('r111_') and name.endswith('_24h'):return 0
+        if name.startswith(('r112_','r111_')) and name.endswith('_24h'):return 0
         if name.startswith('r11_') and name.endswith('_24h'):return 1
         if name.startswith(('archive_runs','archive_errors','r10_meta','dashboard_status')):return 2
         if name.endswith('_24h'):return 3
-        if name.startswith(('r111_','r11_')):return 4
+        if name.startswith(('r112_','r111_','r11_')):return 4
         if name=='archive_coverage':return 5
         return 6
     for i,(name,sql,args) in enumerate(sorted(pending,key=priority),1):
@@ -112,7 +114,7 @@ def collect(db,now,deadline=None,notify=lambda message:None):
             with query_budget(db,deadline):out['sections'][name]=rows(db,sql,args)
         except sqlite3.OperationalError as e:out['unavailable'][name]=str(e)
     for t in sorted(tables):
-        if t.startswith(('r10_','r11_','r111_','ws_','research_','market_')) or t in ('events','last_rows'):
+        if t.startswith(('r10_','r11_','r111_','r112_','ws_','research_','market_')) or t in ('events','last_rows'):
             try:
                 with query_budget(db,deadline):
                     out['counts'][t]=db.execute('SELECT COUNT(*) FROM "'+t.replace('"','""')+'"').fetchone()[0]
@@ -170,6 +172,15 @@ def export(source,dest,coin=None,hours=24,now=None,complete=False,notify=lambda 
                     data=optional(table,lambda:csv_query(db,f'SELECT * FROM {table} ORDER BY {order} LIMIT ?',(limit,)))
                     if data is not None:
                         z.writestr(table+'.csv',data);manifest['detailLimits'][table]=limit
+                # Joined settled feature/outcome records, not independently capped newest events.
+                for pre in ('r11','r111'):
+                    if scale and {pre+'_ready',pre+'_events',pre+'_outcomes'}<=tables:
+                        sql=f"SELECT r.symbol,r.cutoff,r.decision,r.direction,e.payload,o.state,o.gross_pct,o.mfe,o.mae FROM {pre}_ready r JOIN {pre}_outcomes o USING(symbol,cutoff) JOIN {pre}_events e ON e.symbol=r.symbol AND e.cutoff=r.cutoff AND e.state='READY' ORDER BY r.cutoff DESC,r.symbol LIMIT ?"
+                        data=optional(pre+'_joined',lambda:csv_query(db,sql,(int(600*scale),)))
+                        if data is not None:z.writestr(pre+'_joined.csv',data)
+                if scale and {'r112_entries','r112_outcomes'}<=tables:
+                    data=optional('r112_joined',lambda:csv_query(db,"SELECT e.symbol,e.cutoff,e.cohort,e.direction,e.decision,e.payload,o.horizon,o.policy,o.state,o.gross_pct,o.mfe,o.mae FROM r112_entries e JOIN r112_outcomes o USING(symbol,cutoff,cohort) WHERE o.horizon=15 ORDER BY e.cutoff DESC,e.symbol,e.cohort,o.policy LIMIT ?",(int(1000*scale),)))
+                    if data is not None:z.writestr('r112_joined.csv',data)
                 if 'market_observations' in tables:
                     symbols=[coin] if coin else ['BTCUSDT']
                     if not coin and scale:
