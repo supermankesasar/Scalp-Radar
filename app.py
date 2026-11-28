@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Scalp Radar v0.5 — Top 5 active journeys, fast watch, read-only."""
+"""Scalp Radar v0.5 — Top 10 active journeys, fast watch, read-only."""
 from __future__ import annotations
 
 import json
@@ -13,12 +13,12 @@ from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import re
-from signals import SignalStore
+from signals import SignalStore, ACTIVE_LIMIT
 from filters.registry import evaluate as evaluate_filters
 from filters import scalp_v2, multifactor, microstructure
 from research_history import ResearchHistory
 from market_archive import MarketArchive, crypto_universe
-from stream_engine import StreamEngine, LIMIT as WS_LIMIT, close_at
+from stream_engine import StreamEngine, LIMIT as WS_LIMIT, TF as WS_TF, close_at
 from stream_research import StreamResearch
 from research_r10 import ResearchR10
 from radar_r11 import RadarR11
@@ -322,7 +322,7 @@ SCAN_STATE = {
     'errors': [], 'startedAt': None, 'completedAt': None,
     'mode': DEFAULT_MODE, 'minTurnover': DEFAULT_TURNOVER,
     'requestedMode': DEFAULT_MODE, 'requestedMinTurnover': DEFAULT_TURNOVER,
-    'generation': 0, 'message': 'Belum dipindai',
+    'generation': 0, 'message': 'Belum dipindai', 'cacheSkipped':0,'cacheSkippedSymbols':[],
 }
 
 
@@ -398,17 +398,21 @@ def price_return(rows, back):
     return 100.0 * (rows[-1]['close'] / rows[-1-back]['close'] - 1.0)
 
 
-def scan_symbol(ticker, is_tracked=False):
+def scan_symbol(ticker, is_tracked=False, cache_only=False, scan_now=None):
     """Closed candles only; OI intentionally optional and queried for classified rows."""
     symbol = ticker['symbol']
-    now = int(time.time() * 1000)
+    now = int(time.time() * 1000) if scan_now is None else scan_now
     sets = {}
     # Small bounded queries, sequential by symbol; executor provides controlled parallelism.
     for tf, limit in (('5m', 310), ('15m', 230), ('1h', 230), ('4h', 230)):
-        candles = request_market('/fapi/v1/klines', {'symbol': symbol, 'interval': tf, 'limit': limit}, ttl=140)
-        received = int(time.time()*1000)
-        if ARCHIVE is not None:
-            ARCHIVE.warmup(symbol, tf, candles, received)
+        if cache_only:
+            candles=STREAM.candles(symbol,tf,limit-1,now)
+            if candles is None:raise ValueError('CACHE_GAP '+tf)
+        else:
+            candles = request_market('/fapi/v1/klines', {'symbol': symbol, 'interval': tf, 'limit': limit}, ttl=140)
+            received = int(time.time()*1000)
+            if ARCHIVE is not None:
+                ARCHIVE.warmup(symbol, tf, candles, received)
         rows = parse_klines(candles, now)
         if len(rows) < 220:
             raise ValueError('Candle %s tidak cukup: %s' % (tf, len(rows)))
@@ -451,9 +455,13 @@ def scan_symbol(ticker, is_tracked=False):
     minute_error=None
     if OVERNIGHT or LIVE_FILTER!='BASELINE':
         try:
-            raw=request_market('/fapi/v1/klines',{'symbol':symbol,'interval':'1m','limit':100},ttl=30)
-            if ARCHIVE is not None:
-                ARCHIVE.warmup(symbol,'1m',raw,int(time.time()*1000))
+            if cache_only:
+                raw=STREAM.candles(symbol,'1m',99,now)
+                if raw is None:raise ValueError('CACHE_GAP 1m')
+            else:
+                raw=request_market('/fapi/v1/klines',{'symbol':symbol,'interval':'1m','limit':100},ttl=30)
+                if ARCHIVE is not None:
+                    ARCHIVE.warmup(symbol,'1m',raw,int(time.time()*1000))
             features['minute']=scalp_v2.minute_features(parse_klines(raw,now),i5['time'],ema)
             if features['minute'] is None:
                 minute_error='1m missing or not aligned to 5m close'
@@ -611,6 +619,15 @@ def scan_job(generation, mode, min_turnover):
         if not tickers:
             raise RuntimeError('Tidak ditemukan pair USDT perpetual sesuai mode filter.')
 
+        # In WS mode the live pass never waits on per-symbol REST history.
+        cache_only=STREAM is not None
+        scan_now=int(time.time()*1000)
+        if cache_only:
+            cold=[t['symbol'] for t in tickers if not STREAM.ready(t['symbol'],scan_now)]
+            cold_set=set(cold)
+            tickers=[t for t in tickers if t['symbol'] not in cold_set]
+            with SCAN_LOCK:
+                SCAN_STATE.update(cacheSkipped=len(cold),cacheSkippedSymbols=cold,processed=len(cold),message='Scan cache live; histori dipulihkan terpisah')
         # Limited batches avoid flooding futures kline endpoints when ALL is
         # selected. Rate-limit errors interrupt the remaining cycle for safety.
         stop_for_limit = False
@@ -622,8 +639,8 @@ def scan_job(generation, mode, min_turnover):
                     return
                 started_batch = time.monotonic()
                 batch = tickers[offset:offset+SCAN_BATCH_SIZE]
-                cached_batch=STREAM is not None and all(STREAM.ready(t['symbol'],int(time.time()*1000)) for t in batch)
-                futures = {executor.submit(scan_symbol, t, t['symbol'] in tracked):t['symbol'] for t in batch}
+                cached_batch=cache_only
+                futures = {executor.submit(scan_symbol,t,t['symbol'] in tracked,True,scan_now) if cache_only else executor.submit(scan_symbol,t,t['symbol'] in tracked):t['symbol'] for t in batch}
                 for future in as_completed(futures):
                     if not _same_generation(generation):
                         return
@@ -638,7 +655,7 @@ def scan_job(generation, mode, min_turnover):
                         if res.get('contextError'):
                             with SCAN_LOCK:
                                 SCAN_STATE['errors'].append(res['symbol']+': context '+res['contextError'])
-                        # Ledger records all rules before Top5 ranking or journey rotation.
+                        # Ledger records all rules independently of Top10 ranking or journey rotation.
                         # Failure is visible but must not corrupt production tracking.
                         try:
                             HISTORY.record_and_evaluate(res, res['_recent5m'], int(time.time()*1000))
@@ -670,10 +687,11 @@ def scan_job(generation, mode, min_turnover):
                     with SCAN_LOCK:
                         SCAN_STATE['errors'].append('Rate limit Binance terdeteksi; siklus scan dihentikan untuk melindungi koneksi API.')
                     break
-                # Promote at most five highest scores seen SO FAR (rolling Top 5).
+                # Promote highest scores seen SO FAR (rolling Top 10).
                 # Fresh quote check stops misleading old candle entries.
                 try:
-                    quotes = latest_quotes({r['symbol'] for r in eligible_rows})
+                    wanted={r['symbol'] for r in eligible_rows}
+                    quotes=STREAM.prices(wanted,int(time.time()*1000)) if cache_only else latest_quotes(wanted)
                     for score, turnover, direction, candidate in promotion_candidates(eligible_rows, quote_prices=quotes):
                         sym = candidate['symbol']
                         if STORE.activate_top_candidate(candidate, recent_candles[sym], direction):
@@ -704,6 +722,7 @@ def scan_job(generation, mode, min_turnover):
                 SCAN_STATE['completedAt'] = int(time.time()*1000)
                 stopped = SCAN_STATE['processed'] < SCAN_STATE['total']
                 SCAN_STATE['message'] = ('Scan terhenti sebelum selesai' if stopped else
+                    'Scan selesai (sebagian menunggu cache)' if SCAN_STATE.get('cacheSkipped') else
                     'Scan selesai' if SCAN_STATE['rows'] else 'Tidak ada data berhasil dianalisis')
 
 
@@ -736,12 +755,12 @@ def schedule_scan(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False)
         started_age = now_ms - (SCAN_STATE['startedAt'] or 0)
         new_ws_bar=STREAM is not None and close_at(now_ms-7000,300000) > (SCAN_STATE['startedAt'] or 0)
         need_start = (not running and (SCAN_STATE['completedAt'] is None or new_filters or new_ws_bar
-                                      or elapsed >= SCAN_REFRESH_MS or (force and started_age >= 60000)))
+                                      or elapsed >= SCAN_REFRESH_MS or (STREAM is not None and SCAN_STATE.get('cacheSkipped',0)>0 and elapsed>=30000) or (force and started_age >= 60000)))
         if need_start:
             SCAN_STATE.update({
                 'running': True, 'rows': [], 'processed': 0, 'total': 0, 'eligible': 0,
                 'universe': 0, 'missingTicker': 0, 'trackedExtra': 0,
-                'errors': [], 'startedAt': now_ms, 'progressAt':now_ms, 'completedAt': None,
+                'errors': [], 'cacheSkipped':0,'cacheSkippedSymbols':[], 'startedAt': now_ms, 'progressAt':now_ms, 'completedAt': None,
                 'mode': mode, 'minTurnover': min_turnover,
                 'generation': SCAN_STATE['generation']+1,
                 'message': 'Mengambil daftar USDT perpetual Binance',
@@ -775,11 +794,12 @@ def read_scanner(mode=DEFAULT_MODE, min_turnover=DEFAULT_TURNOVER, force=False):
     active = STORE.active_pending(now_ms)
     return {
         'running': state['running'], 'rows': combined,
-        'activeSignals': len(active), 'activeLimit': 5,
+        'activeSignals': len(active), 'activeLimit': ACTIVE_LIMIT,
         'signals': active,
         'processed': state['processed'], 'total': state['total'],
         'successful': len(fresh),
-        'failed': state['processed'] - len(fresh),
+        'failed': max(0,state['processed'] - len(fresh)-state.get('cacheSkipped',0)),
+        'cacheSkipped':state.get('cacheSkipped',0),'cacheSkippedSymbols':state.get('cacheSkippedSymbols',[]),
         'eligible': state['eligible'], 'universe': state['universe'],
         'missingTicker': state['missingTicker'], 'trackedExtra': state['trackedExtra'],
         'errors': state['errors'][:10], 'errorCount': len(state['errors']),
@@ -819,7 +839,7 @@ class Handler(BaseHTTPRequestHandler):
         elif route.path == '/api/health':
             self._reply(200, json.dumps({'ok':True,'version':'0.5','storage':'SQLite','activeTracked':len(STORE.active_symbols())}).encode(), 'application/json')
         elif route.path == '/api/runtime':
-            self._reply(200,json.dumps(dict(RUNTIME.status(),scan={k:SCAN_STATE.get(k) for k in ('running','progressAt','processed','total','startedAt')},restCooldownSeconds=REST_GUARD.remaining(),stream=STREAM.status() if STREAM else None) if RUNTIME else {'enabled':False}).encode(),'application/json')
+            self._reply(200,json.dumps(dict(RUNTIME.status(),scan={k:SCAN_STATE.get(k) for k in ('running','progressAt','processed','total','startedAt','cacheSkipped','cacheSkippedSymbols')},restCooldownSeconds=REST_GUARD.remaining(),stream=STREAM.status() if STREAM else None) if RUNTIME else {'enabled':False}).encode(),'application/json')
         elif route.path == '/api/radar/r11':
             self._reply(200,json.dumps(R11.status() if R11 else {'enabled':False},allow_nan=False).encode(),'application/json')
         elif route.path == '/api/radar/r111':
@@ -941,28 +961,47 @@ def minute_research_loop():
 
 
 def minute_seed_loop():
-    # Restore local historical candles first; paced REST only for remaining gaps.
-    restored=set()
+    """Repair/warm cache independently; never make live scanner wait on REST.
+    One existing worker, local WAL first, paced missing requests only.
+    """
+    archived={}
     while not STREAM.stop.is_set():
         with STREAM.lock:symbols=sorted(STREAM.symbols)
-        if ARCHIVE is not None and R111 is not None:
-            todo=set(symbols)-restored
-            if todo:
-                try:restore_minutes(ARCHIVE,STREAM,todo,int(time.time()*1000));restored.update(todo)
-                except Exception as exc:print('R11.1 local warmup:',str(exc)[:120],flush=True)
-        for symbol in symbols:
-            if STREAM.stop.is_set():return
-            now=int(time.time()*1000)
-            # Do not race normal WS delivery immediately after close.
-            if now%60000<15000:now-=60000
-            if STREAM.candles(symbol,'1m',61,now) is not None:continue
-            try:request_market('/fapi/v1/klines',{'symbol':symbol,'interval':'1m','limit':100},ttl=30)
-            except Exception as exc:
-                print('R10 seed:',symbol,str(exc)[:100],flush=True)
-                if STREAM.stop.wait(300 if 'rate limit' in str(exc).lower() else 10):return
-            if STREAM.stop.wait(.8):return
-        if RUNTIME:RUNTIME.beat('r10-minute-seed')
-        STREAM.stop.wait(30)
+        # R11 gets 1m first; higher context is warmed separately from live ranking.
+        for tf in ('1m','5m','15m','1h','4h'):
+            step=WS_TF[tf];limit=WS_LIMIT[tf]
+            for symbol in symbols:
+                if STREAM.stop.is_set():return
+                now=int(time.time()*1000);asof=now-15000
+                if asof<step:continue
+                cached=STREAM.candles(symbol,tf,limit-1,asof)
+                if cached is None and ARCHIVE is not None:
+                    try:
+                        local=ARCHIVE.cached_rows(symbol,tf,limit-1,asof)
+                        STREAM.seed(symbol,tf,local,now)
+                        cached=STREAM.candles(symbol,tf,limit-1,asof)
+                    except Exception as exc:print('Local cache seed:',symbol,tf,str(exc)[:100],flush=True)
+                if cached is None:
+                    try:
+                        raw=request_market('/fapi/v1/klines',{'symbol':symbol,'interval':tf,'limit':limit},ttl=30)
+                        if ARCHIVE is not None:
+                            received=int(time.time()*1000)
+                            ARCHIVE.put('kline_'+tf,symbol,[(r[6],r) for r in raw],received)
+                        if STREAM.stop.wait(.8):return
+                    except Exception as exc:
+                        print('Cache seed:',symbol,tf,str(exc)[:100],flush=True)
+                        if 'rate limit' in str(exc).lower():
+                            if STREAM.stop.wait(30):return
+                        elif STREAM.stop.wait(1):return
+                elif ARCHIVE is not None and tf!='1m':
+                    key=(symbol,tf);cut=int(cached[-1][6])
+                    if archived.get(key)!=cut:
+                        try:
+                            ARCHIVE.put('kline_'+tf,symbol,[(r[6],r) for r in cached[-12:]],now)
+                            archived[key]=cut
+                        except Exception as exc:print('Cache archive:',symbol,tf,str(exc)[:100],flush=True)
+                if RUNTIME:RUNTIME.beat('r10-minute-seed',symbol=symbol,timeframe=tf)
+        STREAM.stop.wait(10)
 
 
 def serve():
@@ -977,7 +1016,7 @@ def serve():
         else:threading.Thread(target=fn,daemon=True,name=name).start()
     def scan_status():
         # Read only primitive values without acquiring a potentially stalled lock.
-        return {k:SCAN_STATE.get(k) for k in ('running','progressAt','processed','total','startedAt')}
+        return {k:SCAN_STATE.get(k) for k in ('running','progressAt','processed','total','startedAt','cacheSkipped','cacheSkippedSymbols')}
     if RUNTIME:
         threading.Thread(target=RUNTIME.watch,args=(scan_status,),daemon=True,name='r10-watchdog').start()
     if STREAM is not None:
