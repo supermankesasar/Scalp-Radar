@@ -1,7 +1,8 @@
 import csv,io,json,sqlite3,tempfile,unittest,zipfile
 from pathlib import Path
 from contextlib import closing
-from export_lite import export,MAX_ZIP
+from export_lite import export,MAX_ZIP,collect
+from unittest.mock import patch
 class LiteTests(unittest.TestCase):
     def test_continuity_read_only_and_missing_schema(self):
         with tempfile.TemporaryDirectory() as d:
@@ -39,4 +40,24 @@ class LiteTests(unittest.TestCase):
             with zipfile.ZipFile(dest) as z:
                 r=json.loads(z.read('summary.json'))['sections']['r111_outcomes_all'][0]
                 self.assertEqual(r['ready'],2);self.assertEqual(r['settled'],1);self.assertAlmostEqual(r['net020'],.3)
+    def test_optional_failure_still_saves_zip(self):
+        with tempfile.TemporaryDirectory() as d:
+            src=Path(d)/'test.sqlite3';dest=Path(d)/'nested'/'lite.zip'
+            with closing(sqlite3.connect(src)) as db:
+                db.executescript("CREATE TABLE r11_cycles(cutoff INTEGER PRIMARY KEY,universe INTEGER,eligible INTEGER); INSERT INTO r11_cycles VALUES(1,10,5);")
+                db.commit()
+            with patch('export_lite.csv_query',side_effect=sqlite3.OperationalError('interrupted')):
+                export(src,dest)
+            with zipfile.ZipFile(dest) as z:
+                self.assertIsNone(z.testzip())
+                self.assertIn('r11_cycles',json.loads(z.read('manifest.json'))['omittedDetails'])
+                self.assertEqual(json.loads(z.read('summary.json'))['sections']['r11_coverage_all'][0]['eligibleShare'],.5)
+    def test_expired_summary_budget_is_explicit(self):
+        with closing(sqlite3.connect(':memory:')) as db:
+            db.row_factory=sqlite3.Row
+            db.execute('CREATE TABLE r11_cycles(cutoff INTEGER PRIMARY KEY,universe INTEGER,eligible INTEGER)')
+            result,_=collect(db,1000,deadline=0)
+            self.assertIn('r11_coverage_all',result['unavailable'])
+            self.assertNotIn('r11_coverage_all',result['sections'])
+            self.assertIn('count:r11_cycles',result['unavailable'])
 if __name__=='__main__':unittest.main()

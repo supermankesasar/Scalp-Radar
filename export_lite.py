@@ -1,24 +1,47 @@
 """Compact cumulative analysis export, read-only, no full SQLite copy."""
-import argparse,csv,io,json,sqlite3,time,zipfile
+import argparse,csv,io,json,os,sqlite3,sys,tempfile,time,traceback,zipfile
 from datetime import datetime
+from contextlib import contextmanager
 from pathlib import Path
 from database_location import existing_database,configured
 ROOT=Path(__file__).resolve().parent
 MAX_ZIP=9*1024*1024
+QUERY_SECONDS=8
+SUMMARY_SECONDS=75
+DETAIL_SECONDS=25
+
+def progress(message):print(message,flush=True)
+
+@contextmanager
+def query_budget(db,deadline,seconds=QUERY_SECONDS):
+    # Each query and phase is bounded in routine mode; complete mode passes None.
+    if deadline is None:
+        yield;return
+    end=min(deadline,time.monotonic()+seconds)
+    if time.monotonic()>=end:raise sqlite3.OperationalError('export time budget reached')
+    db.set_progress_handler(lambda:int(time.monotonic()>=end),10000)
+    try:yield
+    finally:db.set_progress_handler(None,0)
+
 STEPS={'kline_1m':60000,'kline_5m':300000,'kline_15m':900000,'kline_1h':3600000,'kline_4h':14400000}
 def rows(db,sql,args=()):
     return [dict(r) for r in db.execute(sql,args)]
-def continuity(db,now):
+def continuity(db,now,deadline=None,unavailable=None):
     """Observed history span and recent gaps, not proof of listing dates."""
     result=[]
     day=now-86400000
     for kind,step in STEPS.items():
         last=now//step*step-1
-        data=rows(db,"""SELECT symbol,COUNT(*) n,MIN(source_ts) first,MAX(source_ts) latest,
-          SUM(CASE WHEN source_ts>=? THEN 1 ELSE 0 END) recent,
-          SUM(CASE WHEN (source_ts+1)%?!=0 THEN 1 ELSE 0 END) offGrid
-          FROM market_observations WHERE kind=? AND source_ts<=? AND received_at<=? GROUP BY symbol""",
-          (day,step,kind,last,now))
+        try:
+            with query_budget(db,deadline):
+                data=rows(db,"""SELECT symbol,COUNT(*) n,MIN(source_ts) first,MAX(source_ts) latest,
+                  SUM(CASE WHEN source_ts>=? THEN 1 ELSE 0 END) recent,
+                  SUM(CASE WHEN (source_ts+1)%?!=0 THEN 1 ELSE 0 END) offGrid
+                  FROM market_observations WHERE kind=? AND source_ts<=? AND received_at<=? GROUP BY symbol""",
+                  (day,step,kind,last,now))
+        except sqlite3.OperationalError as exc:
+            if unavailable is None:raise
+            unavailable['continuity_'+kind]=str(exc);continue
         for r in data:
             first,latest=r['first'],r['latest']
             # Only observed-span denominator; never assume continuous listing before first observation.
@@ -33,18 +56,15 @@ def continuity(db,now):
             result.append(r)
     return result
 
-def collect(db,now):
+def collect(db,now,deadline=None,notify=lambda message:None):
     tables={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     out={'schema':'scalp-radar-lite-v1','exportedAtMs':now,'counts':{},'sections':{},'unavailable':{},
          'note':'Cumulative and last 24h summaries; overlapping events, assumed costs in percentage points, no real fills. Missing returns are not zero.'}
+    pending=[]
     def q(name,required,sql,args=()):
         if not set(required)<=tables:
             out['unavailable'][name]='missing tables: '+','.join(sorted(set(required)-tables));return
-        try:out['sections'][name]=rows(db,sql,args)
-        except sqlite3.OperationalError as e:out['unavailable'][name]=str(e)
-    for t in sorted(tables):
-        if t.startswith(('r10_','r11_','r111_','ws_','research_','market_')) or t in ('events','last_rows'):
-            out['counts'][t]=db.execute('SELECT COUNT(*) FROM "'+t.replace('"','""')+'"').fetchone()[0]
+        pending.append((name,sql,args))
     day=now-86400000
     q('archive_coverage',['market_observations'],"SELECT kind,COUNT(*) n,COUNT(DISTINCT symbol) pairs,MIN(source_ts) first,MAX(source_ts) latest,MAX(received_at) received FROM market_observations GROUP BY kind")
     q('archive_runs',['market_collection_runs'],"SELECT * FROM market_collection_runs ORDER BY id DESC LIMIT 48")
@@ -75,6 +95,28 @@ def collect(db,now):
             q(pre+'_reasons_'+label,[pre+'_events'],f"SELECT state,json_extract(payload,'$.reason') reason,COUNT(*) n FROM {pre}_events"+(' WHERE decision>=?' if label=='24h' else '')+" GROUP BY 1,2",args)
             q(pre+'_coin_'+label,[pre+'_ready',pre+'_outcomes'],f"SELECT r.symbol,r.direction,COUNT(*) ready,COUNT(o.gross_pct) observed,AVG(o.gross_pct) gross,AVG(o.gross_pct)-.20 net020 FROM {pre}_ready r LEFT JOIN {pre}_outcomes o USING(symbol,cutoff)"+where+" GROUP BY 1,2",args)
     q('ws_coin_24h',['ws_minute_snapshots'],"SELECT symbol,COUNT(*) n,MIN(candle_time) first,MAX(candle_time) latest,AVG(observed_at-candle_time) lagMs,SUM(json_extract(payload,'$.micro.coverage.trades')=1) tradeCovered,SUM(json_extract(payload,'$.micro.coverage.depth')=1) depthCovered FROM ws_minute_snapshots WHERE candle_time>=? GROUP BY symbol",(day,))
+    # Recent R11.1/R11 sections first, then operational coverage and other recent
+    # results; expensive historical rule expansion is lower priority.
+    def priority(item):
+        name=item[0]
+        if name.startswith('r111_') and name.endswith('_24h'):return 0
+        if name.startswith('r11_') and name.endswith('_24h'):return 1
+        if name.startswith(('archive_runs','archive_errors','r10_meta','dashboard_status')):return 2
+        if name.endswith('_24h'):return 3
+        if name.startswith(('r111_','r11_')):return 4
+        if name=='archive_coverage':return 5
+        return 6
+    for i,(name,sql,args) in enumerate(sorted(pending,key=priority),1):
+        notify('Summary %d/%d: %s'%(i,len(pending),name))
+        try:
+            with query_budget(db,deadline):out['sections'][name]=rows(db,sql,args)
+        except sqlite3.OperationalError as e:out['unavailable'][name]=str(e)
+    for t in sorted(tables):
+        if t.startswith(('r10_','r11_','r111_','ws_','research_','market_')) or t in ('events','last_rows'):
+            try:
+                with query_budget(db,deadline):
+                    out['counts'][t]=db.execute('SELECT COUNT(*) FROM "'+t.replace('"','""')+'"').fetchone()[0]
+            except sqlite3.OperationalError as e:out['unavailable']['count:'+t]=str(e)
     return out,tables
 
 def json_write(z,name,value):
@@ -88,69 +130,122 @@ def csv_dict(data):
     buf=io.StringIO(newline='');w=csv.DictWriter(buf,fieldnames=list(data[0]));w.writeheader();w.writerows(data)
     return buf.getvalue().encode('utf-8')
 
-def export(source,dest,coin=None,hours=24,now=None):
+def export(source,dest,coin=None,hours=24,now=None,complete=False,notify=lambda message:None):
     source=Path(source).resolve();dest=Path(dest).resolve()
     if source==dest or dest.exists():raise RuntimeError('Destination exists or equals database')
     now=int(time.time()*1000) if now is None else now
     if not 1<=hours<=168:raise ValueError('hours must be 1–168')
-    db=sqlite3.connect(source.as_uri()+'?mode=ro',uri=True,timeout=30);db.row_factory=sqlite3.Row
-    tmp=dest.with_suffix('.tmp')
+    dest.parent.mkdir(parents=True,exist_ok=True)
+    db=sqlite3.connect(source.as_uri()+'?mode=ro',uri=True,timeout=10);db.row_factory=sqlite3.Row
+    tmp=None
     try:
+        fd,name=tempfile.mkstemp(prefix='lite-',suffix='.tmp',dir=dest.parent)
+        os.close(fd);tmp=Path(name)
         db.execute('PRAGMA query_only=ON');db.execute('BEGIN')
-        summary,tables=collect(db,now);summary['databaseBytes']=source.stat().st_size
-        cont=continuity(db,now) if 'market_observations' in tables else []
+        # Reserve a separate continuity budget so heavy rule history cannot starve it.
+        summary,tables=collect(db,now,None if complete else time.monotonic()+SUMMARY_SECONDS,notify)
+        summary['databaseBytes']=source.stat().st_size
+        summary['mode']='complete' if complete else 'routine'
+        notify('Checking coin continuity...')
+        cont=continuity(db,now,None if complete else time.monotonic()+25,summary['unavailable']) if 'market_observations' in tables else []
+        detail_deadline=None if complete else time.monotonic()+DETAIL_SECONDS
+        optional_errors={}
+        def optional(name,fn):
+            try:
+                with query_budget(db,detail_deadline):return fn()
+            except (sqlite3.OperationalError,OSError,ValueError) as exc:
+                optional_errors[name]=str(exc);return None
         specs=[('r111_cycles',360),('r11_cycles',360),('r10_cycles',720),('r111_moves',2000),
                ('r111_events',1500),('r11_events',1000),('r111_ready',1500),('r111_outcomes',1500),('r11_ready',1000),('r11_outcomes',1000)]
         def write(scale):
             manifest={'schema':summary['schema'],'snapshotMs':now,'detailLimits':{},'coin':coin,'hours':hours if coin else None,
                 'note':'Not a restorable backup. Per-coin continuity is computed from all stored aligned candle timestamps, not the raw sample. Recent window ends at the last expected closed candle. Unknown listing dates/delisting can affect missing counts. Raw optional details are not representative.'}
+            manifest['omittedDetails']={}
             with zipfile.ZipFile(tmp,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=6) as z:
                 json_write(z,'summary.json',summary);z.writestr('coin_continuity.csv',csv_dict(cont))
                 for table,n in specs:
                     if table not in tables or int(n*scale)<=0:continue
                     limit=int(n*scale)
                     order='cutoff DESC' if table.endswith('_cycles') else 'cutoff DESC,symbol'
-                    z.writestr(table+'.csv',csv_query(db,f'SELECT * FROM {table} ORDER BY {order} LIMIT ?',(limit,)))
-                    manifest['detailLimits'][table]=limit
+                    data=optional(table,lambda:csv_query(db,f'SELECT * FROM {table} ORDER BY {order} LIMIT ?',(limit,)))
+                    if data is not None:
+                        z.writestr(table+'.csv',data);manifest['detailLimits'][table]=limit
                 if 'market_observations' in tables:
                     symbols=[coin] if coin else ['BTCUSDT']
                     if not coin and scale:
                         for table in ('r111_moves','r111_ready','r11_ready'):
-                            if table in tables:symbols.extend(r[0] for r in db.execute(f'SELECT symbol FROM {table} ORDER BY cutoff DESC LIMIT 100'))
+                            if table in tables:
+                                extra=optional(table+'_symbols',lambda:list(db.execute(f'SELECT symbol FROM {table} ORDER BY cutoff DESC LIMIT 100')))
+                                if extra:symbols.extend(r[0] for r in extra)
                         symbols=list(dict.fromkeys(symbols))[:max(1,int(20*scale))]
                     if coin or scale:
                         start=now-(hours*3600000 if coin else 7200000)
                         mark=','.join('?' for _ in symbols)
-                        z.writestr('sample_candles.csv',csv_query(db,f"SELECT kind,symbol,source_ts,received_at,payload FROM market_observations WHERE kind LIKE 'kline_%' AND symbol IN ({mark}) AND source_ts BETWEEN ? AND ? AND received_at<=? ORDER BY symbol,kind,source_ts",(*symbols,start,now,now)))
-                        manifest['rawSample']={'symbols':symbols,'fromMs':start,'toMs':now}
+                        kinds=tuple(STEPS);km=','.join('?' for _ in kinds)
+                        query=f"SELECT kind,symbol,source_ts,received_at,payload FROM market_observations WHERE kind IN ({km}) AND symbol IN ({mark}) AND source_ts BETWEEN ? AND ? AND received_at<=? ORDER BY symbol,kind,source_ts"
+                        args=(*kinds,*symbols,start,now,now)
+                        # Explicitly requested coin data is required, not silently dropped.
+                        data=csv_query(db,query,args) if coin else optional('sample_candles',lambda:csv_query(db,query,args))
+                        if data is not None:
+                            z.writestr('sample_candles.csv',data)
+                            manifest['rawSample']={'symbols':symbols,'fromMs':start,'toMs':now}
                 for name in ('r10-heartbeat.json','r10-runtime.jsonl'):
                     p=source.parent/name;limit=int(128*1024*scale)
                     if p.is_file() and limit:
-                        with p.open('rb') as f:
-                            f.seek(max(0,p.stat().st_size-limit))
-                            if f.tell():f.readline()
-                            data=f.read(limit)
-                        if data:z.writestr(name,data)
+                        try:
+                            with p.open('rb') as f:
+                                f.seek(max(0,p.stat().st_size-limit))
+                                if f.tell():f.readline()
+                                data=f.read(limit)
+                            if data:z.writestr(name,data)
+                        except OSError as exc:optional_errors[name]=str(exc)
+                manifest['omittedDetails']=dict(optional_errors)
+                manifest['sampleScale']=scale
                 json_write(z,'manifest.json',manifest)
         for scale in (1,.5,.25,0):
+            notify('Writing ZIP (sample scale %s)...'%scale)
             write(scale)
             if tmp.stat().st_size<=MAX_ZIP:break
         else:raise RuntimeError('Required summary or requested coin data exceeds 9 MiB; reduce --hours for coin export.')
-        tmp.replace(dest)
+        with zipfile.ZipFile(tmp) as z:
+            if z.testzip() is not None:raise RuntimeError('ZIP integrity check failed')
+        # No overwrite: a concurrent exporter may have selected the same destination.
+        if os.name=='nt':tmp.rename(dest)
+        else:os.link(tmp,dest)
     finally:
         db.close()
-        if tmp.exists():tmp.unlink()
+        if tmp is not None and tmp.exists():tmp.unlink()
     return dest
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--database');p.add_argument('--output');p.add_argument('--coin');p.add_argument('--hours',type=int,default=24);a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--database');p.add_argument('--output');p.add_argument('--coin');p.add_argument('--hours',type=int,default=24);p.add_argument('--complete',action='store_true',help='No SQL time budget; may take longer');p.add_argument('--open-folder',action='store_true');a=p.parse_args()
     source=Path(a.database).resolve() if a.database else existing_database(ROOT)
     out=source.parent.parent/'exports' if a.database or configured() is not None else ROOT/'exports'
     out.mkdir(parents=True,exist_ok=True)
-    dest=Path(a.output) if a.output else out/('scalp-radar-LITE-'+datetime.now().strftime('%Y%m%d-%H%M%S')+'.zip')
-    print('Creating compact analysis report...',flush=True)
-    export(source,dest,a.coin.upper() if a.coin else None,a.hours)
-    print('LITE EXPORT OK:',dest,flush=True)
-    print('Size: %.2f MiB'%(dest.stat().st_size/1024/1024),flush=True)
-    print('Upload this ZIP; full database stays local.',flush=True)
-if __name__=='__main__':main()
+    dest=(Path(a.output) if a.output else out/('scalp-radar-LITE-'+datetime.now().strftime('%Y%m%d-%H%M%S-%f')+'.zip')).resolve()
+    progress('Database: '+str(source))
+    progress('Output: '+str(dest))
+    progress('Creating compact analysis report...')
+    export(source,dest,a.coin.upper() if a.coin else None,a.hours,complete=a.complete,notify=progress)
+    with zipfile.ZipFile(dest) as z:
+        summary=json.loads(z.read('summary.json'))
+        manifest=json.loads(z.read('manifest.json'))
+    progress('LITE EXPORT OK: '+str(dest))
+    progress('Size: %.2f MiB'%(dest.stat().st_size/1024/1024))
+    if summary['unavailable'] or manifest['omittedDetails']:
+        progress('Some sections unavailable or timed out; see summary.json and manifest.json. Use --complete for unbounded SQL queries.')
+    progress('Upload this ZIP; full database stays local.')
+    if a.open_folder and os.name=='nt':
+        try:os.startfile(str(dest.parent))
+        except OSError as exc:progress('Cannot open Explorer: '+str(exc))
+if __name__=='__main__':
+    try:main()
+    except Exception:
+        detail=traceback.format_exc()
+        print('LITE EXPORT FAILED:\n'+detail,file=sys.stderr,flush=True)
+        try:
+            log=Path(tempfile.gettempdir())/'ScalpRadar-lite-error.log'
+            log.write_text(detail,encoding='utf-8')
+            progress('Error log: '+str(log))
+        except OSError:pass
+        sys.exit(1)
