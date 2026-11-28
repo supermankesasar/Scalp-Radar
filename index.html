@@ -99,13 +99,13 @@
 <body>
 <main>
 <header>
-  <div class="brand"><div class="logo">↗</div><div><h1>Scalp Radar <span style="color:#8498ad;font-size:12px;font-weight:500">v0.5</span></h1><p class="tagline">5 peluang teratas · cek cepat sebelum entry.</p></div></div>
+  <div class="brand"><div class="logo">↗</div><div><h1>Scalp Radar <span style="color:#8498ad;font-size:12px;font-weight:500">v0.5</span></h1><p class="tagline">10 peluang teratas · cek cepat sebelum entry.</p></div></div>
   <div class="live-line"><span class="dot busy" id="dot"></span><span class="tiny" id="live">Menghubungkan…</span><button class="pill-btn" id="refresh">↻ Scan</button></div>
 </header>
 <section class="status"><div><strong id="message">Mengambil daftar market</strong><p class="status-note" id="scanDetails">Sinyal disimpan di server — tab Sudah berasal dari Potensi</p></div><div style="display:flex;align-items:center;gap:10px"><div class="track"><span id="progress"></span></div><span class="tiny" id="time">—</span></div></section>
 <div class="scan-stats" id="scanStats" aria-label="Ringkasan cakupan scanner"></div>
 <div class="error" id="error" role="alert"></div>
-<div class="headline"><div class="section-title" style="margin:0">Top 5 watchlist</div><span class="tiny">Maks. 5 Potensi aktif total · Sudah ditampilkan 6 jam · detail & arsip tetap ada</span></div>
+<div class="headline"><div class="section-title" style="margin:0">Top 10 watchlist</div><span class="tiny">Maks. 10 Potensi aktif total · Sudah ditampilkan 6 jam · detail & arsip tetap ada</span></div>
 <div class="tabs" id="tabs">
  <button class="tab up" data-category="POTENSI_NAIK"><div class="top"><span class="name">↗ Potensi Naik</span><span class="tiny">WATCH</span></div><div class="number" id="countPN">0</div><div class="bottom" id="topPN">Menunggu sinyal</div></button>
  <button class="tab done" data-category="SUDAH_NAIK"><div class="top"><span class="name">↑ Sudah Naik</span><span class="tiny">REACHED</span></div><div class="number" id="countSN">0</div><div class="bottom" id="topSN">Dari potensi naik</div></button>
@@ -120,7 +120,7 @@
 <div class="history-panel"><button class="pill-btn" id="historyToggle">Riwayat sinyal 30 hari ▾</button><div class="history-rows" id="historyRows" hidden></div><p class="tiny">Target/stop hanya berdasar close candle 5m. Riwayat bukan catatan profit atau order yang dieksekusi.</p></div>
 </section>
 <section id="detail" class="detail"><div class="detail-head"><div><div class="section-title" style="margin-bottom:3px">Coin deep dive</div><h2 id="detailSymbol">—</h2><p class="tiny" id="detailTime">—</p></div><button class="pill-btn" id="closeDetail">Tutup ×</button></div><div id="detailError" class="error"></div><div class="detail-grid"><div class="panel"><div class="headline" style="margin-bottom:12px"><div><div class="section-title" style="margin:0">Chart 5m</div><strong id="priceDetail">—</strong></div><span class="tiny">80 candle terakhir</span></div><svg id="chart" class="chart" viewBox="0 0 740 255" role="img" aria-label="Grafik harga penutupan 5 menit"></svg><div class="analysis"><h3 id="statusDetail">—</h3><ul id="reasons"></ul><p id="levels" class="risk"></p><p id="issues" class="risk"></p></div></div><div class="panel"><div class="section-title">Indicators & Futures flow</div><div class="detail-data" id="detailData"></div></div></div></section>
-<div class="footer"><b>Fase 1 · Read-only Binance USDⓈ-M.</b> Kategori <b>Sudah Naik/Turun</b> muncul setelah sinyal Potensi tercatat dan penutupan candle 5m berikutnya mencapai target. Maksimal 5 Potensi aktif gabungan naik/turun. Status Sudah tampil 6 jam lalu tersimpan di arsip 30 hari. Koin dapat muncul di beberapa kategori. Kolom sejak sinyal menunjukkan perubahan harga bertanda (+ naik / − turun). Highlight pergerakan tinggi menggunakan data harga, bukan prediksi keberhasilan. Skor masih heuristik, belum backtest, bukan rekomendasi membuka posisi. Riwayat disimpan di server; akses HP publik membutuhkan deployment HTTPS dan penyimpanan persisten. Open Interest tidak membuktikan arah posisi individu.</div>
+<div class="footer"><b>Fase 1 · Read-only Binance USDⓈ-M.</b> Kategori <b>Sudah Naik/Turun</b> muncul setelah sinyal Potensi tercatat dan penutupan candle 5m berikutnya mencapai target. Maksimal 10 Potensi aktif gabungan naik/turun. Status Sudah tampil 6 jam lalu tersimpan di arsip 30 hari. Koin dapat muncul di beberapa kategori. Kolom sejak sinyal menunjukkan perubahan harga bertanda (+ naik / − turun). Highlight pergerakan tinggi menggunakan data harga, bukan prediksi keberhasilan. Skor masih heuristik, belum backtest, bukan rekomendasi membuka posisi. Riwayat disimpan di server; akses HP publik membutuhkan deployment HTTPS dan penyimpanan persisten. Open Interest tidak membuktikan arah posisi individu.</div>
 </main>
 <script src="/ui.js" defer></script>
 </body>
