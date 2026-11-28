@@ -59,6 +59,22 @@ class LiteTests(unittest.TestCase):
                 rows=list(csv.DictReader(io.StringIO(z.read('coin_continuity.csv').decode())))
                 b=next(x for x in rows if x['symbol']=='BBB' and x['kind']=='kline_1m')
                 self.assertEqual(b['recent'],'0');self.assertEqual(b['missingRecentAssumingActive'],'1440')
+    def test_indicator_study_future_labels_and_missing_features(self):
+        with closing(sqlite3.connect(':memory:')) as db:
+            db.row_factory=sqlite3.Row
+            db.executescript("""CREATE TABLE research_snapshots(symbol TEXT,candle_time INTEGER,recorded_at INTEGER,payload TEXT);
+                CREATE TABLE market_observations(kind TEXT,symbol TEXT,source_ts INTEGER,received_at INTEGER,payload TEXT,PRIMARY KEY(kind,symbol,source_ts));""")
+            f=json.dumps({'researchFeatures':{'extraIndicators':{'5m':{'version':'shadow-extra-v1','adx14':30}}}})
+            for s,p in [('UP',102),('DOWN',98),('FLAT',100),('MISSING',None),('OLD',101)]:
+                db.execute('INSERT INTO research_snapshots VALUES(?,?,?,?)',(s,59999,60001,'{}' if s=='OLD' else f))
+                if p is not None:
+                    db.execute('INSERT INTO market_observations VALUES(?,?,?,?,?)',('kline_1m',s,179999,180000,json.dumps([120000,100,100,100,100])))
+                    db.execute('INSERT INTO market_observations VALUES(?,?,?,?,?)',('kline_1m',s,1019999,1020000,json.dumps([960000,p,p,p,p])))
+            s,_=collect(db,1200000,deadline=None,daily_only=True)
+            self.assertEqual({r['symbol']:r['label'] for r in s['sections']['daily_indicator_cohort']},
+                {'UP':'UP','DOWN':'DOWN','FLAT':'FLAT','MISSING':'MISSING_FUTURE','OLD':'NO_FEATURE'})
+            self.assertEqual({r['label']:r['mean'] for r in s['sections']['daily_indicator_profile']},
+                {'UP':30,'DOWN':30,'FLAT':30})
     def test_ready_outcome_aggregate(self):
         with tempfile.TemporaryDirectory() as d:
             src=Path(d)/'test.sqlite3';dest=Path(d)/'lite.zip'

@@ -19,6 +19,7 @@ class ResearchHistory:
               symbol TEXT NOT NULL, candle_time INTEGER NOT NULL,
               recorded_at INTEGER NOT NULL, payload TEXT NOT NULL,
               PRIMARY KEY(symbol,candle_time));
+            CREATE INDEX IF NOT EXISTS research_snapshots_recorded ON research_snapshots(recorded_at);
             CREATE TABLE IF NOT EXISTS research_candidates (
               id INTEGER PRIMARY KEY, symbol TEXT NOT NULL, candle_time INTEGER NOT NULL,
               filter_id TEXT NOT NULL, version TEXT NOT NULL, direction TEXT NOT NULL,

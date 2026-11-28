@@ -155,17 +155,17 @@ class ScannerTests(unittest.TestCase):
         i5=dict(base)
         i15=dict(base)
         it=dict(base)
-        with patch.object(app,'indicators',side_effect=[i5,i15,it,it]), \
-             patch.object(app,'regime',side_effect=['BULLISH','BULLISH']), \
-             patch.object(app,'utc_vwap',return_value=(99,'2026-11-21')):
+        with patch('scan_math.indicators',side_effect=[i5,i15,it,it]), \
+             patch('scan_math.regime',side_effect=['BULLISH','BULLISH']), \
+             patch('scan_math.utc_vwap',return_value=(99,'2026-11-21')):
             up=app.scan_symbol({'symbol':'AAAUSDT','turnover24h':100000000,'change24h':.1})
         # Real synthetic data can show a small recent move, so use threshold checks rather than forcing predictions.
         self.assertTrue(up['potentialUp'])
         self.assertGreaterEqual(up['longScore'],65)
         bearish=dict(base,close=100,ema21=100.5,rsi14=43,macdHistogram=-.05)
-        with patch.object(app,'indicators',side_effect=[bearish,bearish,it,it]), \
-             patch.object(app,'regime',side_effect=['BEARISH','BEARISH']), \
-             patch.object(app,'utc_vwap',return_value=(101,'2026-11-21')):
+        with patch('scan_math.indicators',side_effect=[bearish,bearish,it,it]), \
+             patch('scan_math.regime',side_effect=['BEARISH','BEARISH']), \
+             patch('scan_math.utc_vwap',return_value=(101,'2026-11-21')):
             down=app.scan_symbol({'symbol':'AAAUSDT','turnover24h':100000000,'change24h':-.1})
         self.assertTrue(down['potentialDown'])
         self.assertGreaterEqual(down['shortScore'],65)

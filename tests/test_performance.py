@@ -46,6 +46,25 @@ class PerformanceTests(unittest.TestCase):
         self.assertEqual(e['obvFlow20'],1)
         self.assertGreater(e['roc5Pct'],0)
         self.assertTrue(0<=e['stochRsi14K3']<=100)
+    def test_spawn_worker_math_parity_and_cpu_limits(self):
+        import multiprocessing
+        from concurrent.futures import ProcessPoolExecutor
+        from scan_math import compute_scan_math
+        from test_app import fake_candles
+        import time
+        now=int(time.time()*1000)
+        sets={tf:fake_candles(tf,count=310) for tf in ('5m','15m','1h','4h')}
+        raw=fake_candles('1m',count=100)
+        expected=compute_scan_math(sets,raw,now,True)
+        with ProcessPoolExecutor(max_workers=2,mp_context=multiprocessing.get_context('spawn')) as pool:
+            actual=pool.submit(compute_scan_math,sets,raw,now,True).result(timeout=30)
+        self.assertGreaterEqual(actual.pop('calcMs'),0)
+        expected.pop('calcMs')
+        self.assertEqual(actual,expected)
+        self.assertEqual(app.cpu_workers(None,16),8)
+        self.assertEqual(app.cpu_workers('99',24),16)
+        self.assertEqual(app.cpu_workers('bad',2),1)
+        self.assertEqual(app.cpu_workers('4',8),4)
     def test_budget_is_shared_and_bounded(self):
         g=RestGuard();g.history_cap=2
         self.assertEqual(g.history_delay('/futures/data/openInterestHist'),0)

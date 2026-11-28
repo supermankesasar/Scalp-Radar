@@ -25,6 +25,7 @@ if errorlevel 1 (
 echo Scalp Radar R11.1 - R08 dashboard, R10 and R11 comparator retained
 echo Database: persistent local path (or SCANNER_DB override)
 echo Live filter: %SCANNER_LIVE_FILTER%
+echo CPU calculation workers: auto ^(override SCANNER_CPU_WORKERS^)
 echo Browser: http://127.0.0.1:8765
 echo Collection: http://127.0.0.1:8765/api/overnight
 echo Research: http://127.0.0.1:8765/api/research
