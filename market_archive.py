@@ -45,7 +45,7 @@ class MarketContextReader:
         db.row_factory=sqlite3.Row
         try:yield db
         finally:db.close()
-    def research_context(self,symbol,cutoff,decision,universe_size):
+    def research_context(self,symbol,cutoff,decision,universe_size,breadth_override=None):
         # Strict point-in-time receipt and source bounds; stale context is absent.
         d={}
         with self.read_db() as db:
@@ -77,6 +77,10 @@ class MarketContextReader:
                     if index:d['basisPct']=100*(mark/index-1)
                     d['fundingSourceTs']=row['source_ts']
                 except (KeyError,ValueError,TypeError,ZeroDivisionError):pass
+        if breadth_override is not None:return d,breadth_override
+        return d,self.breadth_for(symbol,cutoff,universe_size,self.breadth_returns(cutoff,decision,universe_size))
+
+    def breadth_returns(self,cutoff,decision,universe_size):
         # Breadth is synchronized at one exact close; never combine different symbol timestamps.
         # Cache is built no later than the caller's decision, for 30 seconds only.
         bucket=(cutoff,universe_size)
@@ -94,10 +98,14 @@ class MarketContextReader:
                 self.breadth_cache={k:v for k,v in self.breadth_cache.items() if 0<=decision-v[0]<=300000}
                 self.breadth_cache[bucket]=cached
             returns=cached[1]
+        return returns
+
+    @staticmethod
+    def breadth_for(symbol,cutoff,universe_size,returns):
         n=len(returns);b={'sampleCount':n,'universeSize':universe_size,'cutoff':cutoff}
         if universe_size and n>=max(20,.6*universe_size) and symbol in returns and 'BTCUSDT' in returns:
             b.update(upShare=sum(v>0 for v in returns.values())/n,relativeBTC=returns[symbol]-returns['BTCUSDT'],btcRet15=returns['BTCUSDT'])
-        return d,b
+        return b
 
 class MarketArchive(MarketContextReader):
     def __init__(self,path,lock):
