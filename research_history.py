@@ -75,7 +75,7 @@ class ResearchHistory:
                            json.dumps(candles,allow_nan=False,separators=(',',':'))))
         if packed:
             with self.connection() as db:
-                db.executemany("INSERT OR IGNORE INTO scan_research_queue VALUES(?,?,?,?,?)",packed)
+                db.executemany("INSERT OR IGNORE INTO scan_research_queue SELECT ?,?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM research_snapshots WHERE symbol=? AND candle_time=?)",[r+(r[0],r[1]) for r in packed])
     def queued_scan(self,limit=16):
         with self.connection() as db:
             rows=db.execute("SELECT * FROM scan_research_queue ORDER BY observed_at,symbol LIMIT ?",(limit,)).fetchall()
