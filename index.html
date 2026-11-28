@@ -95,7 +95,7 @@
   td::before{color:var(--dim)}
 }
 /* Trading profile navigation is independent from scalp signal category tabs. */
-.profile-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;max-width:440px;padding:5px;margin:0 0 18px;background:var(--soft);border:1px solid var(--stroke);border-radius:12px}
+.profile-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;max-width:660px;padding:5px;margin:0 0 18px;background:var(--soft);border:1px solid var(--stroke);border-radius:12px}
 .profile-tab{display:flex;align-items:center;justify-content:center;gap:9px;padding:12px 16px;border-radius:8px;border:1px solid transparent;background:transparent;color:var(--dim);font-size:14px;font-weight:750;min-height:44px}
 .profile-tab[aria-selected="true"]{color:var(--text);background:var(--surface);border-color:var(--cyan)}
 .profile-tab:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
@@ -106,21 +106,31 @@
 .swing-empty p{color:var(--dim);max-width:520px}
 .swing-status{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);font-weight:700}
 @media(max-width:700px){.profile-tabs{max-width:none}.profile-tab{padding:10px 8px}}
+.major-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:12px;margin-top:16px}
+.major-card{border:1px solid var(--stroke);border-radius:13px;padding:15px;background:var(--surface)}
+.major-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.major-price{font-size:24px;font-weight:820;letter-spacing:-.045em;margin:8px 0 12px;font-variant-numeric:tabular-nums}
+.major-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.major-metric{background:var(--soft);border-radius:7px;padding:8px;min-width:0}
+.major-metric span{display:block;font-size:11px;color:var(--dim)}
+.major-metric strong{display:block;font-variant-numeric:tabular-nums;font-size:13px}
+@media(max-width:700px){.profile-tab{gap:4px;font-size:12px;padding:10px 5px}.profile-tab small{display:none}.major-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}}
 </style>
 </head>
 <body>
 <main>
 <header>
-  <div class="brand"><div class="logo">↗</div><div><h1>Scalp Radar <span style="color:#8498ad;font-size:12px;font-weight:500">v0.5 · P12</span></h1><p class="tagline">Futures market radar · Scalping &amp; Swing</p></div></div>
+  <div class="brand"><div class="logo">↗</div><div><h1>Scalp Radar <span style="color:#8498ad;font-size:12px;font-weight:500">v0.5 · P13</span></h1><p class="tagline">Futures market radar · USDT perpetual</p></div></div>
   <div class="live-line"><span class="dot busy" id="dot"></span><span class="tiny" id="live">Menghubungkan…</span><button class="pill-btn" id="refresh">↻ Scan</button></div>
 </header>
 <nav class="profile-tabs" role="tablist" aria-label="Profil trading">
   <button type="button" class="profile-tab" id="profileScalping" role="tab" aria-selected="true" aria-controls="scalpingPanel" tabindex="0">Scalping</button>
   <button type="button" class="profile-tab" id="profileSwing" role="tab" aria-selected="false" aria-controls="swingPanel" tabindex="-1">Swing <small>Preview</small></button>
+  <button type="button" class="profile-tab" id="profileMajors" role="tab" aria-selected="false" aria-controls="majorsPanel" tabindex="-1">Major Coins</button>
 </nav>
 <div id="scalpingPanel" class="profile-panel" role="tabpanel" aria-labelledby="profileScalping">
 <section class="status"><div><strong id="message">Mengambil daftar market</strong><p class="status-note" id="scanDetails">Sinyal disimpan di server — tab Sudah berasal dari Potensi</p></div><div style="display:flex;align-items:center;gap:10px"><div class="track"><span id="progress"></span></div><span class="tiny" id="time">—</span></div></section>
-<div class="scan-stats" id="scanStats" aria-label="Ringkasan cakupan scanner"></div>
+<div class="scan-stats" id="scanStats" aria-label="Ringkasan cakupan scanner"></div><p class="tiny" id="promotionStats" style="margin:0 0 12px" aria-live="polite"></p>
 <div class="error" id="error" role="alert"></div>
 <div class="headline"><div class="section-title" style="margin:0">Top 10 watchlist</div><span class="tiny">Maks. 10 Potensi aktif total · Sudah ditampilkan 6 jam · detail & arsip tetap ada</span></div>
 <div class="tabs" id="tabs">
@@ -147,6 +157,11 @@
     <p>Halaman sudah tersedia. Formula, indikator, ranking dan sinyal Swing belum diaktifkan.</p>
     <p class="tiny">Scanner Scalping dan pengumpulan data tetap berjalan di background.</p>
   </div>
+</section>
+<section id="majorsPanel" class="profile-panel" role="tabpanel" aria-labelledby="profileMajors" hidden>
+  <div class="headline"><h2 class="section-title" style="margin:0">Major coins &amp; metals</h2><span class="tiny" id="majorStatus">Menunggu data live…</span></div>
+  <p class="tiny" style="margin-top:8px">Watchlist tetap, tanpa syarat masuk Top 10. Perubahan per candle tertutup; harga live hanya jika quote masih segar. Bukan sinyal entry.</p>
+  <div id="majorRows" class="major-grid"></div>
 </section>
 </main>
 <script src="/ui.js" defer></script>
