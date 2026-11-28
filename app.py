@@ -656,7 +656,7 @@ def _same_generation(generation):
 def scan_job(generation, mode, min_turnover):
     try:
         tracked = STORE.active_symbols()
-        research_pending = HISTORY.pending_symbols(int(time.time()*1000))
+        research_pending = set() if STREAM is not None and mode=='all' else HISTORY.pending_symbols(int(time.time()*1000))
         tickers, info = active_tickers(mode, min_turnover, tracked | research_pending)
         with SCAN_LOCK:
             if generation != SCAN_STATE['generation']:
@@ -688,6 +688,7 @@ def scan_job(generation, mode, min_turnover):
                 started_batch = time.monotonic()
                 batch = tickers[offset:offset+SCAN_BATCH_SIZE]
                 cached_batch=cache_only
+                staged=[]
                 futures = {executor.submit(scan_symbol,t,t['symbol'] in tracked,True,scan_now) if cache_only else executor.submit(scan_symbol,t,t['symbol'] in tracked):t['symbol'] for t in batch}
                 for future in as_completed(futures):
                     if not _same_generation(generation):
@@ -705,14 +706,17 @@ def scan_job(generation, mode, min_turnover):
                                 SCAN_STATE['errors'].append(res['symbol']+': context '+res['contextError'])
                         # Ledger records all rules independently of Top10 ranking or journey rotation.
                         # Failure is visible but must not corrupt production tracking.
-                        try:
-                            HISTORY.record_and_evaluate(res, res['_recent5m'], int(time.time()*1000))
-                        except Exception as history_error:
-                            with SCAN_LOCK:
-                                SCAN_STATE['errors'].append('Research ledger: '+str(history_error)[:150])
-                        if R10 is not None:
-                            try:R10.record5(res,int(time.time()*1000))
-                            except Exception as exc:print('R10 5m ledger:',str(exc)[:160],flush=True)
+                        if cache_only:
+                            staged.append((res,int(time.time()*1000)))
+                        else:
+                            try:
+                                HISTORY.record_and_evaluate(res, res['_recent5m'], int(time.time()*1000))
+                            except Exception as history_error:
+                                with SCAN_LOCK:
+                                    SCAN_STATE['errors'].append('Research ledger: '+str(history_error)[:150])
+                            if R10 is not None:
+                                try:R10.record5(res,int(time.time()*1000))
+                                except Exception as exc:print('R10 5m ledger:',str(exc)[:160],flush=True)
                         res = STORE.refresh(res, res['_recent5m'], allow_new=False)
                         if res.get('potentialUp') or res.get('potentialDown'):
                             eligible_rows.append(res)
@@ -731,6 +735,10 @@ def scan_job(generation, mode, min_turnover):
                             SCAN_STATE['rows'].append(res)
                         if error:
                             SCAN_STATE['errors'].append(error)
+                if staged:
+                    try:HISTORY.stage_scan(staged)
+                    except Exception as exc:
+                        with SCAN_LOCK:SCAN_STATE['errors'].append('Research queue: '+str(exc)[:150])
                 if stop_for_limit:
                     with SCAN_LOCK:
                         SCAN_STATE['errors'].append('Rate limit Binance terdeteksi; siklus scan dihentikan untuk melindungi koneksi API.')
@@ -764,6 +772,7 @@ def scan_job(generation, mode, min_turnover):
             if generation == SCAN_STATE['generation']:
                 SCAN_STATE['errors'].append('Scanner: ' + str(exc))
     finally:
+        audit=None
         with SCAN_LOCK:
             if generation == SCAN_STATE['generation']:
                 SCAN_STATE['running'] = False
@@ -772,6 +781,12 @@ def scan_job(generation, mode, min_turnover):
                 SCAN_STATE['message'] = ('Scan terhenti sebelum selesai' if stopped else
                     'Scan selesai (sebagian menunggu cache)' if SCAN_STATE.get('cacheSkipped') else
                     'Scan selesai' if SCAN_STATE['rows'] else 'Tidak ada data berhasil dianalisis')
+                audit={k:SCAN_STATE.get(k) for k in ('startedAt','completedAt','universe','total','processed','cacheSkipped','cacheSkippedSymbols','mode','errors')}
+                audit['successful']=len(SCAN_STATE['rows'])
+                audit['failed']=max(0,audit['processed']-audit['successful']-(audit['cacheSkipped'] or 0))
+        if audit and audit['startedAt']:
+            try:HISTORY.record_scan_cycle(audit['startedAt'],audit['completedAt'],audit)
+            except Exception as exc:print('Scan cycle audit:',str(exc)[:150],flush=True)
 
 
 def _saved_visible(rows, mode, min_turnover):
@@ -1008,6 +1023,32 @@ def minute_research_loop():
         STREAM.stop.wait(1)
 
 
+def scan_research_loop():
+    """Drain durable research independently from the live scanner.
+    A failed row remains queued and errors are observable; replay uses frozen observation time.
+    """
+    last_cleanup=0
+    while not STREAM.stop.is_set():
+        try:
+            pending=HISTORY.queued_scan(16)
+            for item in pending:
+                if STREAM.stop.is_set():return
+                row=json.loads(item['payload']);bars=json.loads(item['candles'])
+                decision=item['observed_at']
+                HISTORY.record_and_evaluate(row,bars,decision)
+                if R10 is not None:R10.record5(row,decision)
+                HISTORY.ack_scan(item['symbol'],item['candle_time'])
+            now=int(time.time()*1000)
+            if now-last_cleanup>=60000:
+                HISTORY.pending_symbols(now);last_cleanup=now
+            if RUNTIME:RUNTIME.beat('scan-research-writer',batch=len(pending),oldestMs=pending[0]['observed_at'] if pending else None,error=None)
+            STREAM.stop.wait(.1 if pending else 2)
+        except Exception as exc:
+            if RUNTIME:RUNTIME.beat('scan-research-writer',error=str(exc)[:160])
+            print('Scan research queue:',str(exc)[:160],flush=True)
+            STREAM.stop.wait(5)
+
+
 def minute_seed_loop():
     """Repair/warm cache independently; never make live scanner wait on REST.
     One existing worker, local WAL first, paced missing requests only.
@@ -1071,11 +1112,12 @@ def serve():
         for lane in ('minute','ticker','other'):
             worker('ws-'+lane,lambda lane=lane:STREAM.run_forever(lane))
         worker('ws-research',minute_research_loop)
+        worker('scan-research-writer',scan_research_loop)
         if R11 is not None:
             worker('r11-radar',lambda:R11.run(lambda:RUNTIME.beat('r11-radar') if RUNTIME else None))
         if R111 is not None:
             worker('r111-radar',lambda:R111.run(lambda:RUNTIME.beat('r111-radar') if RUNTIME else None))
-        if RUNTIME:worker('r10-minute-seed',minute_seed_loop)
+        worker('r10-minute-seed',minute_seed_loop)
         print('R09 WebSocket enabled; status /api/websocket; research /api/research/1m',flush=True)
     if os.getenv('SCANNER_BACKGROUND', '1') == '1':
         worker('scan-scheduler',scheduler_loop)
